@@ -65,7 +65,7 @@ sudo pip3 install -r requirements.txt
 ```
 ## Configuration
 
-To match personal needs, all operation details can be configured using the file [`config.ini`](config.ini.dist).
+To match personal needs, all operational details can be configured by modifying entries within the file [`config.ini`](config.ini.dist).
 The file needs to be created first:
 
 ```shell
