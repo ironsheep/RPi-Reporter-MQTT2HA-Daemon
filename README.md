@@ -1,5 +1,5 @@
 # RPi-Reporter-MQTT2HA-Daemon
-Linux scripts to collect and transfer Raspberry Pi data via [MQTT](https://projects.eclipse.org/projects/iot.mosquitto) to [Home Assistant](https://www.home-assistant.io/) (for Monitoring all of your RPi's)
+Linux scripts to collect and transfer Raspberry Pi configuration and status information via [MQTT](https://projects.eclipse.org/projects/iot.mosquitto) to [Home Assistant](https://www.home-assistant.io/) (for Monitoring all of your RPi's)
 
 A simple Linux python script to query the Raspberry Pi on which it is running for various configuration and status values which it then reports via MQTT to your Home Assistant installation.  This allows you to install and run this on each of your RPi's so you can track them all via your Home Assistant Dashboard.
 
@@ -122,7 +122,7 @@ This data can be subscribed to and processed by your home assistant installation
 
 ## Credits
 
-Thank you to Thomas Dietrich for providing a wonderful pattern for this project. His project is [miflora-mqtt-deamon](https://github.com/ThomDietrich/miflora-mqtt-daemon)
+Thank you to Thomas Dietrich for providing a wonderful pattern for this project. His project, which I use and heartily recommend, is [miflora-mqtt-deamon](https://github.com/ThomDietrich/miflora-mqtt-daemon)
 
 ----
 
@@ -135,3 +135,8 @@ Thank you to Thomas Dietrich for providing a wonderful pattern for this project.
 > The authors will not be held responsible in the event of device failure or simply errant reporting of your RPi status.
 >
 > This project is in no way affiliated with, authorized, maintained, sponsored or endorsed by *Raspberry Pi (Trading) Ltd.* or any of its affiliates or subsidiaries.
+
+----
+
+
+### [Copyright](copyright) | [License](LICENSE)
