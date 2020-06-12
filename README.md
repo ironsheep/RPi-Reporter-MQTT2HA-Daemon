@@ -88,14 +88,14 @@ python3 /opt/ISP-RPi-mqtt-daemon/ISP-RPi-mqtt-daemon.py --config /opt/isp-rpi-co
 ```
 
 
-### Continuous Daemon/Service
+### Run as Daemon / Service
 
-You most probably want to execute the program **continuously in the background**.
-This can be done either by using the internal daemon or cron.
+You probably want to execute this script **continuously in the background**.
+This can be done by running it as a daemon. Or you can run this once at each time you want an update posted by runing the script from cron.
 
-**Attention:** Daemon mode must be enabled in the configuration file (default).
+**NOTE:** Daemon mode must be enabled in the configuration file (default).
 
-1. Systemd service - on systemd powered systems the **recommended** option
+- via Systemd service - on systemd managed systems (the **recommended** option)
 
    ```shell
    sudo cp /opt/ISP-RPi-mqtt-daemon/template.service /etc/systemd/system/isp-rpi.service
@@ -107,6 +107,12 @@ This can be done either by using the internal daemon or cron.
 
    sudo systemctl enable isp-rpi.service
    ```
+   
+**NOTE:** Periodic (scheduled run once) mode must be enabled in your crontab
+
+- via cron - You'll need to add a line to your crontab file as follows:
+
+   (-- tba --)
    
 ## Integration
 
