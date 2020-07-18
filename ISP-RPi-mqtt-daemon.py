@@ -423,7 +423,11 @@ ether = os.popen("ifconfig " + interface + "| grep ether").read().split()
 mac = ether[1]
 fqdn = socket.getfqdn()
 
-uniqID = "RPi-{}-Mon".format(mac.lower().replace(":", ""))
+mac_basic = mac.lower().replace(":", "")
+mac_left = mac_basic[:6]
+mac_right = mac_basic[6:]
+print_line('mac lt=[{}], rt=[{}], mac=[{}]'.format(mac_left, mac_right, mac_basic), debug=True)
+uniqID = "RPi-{}Mon{}".format(mac_left, mac_right)
 
 # our RPi Reporter device
 LD_MONITOR = "values"
@@ -431,7 +435,7 @@ LD_MONITOR = "values"
 # Publish our MQTT auto discovery
 #  table of key items to publish:
 detectorValues = OrderedDict([
-    (LD_MONITOR, dict(title="RPi Monitor {}".format(rpi_hostname), device_class="timestamp", no_title_prefix="yes", json_values="yes", device_ident="RPi-{}".format(rpi_fqdn))),
+    (LD_MONITOR, dict(title="RPi Monitor {}".format(rpi_hostname), device_class="timestamp", no_title_prefix="yes", json_values="yes", icon='mdi:raspberry-pi', device_ident="RPi-{}".format(rpi_fqdn))),
 ])
 
 print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
@@ -462,6 +466,8 @@ for [sensor, params] in detectorValues.items():
     payload['~'] = base_topic
     payload['pl_avail'] = lwt_online_val
     payload['pl_not_avail'] = lwt_offline_val
+    if 'icon' in params:
+        payload['ic'] = params['icon']
     payload['avty_t'] = activity_topic_rel
     if 'json_values' in params:
         payload['json_attr_t'] = "~/{}".format(sensor)
@@ -469,7 +475,6 @@ for [sensor, params] in detectorValues.items():
     if 'device_ident' in params:
         payload['dev'] = {
                 'identifiers' : ["{}".format(uniqID)],
-                'connections' : [["mac", mac.lower()], [interface, ipaddr]],
                 'manufacturer' : 'Raspberry Pi (Trading) Ltd.',
                 'name' : params['device_ident'],
                 'model' : '{}'.format(rpi_model),
@@ -480,6 +485,8 @@ for [sensor, params] in detectorValues.items():
                 'identifiers' : ["{}".format(uniqID)],
          }
     mqtt_client.publish(discovery_topic, json.dumps(payload), 1, retain=True)
+
+    # remove connections as test:                  'connections' : [["mac", mac.lower()], [interface, ipaddr]],
 
 # -----------------------------------------------------------------------------
 #  timer and timer funcs for period handling
