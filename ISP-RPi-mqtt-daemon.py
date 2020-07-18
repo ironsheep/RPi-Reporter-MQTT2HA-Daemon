@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import _thread
 from datetime import datetime
+from tzlocal import get_localzone
 import threading
 import socket
 import os
@@ -24,11 +25,15 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "0.8.0"
+script_version = "0.8.1"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
 project_url = 'https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon'
+
+# we'll use this throughout
+local_tz = get_localzone()
+
 
 if False:
     # will be caught by python 2.7 to be illegal syntax
@@ -91,15 +96,16 @@ if opt_debug:
 # Eclipse Paho callbacks - http://www.eclipse.org/paho/clients/python/docs/#callbacks
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        print_line('MQTT connection established', console=True, sd_notify=True)
+        print_line('* MQTT connection established', console=True, sd_notify=True)
         print_line('')  # blank line?!
+        #_thread.start_new_thread(afterMQTTConnect, ())
     else:
-        print_line('Connection error with result code {} - {}'.format(str(rc), mqtt.connack_string(rc)), error=True)
+        print_line('! Connection error with result code {} - {}'.format(str(rc), mqtt.connack_string(rc)), error=True)
         #kill main thread
         os._exit(1)
 
 def on_publish(client, userdata, mid):
-    #print_line('Data successfully published.')
+    #print_line('* Data successfully published.')
     pass
 
 # Load configuration file
@@ -147,6 +153,7 @@ print_line('Configuration accepted', console=False, sd_notify=True)
 #  RPi variables monitored 
 # -----------------------------------------------------------------------------
 
+rpi_model_raw = ''
 rpi_model = ''
 rpi_connections = ''
 rpi_hostname = ''
@@ -160,33 +167,40 @@ rpi_filesystem_space_raw = ''
 rpi_filesystem_space = ''
 rpi_filesystem_percent = ''
 rpi_system_temp = ''
+rpi_mqtt_script = script_info
 
 # -----------------------------------------------------------------------------
 #  monitor variable fetch routines
 #
 def getDeviceModel():
     global rpi_model
+    global rpi_model_raw
     global rpi_connections
     out = subprocess.Popen("/bin/cat /proc/device-tree/model | /bin/sed -e 's/\\x0//g'", 
            shell=True,
            stdout=subprocess.PIPE, 
            stderr=subprocess.STDOUT)
     stdout,stderr = out.communicate()
-    rpi_model = stdout.decode('utf-8').replace('Raspberry ', 'R').replace('i Model ', 'i 1 Model').replace('Rev ', 'r').replace(' Plus ', '+')
+    rpi_model_raw = stdout.decode('utf-8')
+    # now reduce string length (just more compact, same info)
+    rpi_model = rpi_model_raw.replace('Raspberry ', 'R').replace('i Model ', 'i 1 Model').replace('Rev ', 'r').replace(' Plus ', '+')
+
     # now decode interfaces
-    rpi_connections = '[e,w,b]' # default
+    rpi_connections = 'e,w,b' # default
     if 'Pi 3 ' in rpi_model:
         if ' A ' in rpi_model:
-            rpi_connections = '[w,b]'
+            rpi_connections = 'w,b'
         else:
-            rpi_connections = '[e,w,b]'
+            rpi_connections = 'e,w,b'
     elif 'Pi 2 ' in rpi_model:
-        rpi_connections = '[e]'
+        rpi_connections = 'e'
     elif 'Pi 1 ' in rpi_model:
         if ' A ' in rpi_model:
             rpi_connections = ''
         else:
-            rpi_connections = '[e]'
+            rpi_connections = 'e'
+
+    print_line('rpi_model_raw=[{}]'.format(rpi_model_raw), debug=True)
     print_line('rpi_model=[{}]'.format(rpi_model), debug=True)
     print_line('rpi_connections=[{}]'.format(rpi_connections), debug=True)
 
@@ -298,6 +312,10 @@ def getLastUpdateDate():
 getHostnames()
 if(sensor_name == default_sensor_name):
     sensor_name = 'rpi-{}'.format(rpi_hostname)
+# get model so we can use it too in MQTT
+getDeviceModel()
+getLinuxRelease()
+getLinuxVersion()
 
 # -----------------------------------------------------------------------------
 #  timer and timer funcs for ALIVE MQTT Notices handling
@@ -405,7 +423,7 @@ ether = os.popen("ifconfig " + interface + "| grep ether").read().split()
 mac = ether[1]
 fqdn = socket.getfqdn()
 
-uniqID = "RPiMon-{}".format(mac.lower().replace(":", ""))
+uniqID = "RPi-{}-Mon".format(mac.lower().replace(":", ""))
 
 # our RPi Reporter device
 LD_MONITOR = "values"
@@ -413,10 +431,10 @@ LD_MONITOR = "values"
 # Publish our MQTT auto discovery
 #  table of key items to publish:
 detectorValues = OrderedDict([
-    (LD_MONITOR, dict(title="RPi Monitor {}".format(rpi_hostname), device_class="timestamp", no_title_prefix="yes", json_values="yes", device_ident="RPi-{}".format(rpi_fqdn)),
+    (LD_MONITOR, dict(title="RPi Monitor {}".format(rpi_hostname), device_class="timestamp", no_title_prefix="yes", json_values="yes", device_ident="RPi-{}".format(rpi_fqdn))),
 ])
 
-print_line('Announcing Lightning Detection device to MQTT broker for auto-discovery ...')
+print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
 
 base_topic = '{}/sensor/{}'.format(base_topic, sensor_name.lower())
 values_topic_rel = '{}/values'.format('~')
@@ -454,15 +472,14 @@ for [sensor, params] in detectorValues.items():
                 'connections' : [["mac", mac.lower()], [interface, ipaddr]],
                 'manufacturer' : 'Raspberry Pi (Trading) Ltd.',
                 'name' : params['device_ident'],
-                'model' : 'Raspberry Pi',
-                'sw_version': "v{}".format(script_version)
+                'model' : '{}'.format(rpi_model),
+                'sw_version': "{} {}".format(rpi_linux_release, rpi_linux_version)
         }
     else:
          payload['dev'] = {
                 'identifiers' : ["{}".format(uniqID)],
          }
     mqtt_client.publish(discovery_topic, json.dumps(payload), 1, retain=True)
-
 
 # -----------------------------------------------------------------------------
 #  timer and timer funcs for period handling
@@ -519,6 +536,7 @@ RPI_DATE_LAST_UPDATE = "update"
 RPI_FS_SPACE = "fs_space"
 RPI_FS_AVAIL = "fs_available"
 RPI_TEMP = "temperature_c"
+RPI_SCRIPT = "reported_by"
 
 
 def send_status(timestamp, nothing):
@@ -534,8 +552,12 @@ def send_status(timestamp, nothing):
     rpiData[RPI_FS_SPACE] = rpi_filesystem_space
     rpiData[RPI_FS_AVAIL] = rpi_filesystem_percent
     rpiData[RPI_TEMP] = rpi_system_temp
+    rpiData[RPI_SCRIPT] = rpi_mqtt_script
 
-    _thread.start_new_thread(publishMonitorData, (rpiData, values_topic))
+    rpiTopDict = OrderedDict()
+    rpiTopDict[LD_MONITOR] = rpiData
+
+    _thread.start_new_thread(publishMonitorData, (rpiTopDict, values_topic))
 
 def publishMonitorData(latestData, topic):
     print_line('Publishing to MQTT topic "{}, Data:{}"'.format(topic, json.dumps(latestData)))
@@ -557,7 +579,7 @@ def update_values():
 # Interrupt handler
 def handle_interrupt(channel):
     sourceID = "<< INTR(" + str(channel) + ")"
-    current_timestamp = datetime.now()
+    current_timestamp = datetime.now(local_tz)
     print_line(sourceID + " >> Time to report! (%s)" % current_timestamp.strftime('%H:%M:%S - %Y/%m/%d'), verbose=True)
     # ----------------------------------
     # have PERIOD interrupt!
@@ -565,19 +587,21 @@ def handle_interrupt(channel):
     # ok, report our new detection to MQTT
     _thread.start_new_thread(send_status, (current_timestamp, ''))
     
+def afterMQTTConnect():
+    print_line('* afterMQTTConnect()', verbose=True)
+    #  NOTE: this is run after MQTT connects
+    # start our interval timer
+    startPeriodTimer()
+    # do our first report
+    handle_interrupt(0)
 
 
-getDeviceModel()
-getLinuxRelease()
-getLinuxVersion()
 
+# TESTING, early abort
 #stopAliveTimer()
 #exit(0)
 
-# start our interval timer
-startPeriodTimer()
-# do our first report
-handle_interrupt(0)
+afterMQTTConnect()  # now instead of after?
 
 # now just hang in forever loop until script is stopped externally
 try:
