@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "0.8.1"
+script_version = "0.8.3"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -221,7 +221,7 @@ def getLinuxVersion():
            stdout=subprocess.PIPE, 
            stderr=subprocess.STDOUT)
     stdout,stderr = out.communicate()
-    rpi_linux_version = stdout.decode('utf-8').rstrip()
+    rpi_linux_version = stdout.decode('utf-8').rstrip().replace('+', 'plus')
     print_line('rpi_linux_version=[{}]'.format(rpi_linux_version), debug=True)
     
 
@@ -282,7 +282,7 @@ def getFileSystemSpace():
     else:
         rpi_filesystem_space = '1GB'
     print_line('rpi_filesystem_space=[{}]'.format(rpi_filesystem_space), debug=True)
-    rpi_filesystem_percent = lineParts[4]
+    rpi_filesystem_percent = lineParts[4].replace('%', '')
     print_line('rpi_filesystem_percent=[{}]'.format(rpi_filesystem_percent), debug=True)
 
 def getSystemTemperature():
@@ -365,8 +365,8 @@ aliveTimerRunningStatus = False
 
 # MQTT connection
 lwt_topic = '{}/sensor/{}/status'.format(base_topic, sensor_name.lower())
-lwt_online_val = 'Online'
-lwt_offline_val = 'Offline'
+lwt_online_val = 'online'
+lwt_offline_val = 'offline'
 
 print_line('Connecting to MQTT broker ...', verbose=True)
 mqtt_client = mqtt.Client()
@@ -430,7 +430,8 @@ print_line('mac lt=[{}], rt=[{}], mac=[{}]'.format(mac_left, mac_right, mac_basi
 uniqID = "RPi-{}Mon{}".format(mac_left, mac_right)
 
 # our RPi Reporter device
-LD_MONITOR = "values"
+LD_MONITOR = "monitor" # KeyError: 'home310/sensor/rpi-pi3plus/values' let's not use this 'values' as topic
+LDS_PAYLOAD_NAME = "info"
 
 # Publish our MQTT auto discovery
 #  table of key items to publish:
@@ -441,8 +442,8 @@ detectorValues = OrderedDict([
 print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
 
 base_topic = '{}/sensor/{}'.format(base_topic, sensor_name.lower())
-values_topic_rel = '{}/values'.format('~')
-values_topic = '{}/values'.format(base_topic) 
+values_topic_rel = '{}/{}'.format('~', LD_MONITOR)
+values_topic = '{}/{}'.format(base_topic, LD_MONITOR) 
 activity_topic_rel = '{}/status'.format('~')     # vs. LWT
 activity_topic = '{}/status'.format(base_topic)    # vs. LWT
 
@@ -462,7 +463,7 @@ for [sensor, params] in detectorValues.items():
         payload['unit_of_measurement'] = params['unit']
     if 'json_values' in params:
         payload['stat_t'] = "~/{}".format(sensor)
-        payload['val_tpl'] = "{{{{ value_json.{}.timestamp }}}}".format(sensor)
+        payload['val_tpl'] = "{{{{ value_json.{}.timestamp }}}}".format(LDS_PAYLOAD_NAME)
     payload['~'] = base_topic
     payload['pl_avail'] = lwt_online_val
     payload['pl_not_avail'] = lwt_offline_val
@@ -471,7 +472,7 @@ for [sensor, params] in detectorValues.items():
     payload['avty_t'] = activity_topic_rel
     if 'json_values' in params:
         payload['json_attr_t'] = "~/{}".format(sensor)
-        payload['json_attr_tpl'] = '{{{{ value_json.{} | tojson }}}}'.format(sensor)
+        payload['json_attr_tpl'] = '{{{{ value_json.{} | tojson }}}}'.format(LDS_PAYLOAD_NAME)
     if 'device_ident' in params:
         payload['dev'] = {
                 'identifiers' : ["{}".format(uniqID)],
@@ -532,37 +533,40 @@ periodTimeRunningStatus = False
 #  MQTT Transmit Helper Routines
 # -----------------------------------------------------------------------------
 SCRIPT_TIMESTAMP = "timestamp"
-RPI_MODEL = "model"
-RPI_CONNECTIONS = "connections"
-RPI_HOSTNAME = "hostname"
+RPI_MODEL = "rpi_model"
+RPI_CONNECTIONS = "ifaces"
+RPI_HOSTNAME = "host_name"
 RPI_FQDN = "fqdn"
-RPI_LINUX_RELEASE = "linux_release" 
-RPI_LINUX_VERSION = "linux_version" 
-RPI_UPTIME = "uptime"
-RPI_DATE_LAST_UPDATE = "update"
-RPI_FS_SPACE = "fs_space"
-RPI_FS_AVAIL = "fs_available"
+RPI_LINUX_RELEASE = "ux_release" 
+RPI_LINUX_VERSION = "ux_version" 
+RPI_UPTIME = "up_time"
+RPI_DATE_LAST_UPDATE = "last_update"
+RPI_FS_SPACE = 'fs_total' # "fs_space_gbytes"
+RPI_FS_AVAIL = 'fs_free' # "fs_available_prcnt"
 RPI_TEMP = "temperature_c"
-RPI_SCRIPT = "reported_by"
+RPI_SCRIPT = "reporter"
 
 
 def send_status(timestamp, nothing):
     rpiData = OrderedDict()
     rpiData[SCRIPT_TIMESTAMP] = timestamp.astimezone().replace(microsecond=0).isoformat()
     rpiData[RPI_MODEL] = rpi_model
+    rpiData[RPI_CONNECTIONS] = rpi_connections
     rpiData[RPI_HOSTNAME] = rpi_hostname
     rpiData[RPI_FQDN] = rpi_fqdn
     rpiData[RPI_LINUX_RELEASE] = rpi_linux_release
     rpiData[RPI_LINUX_VERSION] = rpi_linux_version
     rpiData[RPI_UPTIME] = rpi_uptime
-    rpiData[RPI_DATE_LAST_UPDATE] = rpi_last_update_date
-    rpiData[RPI_FS_SPACE] = rpi_filesystem_space
-    rpiData[RPI_FS_AVAIL] = rpi_filesystem_percent
-    rpiData[RPI_TEMP] = rpi_system_temp
-    rpiData[RPI_SCRIPT] = rpi_mqtt_script
+    actualDate = datetime.strptime(rpi_last_update_date, '%y%m%d%H%M%S')
+    actualDate.replace(tzinfo=local_tz)
+    rpiData[RPI_DATE_LAST_UPDATE] = actualDate.astimezone().replace(microsecond=0).isoformat()
+    rpiData[RPI_FS_SPACE] = int(rpi_filesystem_space.replace('GB', ''),10)
+    rpiData[RPI_FS_AVAIL] = int(rpi_filesystem_percent,10)
+    rpiData[RPI_TEMP] = float(rpi_system_temp)
+    rpiData[RPI_SCRIPT] = rpi_mqtt_script.replace('.py', '')
 
     rpiTopDict = OrderedDict()
-    rpiTopDict[LD_MONITOR] = rpiData
+    rpiTopDict[LDS_PAYLOAD_NAME] = rpiData
 
     _thread.start_new_thread(publishMonitorData, (rpiTopDict, values_topic))
 
