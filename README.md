@@ -36,26 +36,32 @@ Each RPi device is reported as:
 | `Model`         | RPi 4 Model B v1.1  |
 | `Name`      | (fqdn) pimon1.home |
 | `sofware ver`  | OS Name, Version (e.g., Buster v4.19.75v7l+) |
-| `mac addr`       | mac: 00:00:00:00:00:00 |
-| `Ether IP addr`       | eth0: 00.00.00.00 |
-| `WiFi IP addr`       | wlan0: 00.00.00.00 |
 
-### Readings
 
-The RPi set of sensors provide the following readings:
+### RPi Monitor
+
+The monitored information is:
 
 | Name            | Description |
 |-----------------|-------------|
+| `rpi_model`     | tinyfied hardware version string |
+| `ifaces`        | comma sep list of interfaces on board [w,e,b] |
 | `temperature_c `   | System temperature, in [°C] (0.1°C resolution) |
-| `uptime`      | duration since last booted, as [days] |
-| `updated`  | updates last applied, as [date] |
-| `f/s size`       | total space in [GBytes] |
-| `f/s avail.`       | free space [%] |
-| `hostname `       | hostname |
+| `up_time`      | duration since last booted, as [days] |
+| `last_update`  | updates last applied, as [date] |
+| `fs_total_gb`       | total space in [GBytes] |
+| `fs_free_prcnt`       | free space [%] |
+| `host_name `       | hostname |
 | `fqdn `       | hostname.domain |
-| `linux_release `       | os release name (e.g., buster) |
-| `linux_version `       | os version (e.g., 4.19.66-v7+) |
-
+| `ux_release `       | os release name (e.g., buster) |
+| `ux_version `       | os version (e.g., 4.19.66-v7+) |
+| `fs_free_prcnt`  | script name, version running on RPi |
+| `ethernet`       |  |
+|        | mac: 00:00:00:00:00:00  |
+|        | eth0: 00.00.00.00 | 
+| `wifi`       |  |
+|        | mac: 00:00:00:00:00:00  |
+|        | wlan0: 00.00.00.00 | 
 
 ## Prerequisites
 
@@ -69,7 +75,7 @@ On a modern Linux system just a few steps are needed to get the daemon working.
 The following example shows the installation under Debian/Raspbian below the `/opt` directory:
 
 ```shell
-sudo apt install git python3 python3-pip
+sudo apt-get install git python3 python3-pip
 
 sudo git clone https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon.git /opt/ISP-RPi-mqtt-daemon
 

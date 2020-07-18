@@ -221,7 +221,7 @@ def getLinuxVersion():
            stdout=subprocess.PIPE, 
            stderr=subprocess.STDOUT)
     stdout,stderr = out.communicate()
-    rpi_linux_version = stdout.decode('utf-8').rstrip().replace('+', 'plus')
+    rpi_linux_version = stdout.decode('utf-8').rstrip()
     print_line('rpi_linux_version=[{}]'.format(rpi_linux_version), debug=True)
     
 
@@ -541,13 +541,26 @@ RPI_LINUX_RELEASE = "ux_release"
 RPI_LINUX_VERSION = "ux_version" 
 RPI_UPTIME = "up_time"
 RPI_DATE_LAST_UPDATE = "last_update"
-RPI_FS_SPACE = 'fs_total' # "fs_space_gbytes"
-RPI_FS_AVAIL = 'fs_free' # "fs_available_prcnt"
+RPI_FS_SPACE = 'fs_total_gb' # "fs_space_gbytes"
+RPI_FS_AVAIL = 'fs_free_prcnt' # "fs_available_prcnt"
 RPI_TEMP = "temperature_c"
 RPI_SCRIPT = "reporter"
 
 
 def send_status(timestamp, nothing):
+    global rpi_model
+    global rpi_connections
+    global rpi_hostname
+    global rpi_fqdn
+    global rpi_linux_release
+    global rpi_linux_version
+    global rpi_uptime
+    global rpi_last_update_date
+    global rpi_filesystem_space
+    global rpi_filesystem_percent
+    global rpi_system_temp
+    global rpi_mqtt_script
+
     rpiData = OrderedDict()
     rpiData[SCRIPT_TIMESTAMP] = timestamp.astimezone().replace(microsecond=0).isoformat()
     rpiData[RPI_MODEL] = rpi_model
