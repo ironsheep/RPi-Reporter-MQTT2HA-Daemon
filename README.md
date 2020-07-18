@@ -93,7 +93,7 @@ python3 /opt/ISP-RPi-mqtt-daemon/ISP-RPi-mqtt-daemon.py
 Using the command line argument `--config`, a directory where to read the config.ini file from can be specified, e.g.
 
 ```shell
-python3 /opt/ISP-RPi-mqtt-daemon/ISP-RPi-mqtt-daemon.py --config /opt/isp-rpi-config
+python3 /opt/ISP-RPi-mqtt-daemon/ISP-RPi-mqtt-daemon.py --config /opt/ISP-RPi-mqtt-daemon
 ```
 
 
@@ -107,14 +107,14 @@ This can be done by running it as a daemon. Or you can run this once at each tim
 - via Systemd service - on systemd managed systems (the **recommended** option)
 
    ```shell
-   sudo cp /opt/ISP-RPi-mqtt-daemon/template.service /etc/systemd/system/isp-rpi.service
+   sudo ln -s /opt/ISP-RPi-mqtt-daemon/isp-rpi-reporter.service /etc/systemd/system/isp-rpi-reporter.service
 
    sudo systemctl daemon-reload
 
-   sudo systemctl start isp-rpi.service
-   sudo systemctl status isp-rpi.service
+   sudo systemctl start isp-rpi-reporter.service
+   sudo systemctl status isp-rpi-reporter.service
 
-   sudo systemctl enable isp-rpi.service
+   sudo systemctl enable isp-rpi-reporter.service
    ```
    
 **NOTE:** Periodic (scheduled run once) mode must be enabled in your crontab
@@ -125,15 +125,32 @@ This can be done by running it as a daemon. Or you can run this once at each tim
    
 ## Integration
 
-In the "mqtt-json" reporting mode, data will be published to the (configurable) MQTT broker topic "`raspberrypi/{hostname}`" (e.g. `raspberrypi/picam01`).
+Data will be published to the (configurable) MQTT broker topic "`raspberrypi/{hostname}/...`" (e.g. `raspberrypi/picam01/...`).
 
 An example:
 
 ```json
-{"temperature": 52.1, "status": "ON", "uptime": 184, "updated": 06Jun20, "fs-size": 64, "fs-avail": 13.5 }
+{
+  "values": {
+    "timestamp": "2020-07-18T00:11:56-06:00",
+    "model": "RPi 3 Model B r1.2",
+    "hostname": "pimon1",
+    "fqdn": "pimon1.home",
+    "linux_release": "stretch",
+    "linux_version": "4.19.66-v7+",
+    "uptime": "00:11:56 up 13 days",
+    "update": "2007171607",
+    "fs_space": "64GB",
+    "fs_available": "10%",
+    "temperature_c": "52.1",
+    "reported_by": "ISP-RPi-mqtt-daemon.py v0.8.0"
+  }
+}
 ```
 
-This data can be subscribed to and processed by your home assistant installation. How you build your RPi dashboard from here is up to you!
+This data can be subscribed to and processed by your home assistant installation. How you build your RPi dashboard from here is up to you!  We are working on a new Lovelace Custom Card that will make displaying this RPi Monitor data very easy.  
+
+*(Watch this space for news as we get closer to releasing the new card...)*
 
 ## Credits
 
