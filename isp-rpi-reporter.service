@@ -1,0 +1,20 @@
+[Unit]
+Description=RPi Reporter MQTT Client/Daemon
+Documentation=https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon
+After=network.target mosquitto.service
+
+[Service]
+Type=notify
+User=daemon
+Group=daemon
+WorkingDirectory=/opt/RPi-Reporter-MQTT2HA-Daemon/
+ExecStart=/usr/bin/python3 -u /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py
+StandardOutput=null
+#StandardOutput=syslog
+#SyslogIdentifier=ISPliDet
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

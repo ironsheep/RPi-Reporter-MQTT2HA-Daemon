@@ -1,0 +1,58 @@
+# Configuration file for RPi-Reporter-MQTT2HA-Daemon
+# Source: https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon
+#
+# Uncomment and adapt all settings as needed.
+# Some settings can be configured by environment variables.
+# If an env variable is set, it takes precedence over settings in this file
+
+[Daemon]
+
+# Enable or Disable an endless execution loop (Default: true)
+#enabled = true
+
+# This script reports RPi values at a fixed interval in minutes [2-30], [Default: 5]
+#interval_in_minutes = 5
+
+# This script uses a flag file containing a date/timestamp of when the system was last updated
+#update_flag_filespec = /home/pi/bin/lastupd.date
+
+[MQTT]
+
+# The hostname or IP address of the MQTT broker to connect to (Default: localhost)
+# Also read from the MQTT_HOSTNAME environment variable
+#hostname = localhost
+
+# The TCP port the MQTT broker is listening on (Default: 1883)
+# Also read from the MQTT_PORT environment variable
+#port = 1883
+
+# Maximum period in seconds between ping messages to the broker. (Default: 60)
+#keepalive = 60
+
+
+# NOTE: The MQTT topic used for this device is constructed as:
+#  {base_topic}/{sensor_name}
+#
+# The MQTT base topic under which to publish the Raspberry Pi sensor data topics.
+#base_topic = home/nodes
+
+# The MQTT name for this Raspberry Pi as a sensor
+#sensor_name = rpi-{hostname}
+
+
+# The MQTT broker authentification credentials (Default: no authentication)
+# Will also read from MQTT_USERNAME and MQTT_PASSWORD environment variables
+#username = user
+#password = pwd123
+
+# Enable TLS/SSL on the connection
+#tls = false
+
+# Path to CA Certificate file to verify host
+#tls_ca_cert =
+
+# Path to TLS client auth key file
+#tls_keyfile =
+
+# Path to TLS client auth certificate file
+#tls_certfile =

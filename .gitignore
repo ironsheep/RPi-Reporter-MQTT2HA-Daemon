@@ -3,6 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# yeah, don't version our finder stash either
+.DS_Store
+
+# yeah, don't set my custom file
+config.ini
+
 # C extensions
 *.so
 

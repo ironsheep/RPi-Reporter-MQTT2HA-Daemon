@@ -1,7 +1,14 @@
 # RPi-Reporter-MQTT2HA-Daemon
-Linux scripts to collect and transfer Raspberry Pi configuration and status information via [MQTT](https://projects.eclipse.org/projects/iot.mosquitto) to [Home Assistant](https://www.home-assistant.io/) (for Monitoring all of your RPi's)
 
-A simple Linux python script to query the Raspberry Pi on which it is running for various configuration and status values which it then reports via MQTT to your Home Assistant installation.  This allows you to install and run this on each of your RPi's so you can track them all via your Home Assistant Dashboard.
+![Project Maintenance][maintenance-shield]
+
+[![GitHub Activity][commits-shield]][commits]
+
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
+[![GitHub Release][releases-shield]][releases]
+
+A simple Linux python script to query the Raspberry Pi on which it is running for various configuration and status values which it then reports via via [MQTT](https://projects.eclipse.org/projects/iot.mosquitto) to your [Home Assistant](https://www.home-assistant.io/) installation.  This allows you to install and run this on each of your RPi's so you can track them all via your own Home Assistant Dashboard.
 
 This script can alse be configured to be run in **daemon mode** continously in the background as a systemd service (or optionally as a script run from cron(1m).
 
@@ -146,3 +153,14 @@ Thank you to Thomas Dietrich for providing a wonderful pattern for this project.
 
 
 ### [Copyright](copyright) | [License](LICENSE)
+
+[commits-shield]: https://img.shields.io/github/commit-activity/y/ironsheep/RPi-Reporter-MQTT2HA-Daemon.svg?style=for-the-badge
+[commits]: https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/commits/master
+
+[license-shield]: https://img.shields.io/github/license/ironsheep/RPi-Reporter-MQTT2HA-Daemon.svg?style=for-the-badge
+
+[maintenance-shield]: https://img.shields.io/badge/maintainer-S%20M%20Moraco%20%40ironsheepbiz-blue.svg?style=for-the-badge
+
+[releases-shield]: https://img.shields.io/github/release/ironsheep/RPi-Reporter-MQTT2HA-Daemon.svg?style=for-the-badge
+[releases]: https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/releases
+
