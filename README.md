@@ -33,7 +33,7 @@ Each RPi device is reported as:
 | Name            | Description |
 |-----------------|-------------|
 | `Manufacturer`   | Raspberry Pi (Trading) Ltd. |
-| `Model`         | RPi 4 Model B v1.1 [eWb] |
+| `Model`         | RPi 4 Model B v1.1  |
 | `Name`      | (fqdn) pimon1.home |
 | `sofware ver`  | OS Name, Version (e.g., Buster v4.19.75v7l+) |
 | `mac addr`       | mac: 00:00:00:00:00:00 |
@@ -46,12 +46,16 @@ The RPi set of sensors provide the following readings:
 
 | Name            | Description |
 |-----------------|-------------|
-| `temperature`   | System temperature, in [°C] (0.1°C resolution) |
-| `status`         | [on -or- off] |
+| `temperature_c `   | System temperature, in [°C] (0.1°C resolution) |
 | `uptime`      | duration since last booted, as [days] |
 | `updated`  | updates last applied, as [date] |
 | `f/s size`       | total space in [GBytes] |
-| `f/s avail.`       | free space in [GBytes] |
+| `f/s avail.`       | free space [%] |
+| `hostname `       | hostname |
+| `fqdn `       | hostname.domain |
+| `linux_release `       | os release name (e.g., buster) |
+| `linux_version `       | os version (e.g., 4.19.66-v7+) |
+
 
 ## Prerequisites
 
