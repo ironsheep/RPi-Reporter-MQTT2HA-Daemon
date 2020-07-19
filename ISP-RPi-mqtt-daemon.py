@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "0.8.4"
+script_version = "0.8.5"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -640,9 +640,9 @@ def send_status(timestamp, nothing):
     rpiData[RPI_LINUX_RELEASE] = rpi_linux_release
     rpiData[RPI_LINUX_VERSION] = rpi_linux_version
     rpiData[RPI_UPTIME] = rpi_uptime
-    actualDate = datetime.strptime(rpi_last_update_date, '%y%m%d%H%M%S')
-    actualDate.replace(tzinfo=local_tz)
     #  DON'T use V1 form of getting date (my dashbord mech)
+    #actualDate = datetime.strptime(rpi_last_update_date, '%y%m%d%H%M%S')
+    #actualDate.replace(tzinfo=local_tz)
     #rpiData[RPI_DATE_LAST_UPDATE] = actualDate.astimezone().replace(microsecond=0).isoformat()
     rpiData[RPI_DATE_LAST_UPDATE] = rpi_last_update_date_v2.astimezone().replace(microsecond=0).isoformat()
     rpiData[RPI_FS_SPACE] = int(rpi_filesystem_space.replace('GB', ''),10)
