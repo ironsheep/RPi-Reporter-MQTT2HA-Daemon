@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "0.8.3"
+script_version = "0.8.4"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -163,11 +163,13 @@ rpi_linux_version = ''
 rpi_uptime_raw = ''
 rpi_uptime = ''
 rpi_last_update_date = ''
+rpi_last_update_date_v2 = ''
 rpi_filesystem_space_raw = ''
 rpi_filesystem_space = ''
 rpi_filesystem_percent = ''
 rpi_system_temp = ''
 rpi_mqtt_script = script_info
+rpi_interfaces = []
 
 # -----------------------------------------------------------------------------
 #  monitor variable fetch routines
@@ -224,7 +226,6 @@ def getLinuxVersion():
     rpi_linux_version = stdout.decode('utf-8').rstrip()
     print_line('rpi_linux_version=[{}]'.format(rpi_linux_version), debug=True)
     
-
 def getHostnames():
     global rpi_hostname
     global rpi_fqdn
@@ -252,6 +253,63 @@ def getUptime():
     lineParts = rpi_uptime_raw.split(',')
     rpi_uptime = lineParts[0]
     print_line('rpi_uptime=[{}]'.format(rpi_uptime), debug=True)
+
+def getNetworkIFs():
+    global rpi_interfaces
+    out = subprocess.Popen('/sbin/ifconfig | egrep "eth|wlan|inet" | egrep -v "inet6|\:\:1|127\.0\.0\.1"', 
+           shell=True,
+           stdout=subprocess.PIPE, 
+           stderr=subprocess.STDOUT)
+    stdout,stderr = out.communicate()
+    lines = stdout.decode('utf-8').split("\n")
+    trimmedLines = []
+    for currLine in lines:
+        trimmedLine = currLine.lstrip().rstrip()
+        trimmedLines.append(trimmedLine)
+
+    print_line('trimmedLines=[{}]'.format(trimmedLines), debug=True)
+    #
+    #  The following means eth0 (wired is NOT connected, and WiFi is connected)
+    #  eth0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
+    #    ether b8:27:eb:1a:f3:bc  txqueuelen 1000  (Ethernet)
+    #  wlan0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+    #    inet 192.168.100.189  netmask 255.255.255.0  broadcast 192.168.100.255
+    #    ether b8:27:eb:4f:a6:e9  txqueuelen 1000  (Ethernet)
+    #
+    tmpInterfaces = []
+    inEth = False
+    etherIF = ''
+    inWlan = False
+    wlanIF = ''
+    for currLine in trimmedLines:
+        lineParts = currLine.split()
+        print_line('- currLine=[{}], lineParts=[{}]'.format(currLine, lineParts), debug=True)
+        if inEth == True:
+            #print_line('if=[{}], lineParts=[{}]'.format(etherIF, lineParts), debug=True)
+            if 'ether' in currLine:
+                newTuple = (etherIF, 'mac', lineParts[1])
+                tmpInterfaces.append(newTuple)
+                #print_line('newTuple=[{}]'.format(newTuple), debug=True)
+            elif 'inet' in currLine:
+                newTuple = (etherIF, 'IP', lineParts[1])
+                tmpInterfaces.append(newTuple)
+                #print_line('newTuple=[{}]'.format(newTuple), debug=True)
+        elif inWlan == True:
+            #print_line('if=[{}], lineParts=[{}]'.format(etherIF, lineParts), debug=True)
+            if 'ether' in currLine:
+                tmpInterfaces.append( (wlanIF, 'mac', lineParts[1]) )
+            elif 'inet' in currLine:
+                tmpInterfaces.append( (wlanIF, 'IP', lineParts[1]) )
+        elif 'eth' in currLine:
+            inEth = True
+            etherIF = lineParts[0].replace(':', '')
+            print_line('etherIF=[{}]'.format(etherIF), debug=True)
+        elif 'wlan' in currLine:
+            inWlan = True
+            wlanIF = lineParts[0].replace(':', '')
+            print_line('wlanIF=[{}]'.format(wlanIF), debug=True)
+    rpi_interfaces = tmpInterfaces
+    print_line('rpi_interfaces=[{}]'.format(rpi_interfaces), debug=True)
 
 def getFileSystemSpace():
     global rpi_filesystem_space_raw
@@ -307,6 +365,18 @@ def getLastUpdateDate():
     if 'No such file' in rpi_last_update_date:
         rpi_last_update_date = 'unknown'
     print_line('rpi_last_update_date=[{}]'.format(rpi_last_update_date), debug=True)
+
+def getLastUpdateDateV2():
+    global rpi_last_update_date_v2
+    apt_log_filespec = '/var/log/dpkg.log'
+    try:
+        mtime = os.path.getmtime(apt_log_filespec)
+    except OSError:
+        mtime = 0
+    last_modified_date = datetime.fromtimestamp(mtime)
+    last_modified_date.replace(tzinfo=local_tz)
+    rpi_last_update_date_v2  = last_modified_date
+    print_line('rpi_last_update_date_v2=[{}]'.format(rpi_last_update_date_v2), debug=True)
 
 # get our hostnames so we can setup MQTT
 getHostnames()
@@ -572,10 +642,18 @@ def send_status(timestamp, nothing):
     rpiData[RPI_UPTIME] = rpi_uptime
     actualDate = datetime.strptime(rpi_last_update_date, '%y%m%d%H%M%S')
     actualDate.replace(tzinfo=local_tz)
-    rpiData[RPI_DATE_LAST_UPDATE] = actualDate.astimezone().replace(microsecond=0).isoformat()
+    #  DON'T use V1 form of getting date (my dashbord mech)
+    #rpiData[RPI_DATE_LAST_UPDATE] = actualDate.astimezone().replace(microsecond=0).isoformat()
+    rpiData[RPI_DATE_LAST_UPDATE] = rpi_last_update_date_v2.astimezone().replace(microsecond=0).isoformat()
     rpiData[RPI_FS_SPACE] = int(rpi_filesystem_space.replace('GB', ''),10)
     rpiData[RPI_FS_AVAIL] = int(rpi_filesystem_percent,10)
-    rpiData[RPI_TEMP] = float(rpi_system_temp)
+
+    interpretedTemp = rpi_system_temp
+    if 'failed' in rpi_system_temp:
+        interpretedTemp = float('-1.0')
+    else:
+        interpretedTemp = float(rpi_system_temp)
+    rpiData[RPI_TEMP] = interpretedTemp
     rpiData[RPI_SCRIPT] = rpi_mqtt_script.replace('.py', '')
 
     rpiTopDict = OrderedDict()
@@ -594,7 +672,7 @@ def update_values():
     getUptime()
     getFileSystemSpace()
     getSystemTemperature()
-    getLastUpdateDate()
+    getLastUpdateDateV2()
 
     
 
@@ -619,7 +697,9 @@ def afterMQTTConnect():
     # do our first report
     handle_interrupt(0)
 
-
+# TESTING AGAIN
+getNetworkIFs()
+#getLastUpdateDateV2()
 
 # TESTING, early abort
 #stopAliveTimer()
