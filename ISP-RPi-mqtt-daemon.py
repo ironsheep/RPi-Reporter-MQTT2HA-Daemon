@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "0.8.5"
+script_version = "1.0.0"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -278,36 +278,45 @@ def getNetworkIFs():
     #
     tmpInterfaces = []
     inEth = False
-    etherIF = ''
+    imterfc = ''
     inWlan = False
-    wlanIF = ''
+
     for currLine in trimmedLines:
         lineParts = currLine.split()
-        print_line('- currLine=[{}], lineParts=[{}]'.format(currLine, lineParts), debug=True)
-        if inEth == True:
-            #print_line('if=[{}], lineParts=[{}]'.format(etherIF, lineParts), debug=True)
-            if 'ether' in currLine:
-                newTuple = (etherIF, 'mac', lineParts[1])
-                tmpInterfaces.append(newTuple)
-                #print_line('newTuple=[{}]'.format(newTuple), debug=True)
-            elif 'inet' in currLine:
-                newTuple = (etherIF, 'IP', lineParts[1])
-                tmpInterfaces.append(newTuple)
-                #print_line('newTuple=[{}]'.format(newTuple), debug=True)
-        elif inWlan == True:
-            #print_line('if=[{}], lineParts=[{}]'.format(etherIF, lineParts), debug=True)
-            if 'ether' in currLine:
-                tmpInterfaces.append( (wlanIF, 'mac', lineParts[1]) )
-            elif 'inet' in currLine:
-                tmpInterfaces.append( (wlanIF, 'IP', lineParts[1]) )
-        elif 'eth' in currLine:
-            inEth = True
-            etherIF = lineParts[0].replace(':', '')
-            print_line('etherIF=[{}]'.format(etherIF), debug=True)
-        elif 'wlan' in currLine:
-            inWlan = True
-            wlanIF = lineParts[0].replace(':', '')
-            print_line('wlanIF=[{}]'.format(wlanIF), debug=True)
+        print_line('- currLine=[{}]'.format(currLine), debug=True)
+        print_line('- lineParts=[{}]'.format(lineParts), debug=True)
+        if len(lineParts) > 0:
+            if 'eth' in lineParts[0] and lineParts[0] != 'ether':
+                inEth = True
+                inWlan = False
+                imterfc = lineParts[0].replace(':', '')
+                print_line('etherIF=[{}]'.format(imterfc), debug=True)
+            elif 'wlan' in lineParts[0]:
+                inWlan = True
+                inEth = False
+                imterfc = lineParts[0].replace(':', '')
+                print_line('wlanIF=[{}]'.format(imterfc), debug=True)
+            elif inEth == True:
+                print_line('IF=[{}], lineParts=[{}]'.format(imterfc, lineParts), debug=True)
+                if 'ether' in currLine:
+                    newTuple = (imterfc, 'mac', lineParts[1])
+                    tmpInterfaces.append(newTuple)
+                    print_line('newTuple=[{}]'.format(newTuple), debug=True)
+                elif 'inet' in currLine:
+                    newTuple = (imterfc, 'IP', lineParts[1])
+                    tmpInterfaces.append(newTuple)
+                    print_line('newTuple=[{}]'.format(newTuple), debug=True)
+            elif inWlan == True:
+                print_line('IF=[{}], lineParts=[{}]'.format(imterfc, lineParts), debug=True)
+                if 'ether' in currLine:
+                    newTuple =  (imterfc, 'mac', lineParts[1]) 
+                    tmpInterfaces.append(newTuple)
+                    print_line('newTuple=[{}]'.format(newTuple), debug=True)
+                elif 'inet' in currLine:
+                    newTuple =  (imterfc, 'IP', lineParts[1]) 
+                    tmpInterfaces.append(newTuple)
+                    print_line('newTuple=[{}]'.format(newTuple), debug=True)
+
     rpi_interfaces = tmpInterfaces
     print_line('rpi_interfaces=[{}]'.format(rpi_interfaces), debug=True)
 
@@ -615,6 +624,8 @@ RPI_FS_SPACE = 'fs_total_gb' # "fs_space_gbytes"
 RPI_FS_AVAIL = 'fs_free_prcnt' # "fs_available_prcnt"
 RPI_TEMP = "temperature_c"
 RPI_SCRIPT = "reporter"
+RPI_NETWORK = "networking"
+RPI_INTERFACE = "interface"
 
 
 def send_status(timestamp, nothing):
@@ -648,6 +659,8 @@ def send_status(timestamp, nothing):
     rpiData[RPI_FS_SPACE] = int(rpi_filesystem_space.replace('GB', ''),10)
     rpiData[RPI_FS_AVAIL] = int(rpi_filesystem_percent,10)
 
+    rpiData[RPI_NETWORK] = getNetworkDictionary()
+
     interpretedTemp = rpi_system_temp
     if 'failed' in rpi_system_temp:
         interpretedTemp = float('-1.0')
@@ -660,6 +673,35 @@ def send_status(timestamp, nothing):
     rpiTopDict[LDS_PAYLOAD_NAME] = rpiData
 
     _thread.start_new_thread(publishMonitorData, (rpiTopDict, values_topic))
+
+def getNetworkDictionary():
+    global rpi_interfaces
+    # TYPICAL:
+    # rpi_interfaces=[[
+    #   ('eth0', 'mac', 'b8:27:eb:1a:f3:bc'), 
+    #   ('wlan0', 'IP', '192.168.100.189'), 
+    #   ('wlan0', 'mac', 'b8:27:eb:4f:a6:e9')
+    # ]]
+    networkData = OrderedDict()
+
+    priorIFKey = ''
+    tmpData = OrderedDict()
+    for currTuple in rpi_interfaces:
+        currIFKey = currTuple[0]
+        if priorIFKey == '':
+            priorIFKey = currIFKey
+        if currIFKey != priorIFKey:
+            # save off prior if exists
+            if priorIFKey != '':
+                networkData[priorIFKey] = tmpData
+                tmpData = OrderedDict()
+                priorIFKey = currIFKey
+        subKey = currTuple[1]
+        subValue = currTuple[2]
+        tmpData[subKey] = subValue
+    networkData[priorIFKey] = tmpData
+    print_line('networkData:{}"'.format(networkData), debug=True)
+    return networkData
 
 def publishMonitorData(latestData, topic):
     print_line('Publishing to MQTT topic "{}, Data:{}"'.format(topic, json.dumps(latestData)))

@@ -56,12 +56,8 @@ The monitored information is:
 | `ux_release `       | os release name (e.g., buster) |
 | `ux_version `       | os version (e.g., 4.19.66-v7+) |
 | `fs_free_prcnt`  | script name, version running on RPi |
-| `ethernet`       |  |
-|        | mac: 00:00:00:00:00:00  |
-|        | eth0: 00.00.00.00 | 
-| `wifi`       |  |
-|        | mac: 00:00:00:00:00:00  |
-|        | wlan0: 00.00.00.00 | 
+| `networking`       | lists for each interface: interface name, mac address (and IP if the interface is connected) |
+
 
 ## Prerequisites
 
@@ -94,6 +90,8 @@ vim /opt/RPi-Reporter-MQTT2HA-Daemon/config.ini
 
 ## Execution
 
+### Initial Test
+
 A first test run is as easy as:
 
 ```shell
@@ -105,16 +103,21 @@ Using the command line argument `--config`, a directory where to read the config
 ```shell
 python3 /opt/RPi-Reporter-MQTT2HA-Daemon/RPi-Reporter-MQTT2HA-Daemon.py --config /opt/RPi-Reporter-MQTT2HA-Daemon
 ```
+### Choose Run Style
 
+You can choose to run this script as a system service or from cron(1m).
 
-### Run as Daemon / Service
+- Choose as a system service if you want your HA to know if your RPi is up/down as when run from a service HA knows if you RPi is online or not and when it last reported in.
 
-You probably want to execute this script **continuously in the background**.
-This can be done by running it as a daemon. Or you can run this once at each time you want an update posted by runing the script from cron.
+- If, instead, you want the details of your RPi reported periodically to HA but don't care if it's up or down (or maybe you don't keep it up all the time) then run this script from cron(1m)
+
+Let's look at how to set up each of these forms: 
+
+#### Run as Daemon / Service
+
+In order to have your HA system know if your RPi is online/offline and when it last reported in then you are setting up this script to run as a system service by following these steps:
 
 **NOTE:** Daemon mode must be enabled in the configuration file (default).
-
-- via Systemd service - on systemd managed systems (the **recommended** option)
 
    ```shell
    sudo ln -s /opt/RPi-Reporter-MQTT2HA-Daemon/isp-rpi-reporter.service /etc/systemd/system/isp-rpi-reporter.service
@@ -127,9 +130,11 @@ This can be done by running it as a daemon. Or you can run this once at each tim
    sudo systemctl enable isp-rpi-reporter.service
    ```
    
-**NOTE:** Periodic (scheduled run once) mode must be enabled in your crontab
+#### Run from Cron(1m)
+   
+In order to have the details of your RPi reported periodically to HA but not monitor your RPi for online/offline and when it reports in then we set up this script to run from cron(1m).
 
-- via cron - You'll need to add a line to your crontab file as follows:
+With the cron setup you can run this script at intervals during a day, one a day/week and/or every time the RPi is powered on (booted.)
 
    (-- tba --)
    
@@ -164,22 +169,34 @@ An example:
 
 ```json
 {
-  "values": {
-    "timestamp": "2020-07-18T00:11:56-06:00",
-    "model": "RPi 3 Model B r1.2",
-    "hostname": "pimon1",
-    "fqdn": "pimon1.home",
-    "linux_release": "stretch",
-    "linux_version": "4.19.66-v7+",
-    "uptime": "00:11:56 up 13 days",
-    "update": "2007171607",
-    "fs_space": "64GB",
-    "fs_available": "10%",
-    "temperature_c": "52.1",
-    "reported_by": "RPi-Reporter-MQTT2HA-Daemon.py v0.8.0"
+  "info": {
+    "timestamp": "2020-07-19T13:17:54-06:00",
+    "rpi_model": "RPi 3 Model B r1.2",
+    "ifaces": "e,w,b",
+    "host_name": "pi3plus",
+    "fqdn": "pi3plus.home",
+    "ux_release": "stretch",
+    "ux_version": "4.19.66-v7+",
+    "up_time": "13:17:54 up 14 days",
+    "last_update": "2020-07-18T00:51:36-06:00",
+    "fs_total_gb": 64,
+    "fs_free_prcnt": 10,
+    "networking": {
+      "eth0": {
+        "mac": "b8:27:eb:1a:f3:bc"
+      },
+      "wlan0": {
+        "IP": "192.168.100.189",
+        "mac": "b8:27:eb:4f:a6:e9"
+      }
+    },
+    "temperature_c": 55.3,
+    "reporter": "ISP-RPi-mqtt-daemon v0.8.5"
   }
 }
 ```
+
+**NOTE:** Where there's an IP address that interface is connected.
 
 This data can be subscribed to and processed by your home assistant installation. How you build your RPi dashboard from here is up to you!  We are working on a new Lovelace Custom Card that will make displaying this RPi Monitor data very easy.  
 
