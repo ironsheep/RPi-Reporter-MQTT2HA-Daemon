@@ -88,6 +88,23 @@ cp /opt/RPi-Reporter-MQTT2HA-Daemon/config.{ini.dist,ini}
 vim /opt/RPi-Reporter-MQTT2HA-Daemon/config.ini
 ```
 
+You will likely want to locate and configure the following (at a minimum) in your config.ini:
+
+```shell
+# ...
+hostname = {your-mqtt-broker}
+
+# ...
+base_topic = {your home-assistant base topic}
+
+# ...
+username = {your mqtt username if your setup requires one}
+password = {your mqtt password if your setup requires one}
+
+```
+
+Now that your config.ini is setup let's test!
+
 ## Execution
 
 ### Initial Test
@@ -95,14 +112,15 @@ vim /opt/RPi-Reporter-MQTT2HA-Daemon/config.ini
 A first test run is as easy as:
 
 ```shell
-python3 /opt/RPi-Reporter-MQTT2HA-Daemon/RPi-Reporter-MQTT2HA-Daemon.py
+python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py
 ```
 
 Using the command line argument `--config`, a directory where to read the config.ini file from can be specified, e.g.
 
 ```shell
-python3 /opt/RPi-Reporter-MQTT2HA-Daemon/RPi-Reporter-MQTT2HA-Daemon.py --config /opt/RPi-Reporter-MQTT2HA-Daemon
+python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py --config /opt/RPi-Reporter-MQTT2HA-Daemon
 ```
+
 ### Choose Run Style
 
 You can choose to run this script as a system service or from cron(1m).
@@ -140,6 +158,8 @@ With the cron setup you can run this script at intervals during a day, one a day
    
 ### Update to latest
 
+Like most active developers, we periodically upgrade our script. You can update to the latest we've published by following these steps:
+
    ```shell
    # go to local repo
    cd /opt/RPi-Reporter-MQTT2HA-Daemon
@@ -163,7 +183,7 @@ With the cron setup you can run this script at intervals during a day, one a day
    
 ## Integration
 
-Data will be published to the (configurable) MQTT broker topic "`raspberrypi/{hostname}/...`" (e.g. `raspberrypi/picam01/...`).
+When this script is running data will be published to the (configured) MQTT broker topic "`raspberrypi/{hostname}/...`" (e.g. `raspberrypi/picam01/...`).
 
 An example:
 
