@@ -1,4 +1,4 @@
-# RPi-Reporter-MQTT2HA-Daemon
+# RPi Reporter MQTT2HA Daemon
 
 ![Project Maintenance][maintenance-shield]
 
@@ -77,9 +77,9 @@ The following example shows the installation under Debian/Raspbian below the `/o
 ```shell
 sudo apt-get install git python3 python3-pip
 
-sudo git clone https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon.git /opt/ISP-RPi-mqtt-daemon
+sudo git clone https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon.git /opt/RPi-Reporter-MQTT2HA-Daemon
 
-cd /opt/ISP-RPi-mqtt-daemon
+cd /opt/RPi-Reporter-MQTT2HA-Daemon
 sudo pip3 install -r requirements.txt
 ```
 ## Configuration
@@ -88,8 +88,8 @@ To match personal needs, all operational details can be configured by modifying 
 The file needs to be created first:
 
 ```shell
-cp /opt/ISP-RPi-mqtt-daemon/config.{ini.dist,ini}
-vim /opt/ISP-RPi-mqtt-daemon/config.ini
+cp /opt/RPi-Reporter-MQTT2HA-Daemon/config.{ini.dist,ini}
+vim /opt/RPi-Reporter-MQTT2HA-Daemon/config.ini
 ```
 
 ## Execution
@@ -97,13 +97,13 @@ vim /opt/ISP-RPi-mqtt-daemon/config.ini
 A first test run is as easy as:
 
 ```shell
-python3 /opt/ISP-RPi-mqtt-daemon/ISP-RPi-mqtt-daemon.py
+python3 /opt/RPi-Reporter-MQTT2HA-Daemon/RPi-Reporter-MQTT2HA-Daemon.py
 ```
 
 Using the command line argument `--config`, a directory where to read the config.ini file from can be specified, e.g.
 
 ```shell
-python3 /opt/ISP-RPi-mqtt-daemon/ISP-RPi-mqtt-daemon.py --config /opt/ISP-RPi-mqtt-daemon
+python3 /opt/RPi-Reporter-MQTT2HA-Daemon/RPi-Reporter-MQTT2HA-Daemon.py --config /opt/RPi-Reporter-MQTT2HA-Daemon
 ```
 
 
@@ -117,7 +117,7 @@ This can be done by running it as a daemon. Or you can run this once at each tim
 - via Systemd service - on systemd managed systems (the **recommended** option)
 
    ```shell
-   sudo ln -s /opt/ISP-RPi-mqtt-daemon/isp-rpi-reporter.service /etc/systemd/system/isp-rpi-reporter.service
+   sudo ln -s /opt/RPi-Reporter-MQTT2HA-Daemon/isp-rpi-reporter.service /etc/systemd/system/isp-rpi-reporter.service
 
    sudo systemctl daemon-reload
 
@@ -132,6 +132,29 @@ This can be done by running it as a daemon. Or you can run this once at each tim
 - via cron - You'll need to add a line to your crontab file as follows:
 
    (-- tba --)
+   
+### Update to latest
+
+   ```shell
+   # go to local repo
+   cd /opt/RPi-Reporter-MQTT2HA-Daemon
+   
+   # stop the service
+   sudo systemctl stop isp-rpi-reporter.service
+   
+   # get the latest version
+   sudo git pull
+
+	# reload the systemd configuration (in case it changed)
+   sudo systemctl daemon-reload
+
+	# restart the service with your new version
+   sudo systemctl start isp-rpi-reporter.service
+   
+   # if you want, check status of the running script
+   systemctl status isp-rpi-reporter.service
+
+   ```
    
 ## Integration
 
@@ -153,7 +176,7 @@ An example:
     "fs_space": "64GB",
     "fs_available": "10%",
     "temperature_c": "52.1",
-    "reported_by": "ISP-RPi-mqtt-daemon.py v0.8.0"
+    "reported_by": "RPi-Reporter-MQTT2HA-Daemon.py v0.8.0"
   }
 }
 ```
