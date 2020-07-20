@@ -71,7 +71,7 @@ On a modern Linux system just a few steps are needed to get the daemon working.
 The following example shows the installation under Debian/Raspbian below the `/opt` directory:
 
 ```shell
-sudo apt-get install git python3 python3-pip
+sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama
 
 sudo git clone https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon.git /opt/RPi-Reporter-MQTT2HA-Daemon
 
@@ -115,7 +115,7 @@ A first test run is as easy as:
 python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py
 ```
 
-**NOTE:** *it is a good idea to execute this script by hand this way each time you modify the config.ini.  By running after each modification the script can tell you through error messages if it had any problems with any values in the config.ini file, or any missing values. etc.*
+**NOTE:** *it is a good idea to execute this script by hand this way each time you modify the config.ini.  By running after each modification the script can tell you through error messages if it had any problems with any values in the config.ini file, or any missing values. etc.*``
 
 Using the command line argument `--config`, a directory where to read the config.ini file from can be specified, e.g.
 
@@ -147,8 +147,12 @@ In order to have your HA system know if your RPi is online/offline and when it l
    sudo systemctl start isp-rpi-reporter.service
    sudo systemctl status isp-rpi-reporter.service
 
+   # tell system that it can start our script at system startup during boot
    sudo systemctl enable isp-rpi-reporter.service
    ```
+   
+**NOTE:** *Please remember to run the 'systemctl enable ...' once at first install, if you want your script to start up everytime your RPi reboots!*
+
    
 #### Run from Cron(1m)
    
