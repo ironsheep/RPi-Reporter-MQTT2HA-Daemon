@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "1.0.0"
+script_version = "1.0.1"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -163,7 +163,7 @@ rpi_linux_version = ''
 rpi_uptime_raw = ''
 rpi_uptime = ''
 rpi_last_update_date = ''
-rpi_last_update_date_v2 = ''
+rpi_last_update_date_v2 = datetime.min
 rpi_filesystem_space_raw = ''
 rpi_filesystem_space = ''
 rpi_filesystem_percent = ''
@@ -382,8 +382,7 @@ def getLastUpdateDateV2():
         mtime = os.path.getmtime(apt_log_filespec)
     except OSError:
         mtime = 0
-    last_modified_date = datetime.fromtimestamp(mtime)
-    last_modified_date.replace(tzinfo=local_tz)
+    last_modified_date = datetime.fromtimestamp(mtime, tz=local_tz)
     rpi_last_update_date_v2  = last_modified_date
     print_line('rpi_last_update_date_v2=[{}]'.format(rpi_last_update_date_v2), debug=True)
 
@@ -655,7 +654,10 @@ def send_status(timestamp, nothing):
     #actualDate = datetime.strptime(rpi_last_update_date, '%y%m%d%H%M%S')
     #actualDate.replace(tzinfo=local_tz)
     #rpiData[RPI_DATE_LAST_UPDATE] = actualDate.astimezone().replace(microsecond=0).isoformat()
-    rpiData[RPI_DATE_LAST_UPDATE] = rpi_last_update_date_v2.astimezone().replace(microsecond=0).isoformat()
+    if rpi_last_update_date_v2 != datetime.min:
+        rpiData[RPI_DATE_LAST_UPDATE] = rpi_last_update_date_v2.astimezone().replace(microsecond=0).isoformat()
+    else:
+        rpiData[RPI_DATE_LAST_UPDATE] = ''
     rpiData[RPI_FS_SPACE] = int(rpi_filesystem_space.replace('GB', ''),10)
     rpiData[RPI_FS_AVAIL] = int(rpi_filesystem_percent,10)
 
