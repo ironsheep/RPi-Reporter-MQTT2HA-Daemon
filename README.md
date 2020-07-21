@@ -14,6 +14,7 @@ A simple Linux python script to query the Raspberry Pi on which it is running fo
 
 This script can alse be configured to be run in **daemon mode** continously in the background as a systemd service (or optionally as a script run from cron(1m).
 
+*(See below for links to associated Lovelace Custom Card.)*
 
 ## Features
 
@@ -224,9 +225,13 @@ An example:
 
 **NOTE:** Where there's an IP address that interface is connected.
 
-This data can be subscribed to and processed by your home assistant installation. How you build your RPi dashboard from here is up to you!  We are working on a new Lovelace Custom Card that will make displaying this RPi Monitor data very easy.  
+This data can be subscribed to and processed by your home assistant installation. How you build your RPi dashboard from here is up to you!  
 
-*(Watch this space for news as we get closer to releasing the new card...)*
+## Lovelace Custom Card
+
+We are working on a new Lovelace Custom Card that will make displaying this RPi Monitor data very easy.  
+
+See my project: [Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card)
 
 ## Credits
 

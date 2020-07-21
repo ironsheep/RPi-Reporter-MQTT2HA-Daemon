@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "1.0.1"
+script_version = "1.1.0"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -34,6 +34,10 @@ project_url = 'https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon'
 # we'll use this throughout
 local_tz = get_localzone()
 
+# TODO:
+#  - add loop for getting temp (not -1)
+#  - adjust network info get so we get non-standard interface names correctly
+#  - add announcement of free-space and temperatore endpoints
 
 if False:
     # will be caught by python 2.7 to be illegal syntax
@@ -250,13 +254,15 @@ def getUptime():
     stdout,stderr = out.communicate()
     rpi_uptime_raw = stdout.decode('utf-8').rstrip().lstrip()
     print_line('rpi_uptime_raw=[{}]'.format(rpi_uptime_raw), debug=True)
+    basicParts = rpi_uptime_raw.split()
+    timeStamp = basicParts[0]
     lineParts = rpi_uptime_raw.split(',')
-    rpi_uptime = lineParts[0]
+    rpi_uptime = '{}, {}'.format(lineParts[0], lineParts[1]).replace(timeStamp, '').lstrip()
     print_line('rpi_uptime=[{}]'.format(rpi_uptime), debug=True)
 
 def getNetworkIFs():
     global rpi_interfaces
-    out = subprocess.Popen('/sbin/ifconfig | egrep "eth|wlan|inet" | egrep -v "inet6|\:\:1|127\.0\.0\.1"', 
+    out = subprocess.Popen('/sbin/ifconfig | egrep "flags|inet|ether" | egrep -v "lo:|inet6|\:\:1|127\.0\.0\.1"', 
            shell=True,
            stdout=subprocess.PIPE, 
            stderr=subprocess.STDOUT)
@@ -277,26 +283,18 @@ def getNetworkIFs():
     #    ether b8:27:eb:4f:a6:e9  txqueuelen 1000  (Ethernet)
     #
     tmpInterfaces = []
-    inEth = False
+    haveIF = False
     imterfc = ''
-    inWlan = False
-
     for currLine in trimmedLines:
         lineParts = currLine.split()
         print_line('- currLine=[{}]'.format(currLine), debug=True)
         print_line('- lineParts=[{}]'.format(lineParts), debug=True)
         if len(lineParts) > 0:
-            if 'eth' in lineParts[0] and lineParts[0] != 'ether':
-                inEth = True
-                inWlan = False
+            if 'flags' in currLine:
+                haveIF = True
                 imterfc = lineParts[0].replace(':', '')
-                print_line('etherIF=[{}]'.format(imterfc), debug=True)
-            elif 'wlan' in lineParts[0]:
-                inWlan = True
-                inEth = False
-                imterfc = lineParts[0].replace(':', '')
-                print_line('wlanIF=[{}]'.format(imterfc), debug=True)
-            elif inEth == True:
+                print_line('newIF=[{}]'.format(imterfc), debug=True)
+            elif haveIF == True:
                 print_line('IF=[{}], lineParts=[{}]'.format(imterfc, lineParts), debug=True)
                 if 'ether' in currLine:
                     newTuple = (imterfc, 'mac', lineParts[1])
@@ -304,16 +302,6 @@ def getNetworkIFs():
                     print_line('newTuple=[{}]'.format(newTuple), debug=True)
                 elif 'inet' in currLine:
                     newTuple = (imterfc, 'IP', lineParts[1])
-                    tmpInterfaces.append(newTuple)
-                    print_line('newTuple=[{}]'.format(newTuple), debug=True)
-            elif inWlan == True:
-                print_line('IF=[{}], lineParts=[{}]'.format(imterfc, lineParts), debug=True)
-                if 'ether' in currLine:
-                    newTuple =  (imterfc, 'mac', lineParts[1]) 
-                    tmpInterfaces.append(newTuple)
-                    print_line('newTuple=[{}]'.format(newTuple), debug=True)
-                elif 'inet' in currLine:
-                    newTuple =  (imterfc, 'IP', lineParts[1]) 
                     tmpInterfaces.append(newTuple)
                     print_line('newTuple=[{}]'.format(newTuple), debug=True)
 
