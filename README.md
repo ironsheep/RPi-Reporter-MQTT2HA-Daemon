@@ -140,6 +140,25 @@ In order to have your HA system know if your RPi is online/offline and when it l
 
 **NOTE:** Daemon mode must be enabled in the configuration file (default).
 
+By default the **isp-rpi-reporter.service** file indicates that the script should be run as user:group  **daemon:daemon**.  As this script requires access to the gpu you'll want to add access to them for the daemon user as follows:
+
+
+   ```shell   
+   # list current groups
+   groups daemon 
+   $ daemon : daemon
+
+   # add video if not present
+   sudo usermod daemon -a -G video
+   
+   # list current groups
+   groups daemon
+   $ daemon : daemon video
+   #                 ^^^^^ now it is present
+   ```
+
+Now that the 'daemon' user is configured to allow access the hardware you can setup the script to be run as a system service as follows:
+
    ```shell
    sudo ln -s /opt/RPi-Reporter-MQTT2HA-Daemon/isp-rpi-reporter.service /etc/systemd/system/isp-rpi-reporter.service
 
