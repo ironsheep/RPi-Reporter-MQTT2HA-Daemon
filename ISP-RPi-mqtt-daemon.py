@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "1.1.1"
+script_version = "1.1.2"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -255,7 +255,11 @@ def getUptime():
     basicParts = rpi_uptime_raw.split()
     timeStamp = basicParts[0]
     lineParts = rpi_uptime_raw.split(',')
-    rpi_uptime = '{}, {}'.format(lineParts[0], lineParts[1]).replace(timeStamp, '').lstrip().replace('up ', '')
+    if('user' in lineParts[1]):
+        rpi_uptime_raw = lineParts[0]
+    else:
+        rpi_uptime_raw = '{}, {}'.format(lineParts[0], lineParts[1])
+    rpi_uptime = rpi_uptime_raw.replace(timeStamp, '').lstrip().replace('up ', '')
     print_line('rpi_uptime=[{}]'.format(rpi_uptime), debug=True)
 
 def getNetworkIFs():
@@ -340,7 +344,6 @@ def getFileSystemSpace():
 
 def getSystemTemperature():
     global rpi_system_temp
-
     rpi_system_temp_raw = 'failed'
     retry_count = 3
     while retry_count > 0 and 'failed' in rpi_system_temp_raw:
@@ -359,19 +362,6 @@ def getSystemTemperature():
         interpretedTemp = float(rpi_system_temp_raw)
     rpi_system_temp = interpretedTemp
     print_line('rpi_system_temp=[{}]'.format(rpi_system_temp), debug=True)
-
-def getLastUpdateDate():
-    global rpi_last_update_date
-    cmd_string = '/bin/cat {}'.format(update_flag_filespec)
-    out = subprocess.Popen(cmd_string, 
-            shell=True,
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.STDOUT)
-    stdout,stderr = out.communicate()
-    rpi_last_update_date = stdout.decode('utf-8').rstrip()
-    if 'No such file' in rpi_last_update_date:
-        rpi_last_update_date = 'unknown'
-    print_line('rpi_last_update_date=[{}]'.format(rpi_last_update_date), debug=True)
 
 def getLastUpdateDateV2():
     global rpi_last_update_date_v2
