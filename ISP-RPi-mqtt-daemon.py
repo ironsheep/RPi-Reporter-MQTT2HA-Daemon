@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "1.2.0"
+script_version = "1.2.1"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -507,9 +507,9 @@ LDS_PAYLOAD_NAME = "info"
 # Publish our MQTT auto discovery
 #  table of key items to publish:
 detectorValues = OrderedDict([
-    (LD_MONITOR, dict(title="RPi Monitor {}".format(rpi_hostname), device_class="timestamp", no_title_prefix="yes", json_values="timestamp", icon='mdi:raspberry-pi', device_ident="RPi-{}".format(rpi_fqdn))),
-    (LD_SYS_TEMP, dict(title="RPi Temp {}".format(rpi_hostname), device_class="temperature", no_title_prefix="yes", unit="C", json_values="temperature_c", icon='mdi:thermometer')),
-    (LD_FS_USED, dict(title="RPi Used {}".format(rpi_hostname), no_title_prefix="yes", json_values="fs_free_prcnt", unit="%", icon='mdi:sd')),
+    (LD_MONITOR, dict(title="RPi Monitor {}".format(rpi_hostname), device_class="timestamp", no_title_prefix="yes", json_value="timestamp", json_attr="yes", icon='mdi:raspberry-pi', device_ident="RPi-{}".format(rpi_fqdn))),
+    (LD_SYS_TEMP, dict(title="RPi Temp {}".format(rpi_hostname), device_class="temperature", no_title_prefix="yes", unit="C", json_value="temperature_c", icon='mdi:thermometer')),
+    (LD_FS_USED, dict(title="RPi Used {}".format(rpi_hostname), no_title_prefix="yes", json_value="fs_free_prcnt", unit="%", icon='mdi:sd')),
 ])
 
 print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
@@ -534,16 +534,16 @@ for [sensor, params] in detectorValues.items():
         payload['dev_cla'] = params['device_class']
     if 'unit' in params:
         payload['unit_of_measurement'] = params['unit']
-    if 'json_values' in params:
+    if 'json_value' in params:
         payload['stat_t'] = values_topic_rel
-        payload['val_tpl'] = "{{{{ value_json.{}.{} }}}}".format(LDS_PAYLOAD_NAME, params['json_values'])
+        payload['val_tpl'] = "{{{{ value_json.{}.{} }}}}".format(LDS_PAYLOAD_NAME, params['json_value'])
     payload['~'] = base_topic
     payload['pl_avail'] = lwt_online_val
     payload['pl_not_avail'] = lwt_offline_val
     if 'icon' in params:
         payload['ic'] = params['icon']
     payload['avty_t'] = activity_topic_rel
-    if 'json_values' in params:
+    if 'json_attr' in params:
         payload['json_attr_t'] = values_topic_rel
         payload['json_attr_tpl'] = '{{{{ value_json.{} | tojson }}}}'.format(LDS_PAYLOAD_NAME)
     if 'device_ident' in params:
