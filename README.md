@@ -14,7 +14,7 @@ A simple Linux python script to query the Raspberry Pi on which it is running fo
 
 This script can alse be configured to be run in **daemon mode** continously in the background as a systemd service (or optionally as a script run from cron(1m)).
 
-*(Jump to below [Lovelace Custom Card](##Lovelace-Custom-Card).)*
+*(Jump to below [Lovelace Custom Card](#lovelace-custom-card).)*
 
 ## Features
 
