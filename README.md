@@ -10,7 +10,7 @@
 
 A simple Linux python script to query the Raspberry Pi on which it is running for various configuration and status values which it then reports via via [MQTT](https://projects.eclipse.org/projects/iot.mosquitto) to your [Home Assistant](https://www.home-assistant.io/) installation.  This allows you to install and run this on each of your RPi's so you can track them all via your own Home Assistant Dashboard.
 
-![Discovery image](./Docs/images/DiscoveryV1.png)
+![Discovery image](./Docs/images/DiscoveryV2.png)
 
 This script can alse be configured to be run in **daemon mode** continously in the background as a systemd service (or optionally as a script run from cron(1m).
 
@@ -22,7 +22,7 @@ This script can alse be configured to be run in **daemon mode** continously in t
 * Tested with Home Assistant v0.111.0
 * Tested with Mosquitto broker v5.1
 * Data is published via MQTT
-* MQTT discovery messages are sent so RPi's are automatically registered with Home Assistant (if MQTT discovery is enabled in your installation)
+* MQTT discovery messages are sent so RPi's are automatically registered with Home Assistant (if MQTT discovery is enabled in your HA installation)
 * MQTT authentication support
 * No special/root privileges are required by this mechanism
 * Linux daemon / systemd service, sd\_notify messages generated
@@ -38,10 +38,19 @@ Each RPi device is reported as:
 | `Name`      | (fqdn) pimon1.home |
 | `sofware ver`  | OS Name, Version (e.g., Buster v4.19.75v7l+) |
 
+### RPi MQTT Topics
 
-### RPi Monitor
+Each RPi device is reported as three topics:
 
-The monitored information is:
+| Name            | Device Class | Units | Description
+|-----------------|-------------|-------------|-------------|
+| `~/monitor`   | 'timestamp' | n/a | Is a timestamp which shows when the RPi last sent information, carries a template payload conveying all monitored values (attach the lovelace custom card to this sensor!)
+| `~/temperature`   | 'temperature' | degrees C | Shows the latest system temperature
+| `~/disk_used`   | none | percent (%) | Shows the amount of root file system used
+
+### RPi Monitor Topic
+
+The monitored topic reports the following information:
 
 | Name            | Description |
 |-----------------|-------------|
@@ -50,13 +59,13 @@ The monitored information is:
 | `temperature_c `   | System temperature, in [°C] (0.1°C resolution) |
 | `up_time`      | duration since last booted, as [days] |
 | `last_update`  | updates last applied, as [date] |
-| `fs_total_gb`       | total space in [GBytes] |
-| `fs_free_prcnt`       | free space [%] |
+| `fs_total_gb`       | / total space in [GBytes] |
+| `fs_free_prcnt`       | / free space [%] |
 | `host_name `       | hostname |
 | `fqdn `       | hostname.domain |
 | `ux_release `       | os release name (e.g., buster) |
 | `ux_version `       | os version (e.g., 4.19.66-v7+) |
-| `fs_free_prcnt`  | script name, version running on RPi |
+| `reporter`  | script name, version running on RPi |
 | `networking`       | lists for each interface: interface name, mac address (and IP if the interface is connected) |
 
 
@@ -248,7 +257,7 @@ This data can be subscribed to and processed by your home assistant installation
 
 ## Lovelace Custom Card
 
-We are working on a new Lovelace Custom Card that will make displaying this RPi Monitor data very easy.  
+We have a Lovelace Custom Card that makes displaying this RPi Monitor data very easy.  
 
 See my project: [Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card)
 
