@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "1.1.2"
+script_version = "1.2.0"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -81,19 +81,22 @@ def clean_identifier(name):
 parser = argparse.ArgumentParser(description=project_name, epilog='For further details see: ' + project_url)
 parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
 parser.add_argument("-d", "--debug", help="show debug output", action="store_true")
+parser.add_argument("-s", "--stall", help="TEST: report only the first time", action="store_true")
 parser.add_argument("-c", '--config_dir', help='set directory where config.ini is located', default=sys.path[0])
 parse_args = parser.parse_args()
 
 config_dir = parse_args.config_dir
 opt_debug = parse_args.debug
 opt_verbose = parse_args.verbose
+opt_stall = parse_args.stall
 
 print_line(script_info, info=True)
 if opt_verbose:
     print_line('Verbose enabled', info=True)
 if opt_debug:
     print_line('Debug enabled', debug=True)
-
+if opt_stall:
+    print_line('TEST: Stall (no-re-reporting) enabled', debug=True)
 
 # Eclipse Paho callbacks - http://www.eclipse.org/paho/clients/python/docs/#callbacks
 def on_connect(client, userdata, flags, rc):
@@ -497,12 +500,16 @@ uniqID = "RPi-{}Mon{}".format(mac_left, mac_right)
 
 # our RPi Reporter device
 LD_MONITOR = "monitor" # KeyError: 'home310/sensor/rpi-pi3plus/values' let's not use this 'values' as topic
+LD_SYS_TEMP= "temperature"
+LD_FS_USED = "disk_used"
 LDS_PAYLOAD_NAME = "info"
 
 # Publish our MQTT auto discovery
 #  table of key items to publish:
 detectorValues = OrderedDict([
-    (LD_MONITOR, dict(title="RPi Monitor {}".format(rpi_hostname), device_class="timestamp", no_title_prefix="yes", json_values="yes", icon='mdi:raspberry-pi', device_ident="RPi-{}".format(rpi_fqdn))),
+    (LD_MONITOR, dict(title="RPi Monitor {}".format(rpi_hostname), device_class="timestamp", no_title_prefix="yes", json_values="timestamp", icon='mdi:raspberry-pi', device_ident="RPi-{}".format(rpi_fqdn))),
+    (LD_SYS_TEMP, dict(title="RPi Temp {}".format(rpi_hostname), device_class="temperature", no_title_prefix="yes", unit="C", json_values="temperature_c", icon='mdi:thermometer')),
+    (LD_FS_USED, dict(title="RPi Used {}".format(rpi_hostname), no_title_prefix="yes", json_values="fs_free_prcnt", unit="%", icon='mdi:sd')),
 ])
 
 print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
@@ -528,8 +535,8 @@ for [sensor, params] in detectorValues.items():
     if 'unit' in params:
         payload['unit_of_measurement'] = params['unit']
     if 'json_values' in params:
-        payload['stat_t'] = "~/{}".format(sensor)
-        payload['val_tpl'] = "{{{{ value_json.{}.timestamp }}}}".format(LDS_PAYLOAD_NAME)
+        payload['stat_t'] = values_topic_rel
+        payload['val_tpl'] = "{{{{ value_json.{}.{} }}}}".format(LDS_PAYLOAD_NAME, params['json_values'])
     payload['~'] = base_topic
     payload['pl_avail'] = lwt_online_val
     payload['pl_not_avail'] = lwt_offline_val
@@ -537,7 +544,7 @@ for [sensor, params] in detectorValues.items():
         payload['ic'] = params['icon']
     payload['avty_t'] = activity_topic_rel
     if 'json_values' in params:
-        payload['json_attr_t'] = "~/{}".format(sensor)
+        payload['json_attr_t'] = values_topic_rel
         payload['json_attr_tpl'] = '{{{{ value_json.{} | tojson }}}}'.format(LDS_PAYLOAD_NAME)
     if 'device_ident' in params:
         payload['dev'] = {
@@ -593,7 +600,7 @@ def isPeriodTimerRunning():
 endPeriodTimer = threading.Timer(interval_in_minutes * 60.0, periodTimeoutHandler) 
 # our BOOL tracking state of TIMER
 periodTimeRunningStatus = False
-
+reported_first_time = False
 
 # -----------------------------------------------------------------------------
 #  MQTT Transmit Helper Routines
@@ -613,7 +620,7 @@ RPI_TEMP = "temperature_c"
 RPI_SCRIPT = "reporter"
 RPI_NETWORK = "networking"
 RPI_INTERFACE = "interface"
-
+SCRIPT_REPORT_INTERVAL = "report_interval"
 
 def send_status(timestamp, nothing):
     global rpi_model
@@ -638,6 +645,7 @@ def send_status(timestamp, nothing):
     rpiData[RPI_LINUX_RELEASE] = rpi_linux_release
     rpiData[RPI_LINUX_VERSION] = rpi_linux_version
     rpiData[RPI_UPTIME] = rpi_uptime
+
     #  DON'T use V1 form of getting date (my dashbord mech)
     #actualDate = datetime.strptime(rpi_last_update_date, '%y%m%d%H%M%S')
     #actualDate.replace(tzinfo=local_tz)
@@ -653,6 +661,7 @@ def send_status(timestamp, nothing):
 
     rpiData[RPI_TEMP] = rpi_system_temp
     rpiData[RPI_SCRIPT] = rpi_mqtt_script.replace('.py', '')
+    rpiData[SCRIPT_REPORT_INTERVAL] = interval_in_minutes
 
     rpiTopDict = OrderedDict()
     rpiTopDict[LDS_PAYLOAD_NAME] = rpiData
@@ -707,14 +716,20 @@ def update_values():
 
 # Interrupt handler
 def handle_interrupt(channel):
+    global reported_first_time
     sourceID = "<< INTR(" + str(channel) + ")"
     current_timestamp = datetime.now(local_tz)
     print_line(sourceID + " >> Time to report! (%s)" % current_timestamp.strftime('%H:%M:%S - %Y/%m/%d'), verbose=True)
     # ----------------------------------
     # have PERIOD interrupt!
     update_values()
-    # ok, report our new detection to MQTT
-    _thread.start_new_thread(send_status, (current_timestamp, ''))
+
+    if (opt_stall == False or reported_first_time == False and opt_stall == True):
+        # ok, report our new detection to MQTT
+        _thread.start_new_thread(send_status, (current_timestamp, ''))
+        reported_first_time = True
+    else:
+        print_line(sourceID + " >> Time to report! (%s) but SKIPPED (TEST: stall)" % current_timestamp.strftime('%H:%M:%S - %Y/%m/%d'), verbose=True)
     
 def afterMQTTConnect():
     print_line('* afterMQTTConnect()', verbose=True)
