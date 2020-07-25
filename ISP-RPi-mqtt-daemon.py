@@ -267,7 +267,8 @@ def getUptime():
 
 def getNetworkIFs():
     global rpi_interfaces
-    out = subprocess.Popen('/sbin/ifconfig | egrep "flags|inet|ether" | egrep -v "lo:|inet6|\:\:1|127\.0\.0\.1"', 
+    global mac
+    out = subprocess.Popen('/sbin/ifconfig | egrep "Link|flags|inet|ether" | egrep -v -i "lo:|loopback|inet6|\:\:1|127\.0\.0\.1"', 
            shell=True,
            stdout=subprocess.PIPE, 
            stderr=subprocess.STDOUT)
@@ -280,6 +281,11 @@ def getNetworkIFs():
 
     print_line('trimmedLines=[{}]'.format(trimmedLines), debug=True)
     #
+    # OLDER SYSTEMS
+    #  eth0      Link encap:Ethernet  HWaddr b8:27:eb:c8:81:f2  
+    #    inet addr:192.168.100.41  Bcast:192.168.100.255  Mask:255.255.255.0
+    #  wlan0     Link encap:Ethernet  HWaddr 00:0f:60:03:e6:dd  
+    # NEWER SYSTEMS
     #  The following means eth0 (wired is NOT connected, and WiFi is connected)
     #  eth0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
     #    ether b8:27:eb:1a:f3:bc  txqueuelen 1000  (Ethernet)
@@ -295,18 +301,27 @@ def getNetworkIFs():
         print_line('- currLine=[{}]'.format(currLine), debug=True)
         print_line('- lineParts=[{}]'.format(lineParts), debug=True)
         if len(lineParts) > 0:
-            if 'flags' in currLine:
+            if 'flags' in currLine:  # NEWER ONLY
                 haveIF = True
                 imterfc = lineParts[0].replace(':', '')
                 print_line('newIF=[{}]'.format(imterfc), debug=True)
+            elif 'Link' in currLine:  # OLDER ONLY
+                haveIF = True
+                imterfc = lineParts[0].replace(':', '')
+                newTuple = (imterfc, 'mac', lineParts[4])
+                if mac == '':
+                    mac = lineParts[4]
+                print_line('newIF=[{}]'.format(imterfc), debug=True)
+                tmpInterfaces.append(newTuple)
+                print_line('newTuple=[{}]'.format(newTuple), debug=True)
             elif haveIF == True:
                 print_line('IF=[{}], lineParts=[{}]'.format(imterfc, lineParts), debug=True)
-                if 'ether' in currLine:
+                if 'ether' in currLine: # NEWER ONLY
                     newTuple = (imterfc, 'mac', lineParts[1])
                     tmpInterfaces.append(newTuple)
                     print_line('newTuple=[{}]'.format(newTuple), debug=True)
-                elif 'inet' in currLine:
-                    newTuple = (imterfc, 'IP', lineParts[1])
+                elif 'inet' in currLine:  # OLDER & NEWER
+                    newTuple = (imterfc, 'IP', lineParts[1].replace('addr:',''))
                     tmpInterfaces.append(newTuple)
                     print_line('newTuple=[{}]'.format(newTuple), debug=True)
 
@@ -489,8 +504,14 @@ s.connect((gw[2], 0))
 ipaddr = s.getsockname()[0]
 interface = gw[4]
 ether = os.popen("ifconfig " + interface + "| grep ether").read().split()
-mac = ether[1]
+print_line('- ipaddr=[{}], interface=[{}], ether=[{}]'.format(ipaddr, interface, ether), debug=True)
+mac=''  # preset NOT-FOUND
+if len(ether) > 1:
+    mac = ether[1]
 fqdn = socket.getfqdn()
+print_line('- mac=[{}], fqdn=[{}]'.format(mac, fqdn), debug=True)
+
+getNetworkIFs() # this will fill-in mac if we still don't have it
 
 mac_basic = mac.lower().replace(":", "")
 mac_left = mac_basic[:6]
