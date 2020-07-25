@@ -180,6 +180,10 @@ Now that the 'daemon' user is configured to allow access the hardware you can se
    sudo systemctl enable isp-rpi-reporter.service
    ```
    
+**NOTE**: Raspian 'Jessie' does not fully support all of these systemctl commands
+
+- **systemctl enable isp-rpi-reporter.service** # does not work. (we're looking at alternative for startup on reboot and verifying if it is starting or not...)
+   
 **NOTE:** *Please remember to run the 'systemctl enable ...' once at first install, if you want your script to start up everytime your RPi reboots!*
 
    
@@ -215,6 +219,8 @@ Like most active developers, we periodically upgrade our script. You can update 
    systemctl status isp-rpi-reporter.service
 
    ```
+
+   
    
 ## Integration
 
