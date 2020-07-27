@@ -31,6 +31,21 @@ Provide details about what you are seeing. Also which operating system this is o
 Explain what the issue is, and how things should look/behave. If possible provide a screenshot with a description.
 -->
 
+**Run our report script 'genBugInfo' on your failing device and include the output here:**
+
+<!--
+# run our script
+$ ./genBugInfo 
+genBugInfo: Wrote genBugInfo-200726-191034.lst
+genBugInfo: Done
+
+copy the contents of the genBugInfo-*.lst file here (or just attach this file to this report)
+-->
+
+```
+
+```
+
 **Python errors shown in the logs (if applicable):**
 
 ```

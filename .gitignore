@@ -6,8 +6,11 @@ __pycache__/
 # yeah, don't version our finder stash either
 .DS_Store
 
-# yeah, don't set my custom file
+# yeah, don't commit my custom file
 config.ini
+
+# yeah, don't commit reference files
+*REF
 
 # C extensions
 *.so
