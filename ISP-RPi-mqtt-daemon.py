@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "1.2.2"
+script_version = "1.3.1"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -262,6 +262,8 @@ def getHostnames():
         # missing domain, if we have a fallback apply it
         if len(fallback_domain) > 0:
             rpi_fqdn = '{}.{}'.format(fqdn_raw, fallback_domain)
+        else 
+            rpi_fqdn = rpi_hostname
 
     print_line('rpi_fqdn=[{}]'.format(rpi_fqdn), debug=True)
     print_line('rpi_hostname=[{}]'.format(rpi_hostname), debug=True)
