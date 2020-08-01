@@ -262,7 +262,7 @@ def getHostnames():
         # missing domain, if we have a fallback apply it
         if len(fallback_domain) > 0:
             rpi_fqdn = '{}.{}'.format(fqdn_raw, fallback_domain)
-        else 
+        else:
             rpi_fqdn = rpi_hostname
 
     print_line('rpi_fqdn=[{}]'.format(rpi_fqdn), debug=True)
