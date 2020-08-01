@@ -13,8 +13,8 @@
 # This script reports RPi values at a fixed interval in minutes [2-30], [Default: 5]
 #interval_in_minutes = 5
 
-# This script uses a flag file containing a date/timestamp of when the system was last updated
-#update_flag_filespec = /home/pi/bin/lastupd.date
+# default domain to use when hostname -f doesn't return a proper fqdn
+#fallback_domain = home
 
 [MQTT]
 
@@ -29,6 +29,10 @@
 # Maximum period in seconds between ping messages to the broker. (Default: 60)
 #keepalive = 60
 
+# by default Home Assistant listens to the /homeassistant but it can be changed for a given installation
+#  likewise, by default this script advertises on the same default topic. If you use a different 
+#  discovery prefix then specify yours here.  [default: homeassistant]
+#discovery_prefix = homeassistant
 
 # NOTE: The MQTT topic used for this device is constructed as:
 #  {base_topic}/{sensor_name}

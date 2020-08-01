@@ -52,22 +52,23 @@ Each RPi device is reported as three topics:
 
 The monitored topic reports the following information:
 
-| Name            | Description |
-|-----------------|-------------|
-| `rpi_model`     | tinyfied hardware version string |
-| `ifaces`        | comma sep list of interfaces on board [w,e,b] |
-| `temperature_c `   | System temperature, in [°C] (0.1°C resolution) |
+| Name            | Description
+|-----------------|-------------
+| `rpi_model` | tinyfied hardware version string |
+| `ifaces`        | comma sep list of interfaces on board [w,e,b]
+| `temperature_c`   | System temperature, in [°C] (0.1°C resolution) Note: this is GPU temp. if available, else CPU temp. |
+| `temp_gpu_c`   | GPU temperature, in [°C] (0.1°C resolution) |
+| `temp_cpu_c`   | CPU temperature, in [°C] (0.1°C resolution) |
 | `up_time`      | duration since last booted, as [days] |
 | `last_update`  | updates last applied, as [date] |
 | `fs_total_gb`       | / total space in [GBytes] |
 | `fs_free_prcnt`       | / free space [%] |
-| `host_name `       | hostname |
-| `fqdn `       | hostname.domain |
-| `ux_release `       | os release name (e.g., buster) |
-| `ux_version `       | os version (e.g., 4.19.66-v7+) |
+| `host_name`       | hostname |
+| `fqdn`       | hostname.domain |
+| `ux_release`       | os release name (e.g., buster) |
+| `ux_version`       | os version (e.g., 4.19.66-v7+) |
 | `reporter`  | script name, version running on RPi |
 | `networking`       | lists for each interface: interface name, mac address (and IP if the interface is connected) |
-
 
 ## Prerequisites
 
@@ -88,6 +89,7 @@ sudo git clone https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon.git /opt
 cd /opt/RPi-Reporter-MQTT2HA-Daemon
 sudo pip3 install -r requirements.txt
 ```
+
 ## Configuration
 
 To match personal needs, all operational details can be configured by modifying entries within the file [`config.ini`](config.ini.dist).
@@ -101,9 +103,11 @@ vim /opt/RPi-Reporter-MQTT2HA-Daemon/config.ini
 You will likely want to locate and configure the following (at a minimum) in your config.ini:
 
 ```shell
+fallback_domain = {if you have older RPis that dont report their fqdn correctly}
 # ...
 hostname = {your-mqtt-broker}
-
+# ...
+discovery_prefix = {if you use something other than 'homeassistant'}
 # ...
 base_topic = {your home-assistant base topic}
 
@@ -137,11 +141,11 @@ python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py --config /opt/RP
 
 You can choose to run this script as a system service or from cron(1m).
 
-- Choose as a system service if you want your HA to know if your RPi is up/down as when run from a service HA knows if you RPi is online or not and when it last reported in.
+* Choose as a system service if you want your HA to know if your RPi is up/down as when run from a service HA knows if you RPi is online or not and when it last reported in.
 
-- If, instead, you want the details of your RPi reported periodically to HA but don't care if it's up or down (or maybe you don't keep it up all the time) then run this script from cron(1m)
+* If, instead, you want the details of your RPi reported periodically to HA but don't care if it's up or down (or maybe you don't keep it up all the time) then run this script from cron(1m)
 
-Let's look at how to set up each of these forms: 
+Let's look at how to set up each of these forms:
 
 #### Run as Daemon / Service
 
@@ -151,15 +155,14 @@ In order to have your HA system know if your RPi is online/offline and when it l
 
 By default the **isp-rpi-reporter.service** file indicates that the script should be run as user:group  **daemon:daemon**.  As this script requires access to the gpu you'll want to add access to them for the daemon user as follows:
 
-
-   ```shell   
+   ```shell
    # list current groups
-   groups daemon 
+   groups daemon
    $ daemon : daemon
 
    # add video if not present
    sudo usermod daemon -a -G video
-   
+
    # list current groups
    groups daemon
    $ daemon : daemon video
@@ -179,22 +182,21 @@ Now that the 'daemon' user is configured to allow access the hardware you can se
    # tell system that it can start our script at system startup during boot
    sudo systemctl enable isp-rpi-reporter.service
    ```
-   
+
 **NOTE**: Raspian 'Jessie' does not fully support all of these systemctl commands
 
-- **systemctl enable isp-rpi-reporter.service** # does not work. (we're looking at alternative for startup on reboot and verifying if it is starting or not...)
-   
+* **systemctl enable isp-rpi-reporter.service** # does not work. (we're looking at alternative for startup on reboot and verifying if it is starting or not...)
+
 **NOTE:** *Please remember to run the 'systemctl enable ...' once at first install, if you want your script to start up everytime your RPi reboots!*
 
-   
 #### Run from Cron(1m)
-   
+
 In order to have the details of your RPi reported periodically to HA but not monitor your RPi for online/offline and when it reports in then we set up this script to run from cron(1m).
 
 With the cron setup you can run this script at intervals during a day, one a day/week and/or every time the RPi is powered on (booted.)
 
    (-- tba --)
-   
+
 ### Update to latest
 
 Like most active developers, we periodically upgrade our script. You can update to the latest we've published by following these steps:
@@ -202,26 +204,24 @@ Like most active developers, we periodically upgrade our script. You can update 
    ```shell
    # go to local repo
    cd /opt/RPi-Reporter-MQTT2HA-Daemon
-   
+
    # stop the service
    sudo systemctl stop isp-rpi-reporter.service
-   
+
    # get the latest version
    sudo git pull
 
-	# reload the systemd configuration (in case it changed)
+   # reload the systemd configuration (in case it changed)
    sudo systemctl daemon-reload
 
-	# restart the service with your new version
+   # restart the service with your new version
    sudo systemctl start isp-rpi-reporter.service
-   
+
    # if you want, check status of the running script
    systemctl status isp-rpi-reporter.service
 
    ```
 
-   
-   
 ## Integration
 
 When this script is running data will be published to the (configured) MQTT broker topic "`raspberrypi/{hostname}/...`" (e.g. `raspberrypi/picam01/...`).
@@ -273,7 +273,6 @@ Thank you to Thomas Dietrich for providing a wonderful pattern for this project.
 
 ----
 
-
 ## Disclaimer and Legal
 
 > *Raspberry Pi* is registered trademark of *Raspberry Pi (Trading) Ltd.*
@@ -284,7 +283,6 @@ Thank you to Thomas Dietrich for providing a wonderful pattern for this project.
 > This project is in no way affiliated with, authorized, maintained, sponsored or endorsed by *Raspberry Pi (Trading) Ltd.* or any of its affiliates or subsidiaries.
 
 ----
-
 
 ### [Copyright](copyright) | [License](LICENSE)
 
@@ -297,4 +295,3 @@ Thank you to Thomas Dietrich for providing a wonderful pattern for this project.
 
 [releases-shield]: https://img.shields.io/github/release/ironsheep/RPi-Reporter-MQTT2HA-Daemon.svg?style=for-the-badge
 [releases]: https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/releases
-

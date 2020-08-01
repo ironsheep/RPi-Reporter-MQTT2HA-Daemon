@@ -130,16 +130,25 @@ default_update_flag_filespec = '/home/pi/bin/lastupd.date'
 update_flag_filespec = config['Daemon'].get('update_flag_filespec', default_update_flag_filespec)
 
 default_base_topic = 'home/nodes'
-default_sensor_name = 'rpi-reporter'
-
 base_topic = config['MQTT'].get('base_topic', default_base_topic).lower()
+
+default_sensor_name = 'rpi-reporter'
 sensor_name = config['MQTT'].get('sensor_name', default_sensor_name).lower()
+
+# by default Home Assistant listens to the /homeassistant but it can be changed for a given installation
+default_discovery_prefix = 'homeassistant'
+discovery_prefix = config['MQTT'].get('discovery_prefix', default_discovery_prefix).lower()
 
 # report our RPi values every 5min 
 min_interval_in_minutes = 2
 max_interval_in_minutes = 30
 default_interval_in_minutes = 5
 interval_in_minutes = config['Daemon'].getint('interval_in_minutes', default_interval_in_minutes)
+
+# default domain when hostname -f doesn't return it
+default_domain = ''
+fallback_domain = config['Daemon'].get('fallback_domain', default_domain).lower()
+
 
 # Check configuration
 #
@@ -173,6 +182,8 @@ rpi_filesystem_space_raw = ''
 rpi_filesystem_space = ''
 rpi_filesystem_percent = ''
 rpi_system_temp = ''
+rpi_gpu_temp = ''
+rpi_cpu_temp = ''
 rpi_mqtt_script = script_info
 rpi_interfaces = []
 
@@ -239,10 +250,20 @@ def getHostnames():
            stdout=subprocess.PIPE, 
            stderr=subprocess.STDOUT)
     stdout,stderr = out.communicate()
-    rpi_fqdn = stdout.decode('utf-8').rstrip()
+    fqdn_raw = stdout.decode('utf-8').rstrip()
+    print_line('fqdn_raw=[{}]'.format(fqdn_raw), debug=True)
+    rpi_hostname = fqdn_raw
+    if '.' in fqdn_raw:
+        # have good fqdn
+        nameParts = fqdn_raw.split('.')
+        rpi_fqdn = fqdn_raw
+        rpi_hostname = nameParts[0]
+    else: 
+        # missing domain, if we have a fallback apply it
+        if len(fallback_domain) > 0:
+            rpi_fqdn = '{}.{}'.format(fqdn_raw, fallback_domain)
+
     print_line('rpi_fqdn=[{}]'.format(rpi_fqdn), debug=True)
-    nameParts = rpi_fqdn.split('.')
-    rpi_hostname = nameParts[0]
     print_line('rpi_hostname=[{}]'.format(rpi_hostname), debug=True)
 
 def getUptime():
@@ -267,7 +288,7 @@ def getUptime():
 
 def getNetworkIFs():
     global rpi_interfaces
-    global mac
+    global rpi_mac
     out = subprocess.Popen('/sbin/ifconfig | egrep "Link|flags|inet|ether" | egrep -v -i "lo:|loopback|inet6|\:\:1|127\.0\.0\.1"', 
            shell=True,
            stdout=subprocess.PIPE, 
@@ -296,6 +317,7 @@ def getNetworkIFs():
     tmpInterfaces = []
     haveIF = False
     imterfc = ''
+    rpi_mac = ''
     for currLine in trimmedLines:
         lineParts = currLine.split()
         print_line('- currLine=[{}]'.format(currLine), debug=True)
@@ -309,8 +331,8 @@ def getNetworkIFs():
                 haveIF = True
                 imterfc = lineParts[0].replace(':', '')
                 newTuple = (imterfc, 'mac', lineParts[4])
-                if mac == '':
-                    mac = lineParts[4]
+                if rpi_mac == '':
+                    rpi_mac = lineParts[4]
                 print_line('newIF=[{}]'.format(imterfc), debug=True)
                 tmpInterfaces.append(newTuple)
                 print_line('newTuple=[{}]'.format(newTuple), debug=True)
@@ -362,24 +384,41 @@ def getFileSystemSpace():
 
 def getSystemTemperature():
     global rpi_system_temp
-    rpi_system_temp_raw = 'failed'
+    global rpi_gpu_temp
+    global rpi_cpu_temp
+    rpi_gpu_temp_raw = 'failed'
     retry_count = 3
-    while retry_count > 0 and 'failed' in rpi_system_temp_raw:
+    while retry_count > 0 and 'failed' in rpi_gpu_temp_raw:
         out = subprocess.Popen("/opt/vc/bin/vcgencmd measure_temp | /bin/sed -e 's/\\x0//g'", 
                 shell=True,
                 stdout=subprocess.PIPE, 
                 stderr=subprocess.STDOUT)
         stdout,stderr = out.communicate()
-        rpi_system_temp_raw = stdout.decode('utf-8').rstrip().replace('temp=', '').replace('\'C', '')
+        rpi_gpu_temp_raw = stdout.decode('utf-8').rstrip().replace('temp=', '').replace('\'C', '')
         retry_count -= 1
         sleep(1)
 
-    if 'failed' in rpi_system_temp_raw:
+    if 'failed' in rpi_gpu_temp_raw:
         interpretedTemp = float('-1.0')
     else:
-        interpretedTemp = float(rpi_system_temp_raw)
-    rpi_system_temp = interpretedTemp
-    print_line('rpi_system_temp=[{}]'.format(rpi_system_temp), debug=True)
+        interpretedTemp = float(rpi_gpu_temp_raw)
+    rpi_gpu_temp = interpretedTemp
+    print_line('rpi_gpu_temp=[{}]'.format(rpi_gpu_temp), debug=True)
+
+    out = subprocess.Popen("/bin/cat /sys/class/thermal/thermal_zone0/temp", 
+                shell=True,
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.STDOUT)
+    stdout,stderr = out.communicate()
+    rpi_cpu_temp_raw = stdout.decode('utf-8').rstrip()
+    rpi_cpu_temp = float(rpi_cpu_temp_raw) / 1000.0
+    print_line('rpi_cpu_temp=[{}]'.format(rpi_cpu_temp), debug=True)
+
+    # fallback to CPU temp is GPU not available
+    rpi_system_temp = rpi_gpu_temp
+    if rpi_gpu_temp == -1.0:
+        rpi_system_temp = rpi_cpu_temp
+    
 
 def getLastUpdateDateV2():
     global rpi_last_update_date_v2
@@ -498,22 +537,11 @@ sd_notifier.notify('READY=1')
 # -----------------------------------------------------------------------------
 
 # what RPi device are we on?
-gw = os.popen("ip -4 route show default").read().split()
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s.connect((gw[2], 0))
-ipaddr = s.getsockname()[0]
-interface = gw[4]
-ether = os.popen("ifconfig " + interface + "| grep ether").read().split()
-print_line('- ipaddr=[{}], interface=[{}], ether=[{}]'.format(ipaddr, interface, ether), debug=True)
-mac=''  # preset NOT-FOUND
-if len(ether) > 1:
-    mac = ether[1]
-fqdn = socket.getfqdn()
-print_line('- mac=[{}], fqdn=[{}]'.format(mac, fqdn), debug=True)
+rpi_mac = ''
+# get our hostnames so we can setup MQTT
+getNetworkIFs() # this will fill-in rpi_mac
 
-getNetworkIFs() # this will fill-in mac if we still don't have it
-
-mac_basic = mac.lower().replace(":", "")
+mac_basic = rpi_mac.lower().replace(":", "")
 mac_left = mac_basic[:6]
 mac_right = mac_basic[6:]
 print_line('mac lt=[{}], rt=[{}], mac=[{}]'.format(mac_left, mac_right, mac_basic), debug=True)
@@ -544,7 +572,7 @@ activity_topic = '{}/status'.format(base_topic)    # vs. LWT
 command_topic_rel = '~/set'
 
 for [sensor, params] in detectorValues.items():
-    discovery_topic = 'homeassistant/sensor/{}/{}/config'.format(sensor_name.lower(), sensor)
+    discovery_topic = '{}/sensor/{}/{}/config'.format(discovery_prefix, sensor_name.lower(), sensor)
     payload = OrderedDict()
     if 'no_title_prefix' in params:
         payload['name'] = "{}".format(params['title'].title())
@@ -637,7 +665,9 @@ RPI_UPTIME = "up_time"
 RPI_DATE_LAST_UPDATE = "last_update"
 RPI_FS_SPACE = 'fs_total_gb' # "fs_space_gbytes"
 RPI_FS_AVAIL = 'fs_free_prcnt' # "fs_available_prcnt"
-RPI_TEMP = "temperature_c"
+RPI_SYSTEM_TEMP = "temperature_c"
+RPI_GPU_TEMP = "temp_gpu_c"
+RPI_CPU_TEMP = "temp_cpu_c"
 RPI_SCRIPT = "reporter"
 RPI_NETWORK = "networking"
 RPI_INTERFACE = "interface"
@@ -655,6 +685,8 @@ def send_status(timestamp, nothing):
     global rpi_filesystem_space
     global rpi_filesystem_percent
     global rpi_system_temp
+    global rpi_gpu_temp
+    global rpi_cpu_temp
     global rpi_mqtt_script
 
     rpiData = OrderedDict()
@@ -680,7 +712,10 @@ def send_status(timestamp, nothing):
 
     rpiData[RPI_NETWORK] = getNetworkDictionary()
 
-    rpiData[RPI_TEMP] = rpi_system_temp
+    rpiData[RPI_SYSTEM_TEMP] = forceSingleDigit(rpi_system_temp)
+    rpiData[RPI_GPU_TEMP] = forceSingleDigit(rpi_gpu_temp)
+    rpiData[RPI_CPU_TEMP] = forceSingleDigit(rpi_cpu_temp)
+
     rpiData[RPI_SCRIPT] = rpi_mqtt_script.replace('.py', '')
     rpiData[SCRIPT_REPORT_INTERVAL] = interval_in_minutes
 
@@ -688,6 +723,11 @@ def send_status(timestamp, nothing):
     rpiTopDict[LDS_PAYLOAD_NAME] = rpiData
 
     _thread.start_new_thread(publishMonitorData, (rpiTopDict, values_topic))
+
+def forceSingleDigit(temperature):
+    tempInterp = '{:.1f}'.format(temperature)
+    return float(tempInterp)
+
 
 def getNetworkDictionary():
     global rpi_interfaces
@@ -730,8 +770,6 @@ def update_values():
     getFileSystemSpace()
     getSystemTemperature()
     getLastUpdateDateV2()
-
-    
 
 # -----------------------------------------------------------------------------
 
