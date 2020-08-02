@@ -213,11 +213,11 @@ Set up the script to be run as a Sys V init script as follows:
    
 ### Update to latest
 
-Use one of the following based upon how you are set up.
+Like most active developers, we periodically upgrade our script. Use one of the following list of update steps based upon how you are set up.
 
 #### Systemd commands to perform update
 
-Like most active developers, we periodically upgrade our script. You can update to the latest we've published by following these steps:
+If you are setup in the systemd form, you can update to the latest we've published by following these steps:
 
    ```shell
    # go to local repo
@@ -242,7 +242,7 @@ Like most active developers, we periodically upgrade our script. You can update 
    
 #### SysV init script commands to perform update
 
-Like most active developers, we periodically upgrade our script. You can update to the latest we've published by following these steps:
+If you are setup in the Sys V init script form, you can update to the latest we've published by following these steps:
 
    ```shell
    # go to local repo
