@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "1.3.3"
+script_version = "1.3.4"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -428,7 +428,7 @@ def getLastUpdateDate():
     global rpi_last_update_date
     #apt_log_filespec = '/var/log/dpkg.log'
     #apt_log_filespec2 = '/var/log/dpkg.log.1'
-    out = subprocess.Popen("/bin/grep 'status installed' /var/log/dpkg.log /var/log/dpkg.log.1 | sort | tail -1", 
+    out = subprocess.Popen("/bin/grep 'status installed' /var/log/dpkg.log /var/log/dpkg.log.1 2>/dev/null | sort | tail -1", 
             shell=True,
             stdout=subprocess.PIPE, 
             stderr=subprocess.STDOUT)
