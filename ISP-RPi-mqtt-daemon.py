@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "1.2.2"
+script_version = "1.3.4"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -176,8 +176,8 @@ rpi_linux_release = ''
 rpi_linux_version = ''
 rpi_uptime_raw = ''
 rpi_uptime = ''
-rpi_last_update_date = ''
-rpi_last_update_date_v2 = datetime.min
+rpi_last_update_date = datetime.min
+#rpi_last_update_date_v2 = datetime.min
 rpi_filesystem_space_raw = ''
 rpi_filesystem_space = ''
 rpi_filesystem_percent = ''
@@ -198,7 +198,7 @@ def getDeviceModel():
            shell=True,
            stdout=subprocess.PIPE, 
            stderr=subprocess.STDOUT)
-    stdout,stderr = out.communicate()
+    stdout,_ = out.communicate()
     rpi_model_raw = stdout.decode('utf-8')
     # now reduce string length (just more compact, same info)
     rpi_model = rpi_model_raw.replace('Raspberry ', 'R').replace('i Model ', 'i 1 Model').replace('Rev ', 'r').replace(' Plus ', '+')
@@ -228,7 +228,7 @@ def getLinuxRelease():
            shell=True,
            stdout=subprocess.PIPE, 
            stderr=subprocess.STDOUT)
-    stdout,stderr = out.communicate()
+    stdout,_ = out.communicate()
     rpi_linux_release = stdout.decode('utf-8').rstrip()
     print_line('rpi_linux_release=[{}]'.format(rpi_linux_release), debug=True)
 
@@ -238,7 +238,7 @@ def getLinuxVersion():
            shell=True,
            stdout=subprocess.PIPE, 
            stderr=subprocess.STDOUT)
-    stdout,stderr = out.communicate()
+    stdout,_ = out.communicate()
     rpi_linux_version = stdout.decode('utf-8').rstrip()
     print_line('rpi_linux_version=[{}]'.format(rpi_linux_version), debug=True)
     
@@ -249,7 +249,7 @@ def getHostnames():
            shell=True,
            stdout=subprocess.PIPE, 
            stderr=subprocess.STDOUT)
-    stdout,stderr = out.communicate()
+    stdout,_ = out.communicate()
     fqdn_raw = stdout.decode('utf-8').rstrip()
     print_line('fqdn_raw=[{}]'.format(fqdn_raw), debug=True)
     rpi_hostname = fqdn_raw
@@ -262,6 +262,8 @@ def getHostnames():
         # missing domain, if we have a fallback apply it
         if len(fallback_domain) > 0:
             rpi_fqdn = '{}.{}'.format(fqdn_raw, fallback_domain)
+        else:
+            rpi_fqdn = rpi_hostname
 
     print_line('rpi_fqdn=[{}]'.format(rpi_fqdn), debug=True)
     print_line('rpi_hostname=[{}]'.format(rpi_hostname), debug=True)
@@ -273,7 +275,7 @@ def getUptime():
            shell=True,
            stdout=subprocess.PIPE, 
            stderr=subprocess.STDOUT)
-    stdout,stderr = out.communicate()
+    stdout,_ = out.communicate()
     rpi_uptime_raw = stdout.decode('utf-8').rstrip().lstrip()
     print_line('rpi_uptime_raw=[{}]'.format(rpi_uptime_raw), debug=True)
     basicParts = rpi_uptime_raw.split()
@@ -293,7 +295,7 @@ def getNetworkIFs():
            shell=True,
            stdout=subprocess.PIPE, 
            stderr=subprocess.STDOUT)
-    stdout,stderr = out.communicate()
+    stdout,_ = out.communicate()
     lines = stdout.decode('utf-8').split("\n")
     trimmedLines = []
     for currLine in lines:
@@ -341,6 +343,8 @@ def getNetworkIFs():
                 if 'ether' in currLine: # NEWER ONLY
                     newTuple = (imterfc, 'mac', lineParts[1])
                     tmpInterfaces.append(newTuple)
+                    if rpi_mac == '':
+                        rpi_mac = lineParts[1]
                     print_line('newTuple=[{}]'.format(newTuple), debug=True)
                 elif 'inet' in currLine:  # OLDER & NEWER
                     newTuple = (imterfc, 'IP', lineParts[1].replace('addr:',''))
@@ -349,6 +353,7 @@ def getNetworkIFs():
 
     rpi_interfaces = tmpInterfaces
     print_line('rpi_interfaces=[{}]'.format(rpi_interfaces), debug=True)
+    print_line('rpi_mac=[{}]'.format(rpi_mac), debug=True)
 
 def getFileSystemSpace():
     global rpi_filesystem_space_raw
@@ -358,7 +363,7 @@ def getFileSystemSpace():
             shell=True,
             stdout=subprocess.PIPE, 
             stderr=subprocess.STDOUT)
-    stdout,stderr = out.communicate()
+    stdout,_ = out.communicate()
     rpi_filesystem_space_raw = stdout.decode('utf-8').rstrip()
     print_line('rpi_filesystem_space_raw=[{}]'.format(rpi_filesystem_space_raw), debug=True)
     lineParts = rpi_filesystem_space_raw.split()
@@ -393,7 +398,7 @@ def getSystemTemperature():
                 shell=True,
                 stdout=subprocess.PIPE, 
                 stderr=subprocess.STDOUT)
-        stdout,stderr = out.communicate()
+        stdout,_ = out.communicate()
         rpi_gpu_temp_raw = stdout.decode('utf-8').rstrip().replace('temp=', '').replace('\'C', '')
         retry_count -= 1
         sleep(1)
@@ -409,7 +414,7 @@ def getSystemTemperature():
                 shell=True,
                 stdout=subprocess.PIPE, 
                 stderr=subprocess.STDOUT)
-    stdout,stderr = out.communicate()
+    stdout,_ = out.communicate()
     rpi_cpu_temp_raw = stdout.decode('utf-8').rstrip()
     rpi_cpu_temp = float(rpi_cpu_temp_raw) / 1000.0
     print_line('rpi_cpu_temp=[{}]'.format(rpi_cpu_temp), debug=True)
@@ -419,8 +424,32 @@ def getSystemTemperature():
     if rpi_gpu_temp == -1.0:
         rpi_system_temp = rpi_cpu_temp
     
+def getLastUpdateDate():
+    global rpi_last_update_date
+    #apt_log_filespec = '/var/log/dpkg.log'
+    #apt_log_filespec2 = '/var/log/dpkg.log.1'
+    out = subprocess.Popen("/bin/grep 'status installed' /var/log/dpkg.log /var/log/dpkg.log.1 2>/dev/null | sort | tail -1", 
+            shell=True,
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.STDOUT)
+    stdout,_ = out.communicate()
+    last_installed_pkg_raw = stdout.decode('utf-8').rstrip().replace('/var/log/dpkg.log:','').replace('/var/log/dpkg.log.1:','')
+    print_line('last_installed_pkg_raw=[{}]'.format(last_installed_pkg_raw), debug=True)    
+    line_parts = last_installed_pkg_raw.split()
+    if len(line_parts) > 1:
+        pkg_date_string = '{} {}'.format(line_parts[0], line_parts[1])
+        print_line('pkg_date_string=[{}]'.format(pkg_date_string), debug=True)   
+        # Example:
+        #   2020-07-22 17:08:26 status installed python3-tzlocal:all 1.3-1  
 
-def getLastUpdateDateV2():
+        pkg_install_date = datetime.strptime(pkg_date_string, '%Y-%m-%d %H:%M:%S').replace(tzinfo=local_tz)
+        rpi_last_update_date  = pkg_install_date
+    
+    print_line('rpi_last_update_date=[{}]'.format(rpi_last_update_date), debug=True)
+
+
+def getLastUpdateDateOLD():
+    #  GAH this is affected by log rotate... OBSOLETING this MECH.
     global rpi_last_update_date_v2
     apt_log_filespec = '/var/log/dpkg.log'
     try:
@@ -703,8 +732,12 @@ def send_status(timestamp, nothing):
     #actualDate = datetime.strptime(rpi_last_update_date, '%y%m%d%H%M%S')
     #actualDate.replace(tzinfo=local_tz)
     #rpiData[RPI_DATE_LAST_UPDATE] = actualDate.astimezone().replace(microsecond=0).isoformat()
-    if rpi_last_update_date_v2 != datetime.min:
-        rpiData[RPI_DATE_LAST_UPDATE] = rpi_last_update_date_v2.astimezone().replace(microsecond=0).isoformat()
+    #if rpi_last_update_date_v2 != datetime.min:
+    #    rpiData[RPI_DATE_LAST_UPDATE] = rpi_last_update_date_v2.astimezone().replace(microsecond=0).isoformat()
+    #else:
+    #    rpiData[RPI_DATE_LAST_UPDATE] = ''
+    if rpi_last_update_date != datetime.min:
+        rpiData[RPI_DATE_LAST_UPDATE] = rpi_last_update_date.astimezone().replace(microsecond=0).isoformat()
     else:
         rpiData[RPI_DATE_LAST_UPDATE] = ''
     rpiData[RPI_FS_SPACE] = int(rpi_filesystem_space.replace('GB', ''),10)
@@ -769,7 +802,7 @@ def update_values():
     getUptime()
     getFileSystemSpace()
     getSystemTemperature()
-    getLastUpdateDateV2()
+    getLastUpdateDate()
 
 # -----------------------------------------------------------------------------
 
@@ -800,7 +833,7 @@ def afterMQTTConnect():
 
 # TESTING AGAIN
 getNetworkIFs()
-#getLastUpdateDateV2()
+#getLastUpdateDate()
 
 # TESTING, early abort
 #stopAliveTimer()
