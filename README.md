@@ -202,7 +202,7 @@ Set up the script to be run as a Sys V init script as follows:
    sudo ln -s /opt/RPi-Reporter-MQTT2HA-Daemon/rpi-reporter /etc/init.d/rpi-reporter
 
 	# configure system to start this script at boot time
-   sudo update-rc.d /etc/init.d/rpi-reporter defaults
+   sudo update-rc.d rpi-reporter defaults
 
    # let's start the script now, too so we don't have to reboot
    sudo /etc/init.d/rpi-reporter start
