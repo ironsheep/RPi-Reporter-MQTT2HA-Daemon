@@ -426,8 +426,8 @@ def getSystemTemperature():
     
 def getLastUpdateDate():
     global rpi_last_update_date
-    apt_log_filespec = '/var/log/dpkg.log'
-    apt_log_filespec2 = '/var/log/dpkg.log.1'
+    #apt_log_filespec = '/var/log/dpkg.log'
+    #apt_log_filespec2 = '/var/log/dpkg.log.1'
     out = subprocess.Popen("/bin/grep 'status installed' /var/log/dpkg.log /var/log/dpkg.log.1 | sort | tail -1", 
             shell=True,
             stdout=subprocess.PIPE, 
@@ -436,13 +436,15 @@ def getLastUpdateDate():
     last_installed_pkg_raw = stdout.decode('utf-8').rstrip().replace('/var/log/dpkg.log:','').replace('/var/log/dpkg.log.1:','')
     print_line('last_installed_pkg_raw=[{}]'.format(last_installed_pkg_raw), debug=True)    
     line_parts = last_installed_pkg_raw.split()
-    pkg_date_string = '{} {}'.format(line_parts[0], line_parts[1])
-    print_line('pkg_date_string=[{}]'.format(pkg_date_string), debug=True)   
-    # Example:
-    #   2020-07-22 17:08:26 status installed python3-tzlocal:all 1.3-1  
+    if len(line_parts) > 1:
+        pkg_date_string = '{} {}'.format(line_parts[0], line_parts[1])
+        print_line('pkg_date_string=[{}]'.format(pkg_date_string), debug=True)   
+        # Example:
+        #   2020-07-22 17:08:26 status installed python3-tzlocal:all 1.3-1  
 
-    pkg_install_date = datetime.strptime(pkg_date_string, '%Y-%m-%d %H:%M:%S')
-    rpi_last_update_date  = pkg_install_date
+        pkg_install_date = datetime.strptime(pkg_date_string, '%Y-%m-%d %H:%M:%S').replace(tzinfo=local_tz)
+        rpi_last_update_date  = pkg_install_date
+    
     print_line('rpi_last_update_date=[{}]'.format(rpi_last_update_date), debug=True)
 
 
