@@ -137,23 +137,17 @@ Using the command line argument `--config`, a directory where to read the config
 python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py --config /opt/RPi-Reporter-MQTT2HA-Daemon
 ```
 
-### Choose Run Style
+### Preparing to run full time
 
-You can choose to run this script as a system service or from cron(1m).
-
-* Choose as a system service if you want your HA to know if your RPi is up/down as when run from a service HA knows if you RPi is online or not and when it last reported in.
-
-* If, instead, you want the details of your RPi reported periodically to HA but don't care if it's up or down (or maybe you don't keep it up all the time) then run this script from cron(1m)
-
-Let's look at how to set up each of these forms:
-
-#### Run as Daemon / Service
-
-In order to have your HA system know if your RPi is online/offline and when it last reported in then you are setting up this script to run as a system service by following these steps:
+In order to have your HA system know if your RPi is online/offline and when it last reported-in then you must set up this script to run as a system service.
 
 **NOTE:** Daemon mode must be enabled in the configuration file (default).
 
-By default the **isp-rpi-reporter.service** file indicates that the script should be run as user:group  **daemon:daemon**.  As this script requires access to the gpu you'll want to add access to them for the daemon user as follows:
+But first, we need to grant access to some hardware for the user account under which the sevice will run.
+
+### Set up daemon account to allow access to temperature values
+
+By default this script is run as user:group  **daemon:daemon**.  As this script requires access to the GPU you'll want to add access to it for the daemon user as follows:
 
    ```shell
    # list current groups
@@ -169,35 +163,59 @@ By default the **isp-rpi-reporter.service** file indicates that the script shoul
    #                 ^^^^^ now it is present
    ```
 
-Now that the 'daemon' user is configured to allow access the hardware you can setup the script to be run as a system service as follows:
+### Choose Run Style
+
+You can choose to run this script as a `systemd service` or as a `Sys V init script`. If you are on a newer OS than `Jessie` or if as a system admin you are just more comfortable with Sys V init scripts then you can use the latter style.
+
+Let's look at how to set up each of these forms:
+
+#### Run as Systemd Daemon / Service (*for Raspian/Raspberry pi OS newer than 'jessie'*)
+
+(**Heads Up** *We've learned the hard way that RPi's running `jessie` won't restart the script on reboot if setup this way, Please set up these RPi's using the init script form shown in the next section.*)
+
+Set up the script to be run as a system service as follows:
 
    ```shell
    sudo ln -s /opt/RPi-Reporter-MQTT2HA-Daemon/isp-rpi-reporter.service /etc/systemd/system/isp-rpi-reporter.service
 
    sudo systemctl daemon-reload
 
-   sudo systemctl start isp-rpi-reporter.service
-   sudo systemctl status isp-rpi-reporter.service
-
    # tell system that it can start our script at system startup during boot
    sudo systemctl enable isp-rpi-reporter.service
+   
+   # start the script running
+   sudo systemctl start isp-rpi-reporter.service
+   
+   # check to make sure all is ok with the start up
+   sudo systemctl status isp-rpi-reporter.service
    ```
+   
+**NOTE:** *Please remember to run the 'systemctl enable ...' once at first install, if you want your script to start up every time your RPi reboots!*
 
-**NOTE**: Raspian 'Jessie' does not fully support all of these systemctl commands
+#### Run as Sys V init script (*your RPi is running 'jessie' or you just like this form*)
 
-* **systemctl enable isp-rpi-reporter.service** # does not work. (we're looking at alternative for startup on reboot and verifying if it is starting or not...)
+In this form our wrapper script located in the /etc/init.d directory and is run according to symbolic links in the `/etc/rc.x` directories.
 
-**NOTE:** *Please remember to run the 'systemctl enable ...' once at first install, if you want your script to start up everytime your RPi reboots!*
+Set up the script to be run as a Sys V init script as follows:
 
-#### Run from Cron(1m)
+   ```shell
+   sudo ln -s /opt/RPi-Reporter-MQTT2HA-Daemon/rpi-reporter /etc/init.d/rpi-reporter
 
-In order to have the details of your RPi reported periodically to HA but not monitor your RPi for online/offline and when it reports in then we set up this script to run from cron(1m).
+	# configure system to start this script at boot time
+   sudo update-rc.d /etc/init.d/rpi-reporter defaults
 
-With the cron setup you can run this script at intervals during a day, one a day/week and/or every time the RPi is powered on (booted.)
-
-   (-- tba --)
-
+   # let's start the script now, too so we don't have to reboot
+   sudo /etc/init.d/rpi-reporter start
+  
+   # check to make sure all is ok with the start up
+   sudo /etc/init.d/rpi-reporter status
+   ```
+   
 ### Update to latest
+
+Use one of the following based upon how you are set up.
+
+#### Systemd commands to perform update
 
 Like most active developers, we periodically upgrade our script. You can update to the latest we've published by following these steps:
 
@@ -219,6 +237,28 @@ Like most active developers, we periodically upgrade our script. You can update 
 
    # if you want, check status of the running script
    systemctl status isp-rpi-reporter.service
+
+   ```
+   
+#### SysV init script commands to perform update
+
+Like most active developers, we periodically upgrade our script. You can update to the latest we've published by following these steps:
+
+   ```shell
+   # go to local repo
+   cd /opt/RPi-Reporter-MQTT2HA-Daemon
+
+   # stop the service
+   sudo /etc/init.d/rpi-reporter stop
+
+   # get the latest version
+   sudo git pull
+
+   # restart the service with your new version
+   sudo /etc/init.d/rpi-reporter start
+
+   # if you want, check status of the running script
+   sudo /etc/init.d/rpi-reporter status
 
    ```
 
@@ -270,6 +310,8 @@ See my project: [Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelac
 ## Credits
 
 Thank you to Thomas Dietrich for providing a wonderful pattern for this project. His project, which I use and heartily recommend, is [miflora-mqtt-deamon](https://github.com/ThomDietrich/miflora-mqtt-daemon)
+
+Thanks to [synoniem](https://github.com/synoniem) for working through the issues with startup as a SystemV init script and for providing 'rpi-reporter' script itself and for identifying the need for support of other boot device forms.
 
 ----
 
