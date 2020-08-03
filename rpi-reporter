@@ -1,3 +1,4 @@
+#!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          rpi-reporter
 # Required-Start:    $network $local_fs 

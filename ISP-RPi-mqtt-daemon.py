@@ -720,8 +720,10 @@ RPI_DRIVES = "drives"
 RPI_DRV_BLOCKS = "size_gb"
 RPI_DRV_USED = "used_prcnt"
 RPI_DRV_MOUNT = "mount_pt"
-RPI_DRV_DEVCE = "device"
-
+RPI_DRV_DEVICE = "device"
+RPI_DRV_NFS = "device-nfs"
+RPI_DVC_IP = "ip"
+RPI_DVC_PATH = "dvc"
 
 def send_status(timestamp, nothing):
     global rpi_model
@@ -798,12 +800,27 @@ def getDrivesDictionary():
         rpiSingleDrive = OrderedDict()
         rpiSingleDrive[RPI_DRV_BLOCKS] = int(driveTuple[0])
         rpiSingleDrive[RPI_DRV_USED] = int(driveTuple[1])
-        rpiSingleDrive[RPI_DRV_DEVCE] = driveTuple[3]
+        device = driveTuple[3]
+        if ':' in device:
+            rpiDevice = OrderedDict()
+            lineParts = device.split(':')
+            rpiDevice[RPI_DVC_IP] = lineParts[0]
+            rpiDevice[RPI_DVC_PATH] = lineParts[1]
+            rpiSingleDrive[RPI_DRV_NFS] = rpiDevice
+        else:
+            rpiSingleDrive[RPI_DRV_DEVICE] = device
+            #rpiTest = OrderedDict()
+            #rpiTest[RPI_DVC_IP] = '255.255.255.255'
+            #rpiTest[RPI_DVC_PATH] = '/srv/c2db7b94'
+            #rpiSingleDrive[RPI_DRV_NFS] = rpiTest
         rpiSingleDrive[RPI_DRV_MOUNT] = driveTuple[2]
         driveKey = driveTuple[2].replace('/','-').replace('-','',1)
         if len(driveKey) == 0:
             driveKey = "root"
         rpiDrives[driveKey] = rpiSingleDrive
+
+        # TEST NFS
+
 
     return rpiDrives;
 
