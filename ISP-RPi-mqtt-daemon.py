@@ -750,17 +750,6 @@ def send_status(timestamp, nothing):
     rpiData[RPI_LINUX_VERSION] = rpi_linux_version
     rpiData[RPI_UPTIME] = rpi_uptime
 
-    if len(rpi_filesystem) > 0:
-        rpiDrives = OrderedDict()
-        # tuple { total blocks, used%, mountPoint, device }
-        for driveTuple in rpi_filesystem:
-            rpiSingleDrive = OrderedDict()
-            rpiSingleDrive[RPI_DRV_BLOCKS] = driveTuple[0]
-            rpiSingleDrive[RPI_DRV_USED] = driveTuple[1]
-            rpiSingleDrive[RPI_DRV_DEVCE] = driveTuple[3]
-            rpiDrives[driveTuple[2]] = rpiSingleDrive
-
-        rpiData[RPI_DRIVES] = rpiDrives
 
 
     #  DON'T use V1 form of getting date (my dashbord mech)
@@ -780,6 +769,10 @@ def send_status(timestamp, nothing):
 
     rpiData[RPI_NETWORK] = getNetworkDictionary()
 
+    rpiDrives = getDrivesDictionary()
+    if len(rpiDrives) > 0:
+        rpiData[RPI_DRIVES] = rpiDrives
+
     rpiData[RPI_SYSTEM_TEMP] = forceSingleDigit(rpi_system_temp)
     rpiData[RPI_GPU_TEMP] = forceSingleDigit(rpi_gpu_temp)
     rpiData[RPI_CPU_TEMP] = forceSingleDigit(rpi_cpu_temp)
@@ -795,6 +788,20 @@ def send_status(timestamp, nothing):
 def forceSingleDigit(temperature):
     tempInterp = '{:.1f}'.format(temperature)
     return float(tempInterp)
+
+def getDrivesDictionary():
+    global rpi_filesystem
+    rpiDrives = OrderedDict()
+
+    # tuple { total blocks, used%, mountPoint, device }
+    for driveTuple in rpi_filesystem:
+        rpiSingleDrive = OrderedDict()
+        rpiSingleDrive[RPI_DRV_BLOCKS] = int(driveTuple[0])
+        rpiSingleDrive[RPI_DRV_USED] = int(driveTuple[1])
+        rpiSingleDrive[RPI_DRV_DEVCE] = driveTuple[3]
+        rpiDrives[driveTuple[2]] = rpiSingleDrive
+
+    return rpiDrives;
 
 
 def getNetworkDictionary():
