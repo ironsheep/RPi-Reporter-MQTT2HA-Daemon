@@ -799,7 +799,11 @@ def getDrivesDictionary():
         rpiSingleDrive[RPI_DRV_BLOCKS] = int(driveTuple[0])
         rpiSingleDrive[RPI_DRV_USED] = int(driveTuple[1])
         rpiSingleDrive[RPI_DRV_DEVCE] = driveTuple[3]
-        rpiDrives[driveTuple[2]] = rpiSingleDrive
+        rpiSingleDrive[RPI_DRV_MOUNT] = driveTuple[2]
+        driveKey = driveTuple[2].replace('/','-').replace('-','',1)
+        if len(driveKey) == 0:
+            driveKey = "root"
+        rpiDrives[driveKey] = rpiSingleDrive
 
     return rpiDrives;
 
