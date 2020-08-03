@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "1.3.4"
+script_version = "1.4.0"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -186,6 +186,7 @@ rpi_gpu_temp = ''
 rpi_cpu_temp = ''
 rpi_mqtt_script = script_info
 rpi_interfaces = []
+rpi_filesystem = []
 
 # -----------------------------------------------------------------------------
 #  monitor variable fetch routines
@@ -291,7 +292,7 @@ def getUptime():
 def getNetworkIFs():
     global rpi_interfaces
     global rpi_mac
-    out = subprocess.Popen('/sbin/ifconfig | egrep "Link|flags|inet|ether" | egrep -v -i "lo:|loopback|inet6|\:\:1|127\.0\.0\.1"', 
+    out = subprocess.Popen('/sbin/ifconfig | /bin/egrep "Link|flags|inet|ether" | /bin/egrep -v -i "lo:|loopback|inet6|\:\:1|127\.0\.0\.1"', 
            shell=True,
            stdout=subprocess.PIPE, 
            stderr=subprocess.STDOUT)
@@ -300,7 +301,8 @@ def getNetworkIFs():
     trimmedLines = []
     for currLine in lines:
         trimmedLine = currLine.lstrip().rstrip()
-        trimmedLines.append(trimmedLine)
+        if len(trimmedLine) > 0:
+            trimmedLines.append(trimmedLine)
 
     print_line('trimmedLines=[{}]'.format(trimmedLines), debug=True)
     #
@@ -355,37 +357,59 @@ def getNetworkIFs():
     print_line('rpi_interfaces=[{}]'.format(rpi_interfaces), debug=True)
     print_line('rpi_mac=[{}]'.format(rpi_mac), debug=True)
 
-def getFileSystemSpace():
+def getFileSystemDrives():
     global rpi_filesystem_space_raw
     global rpi_filesystem_space
     global rpi_filesystem_percent
-    out = subprocess.Popen("/bin/df -m | /bin/grep root", 
+    global rpi_filesystem
+    out = subprocess.Popen("/bin/df -m | /bin/egrep -v 'tmpfs|boot|-blocks'", 
             shell=True,
             stdout=subprocess.PIPE, 
             stderr=subprocess.STDOUT)
     stdout,_ = out.communicate()
-    rpi_filesystem_space_raw = stdout.decode('utf-8').rstrip()
-    print_line('rpi_filesystem_space_raw=[{}]'.format(rpi_filesystem_space_raw), debug=True)
-    lineParts = rpi_filesystem_space_raw.split()
-    print_line('lineParts=[{}]'.format(lineParts), debug=True)
-    filesystem_1GBlocks = int(lineParts[1],10) / 1024
-    if filesystem_1GBlocks > 32:
-        rpi_filesystem_space = '64GB'
-    elif filesystem_1GBlocks > 16:
-        rpi_filesystem_space = '32GB'
-    elif filesystem_1GBlocks > 8:
-        rpi_filesystem_space = '16GB'
-    elif filesystem_1GBlocks > 4:
-        rpi_filesystem_space = '8GB'
-    elif filesystem_1GBlocks > 2:
-        rpi_filesystem_space = '4GB'
-    elif filesystem_1GBlocks > 1:
-        rpi_filesystem_space = '2GB'
-    else:
-        rpi_filesystem_space = '1GB'
-    print_line('rpi_filesystem_space=[{}]'.format(rpi_filesystem_space), debug=True)
-    rpi_filesystem_percent = lineParts[4].replace('%', '')
-    print_line('rpi_filesystem_percent=[{}]'.format(rpi_filesystem_percent), debug=True)
+    lines = stdout.decode('utf-8').split("\n")
+    trimmedLines = []
+    for currLine in lines:
+        trimmedLine = currLine.lstrip().rstrip()
+        if len(trimmedLine) > 0:
+            trimmedLines.append(trimmedLine)
+
+    print_line('getFileSystemDrives() trimmedLines=[{}]'.format(trimmedLines), debug=True)
+
+    #  EXAMPLES 
+    #  /dev/root          59998   9290     48208  17% /
+    #  /dev/sda1         937872 177420    712743  20% /media/data
+    # or
+    #  /dev/root          59647  3328     53847   6% /
+    #  /dev/sda1           3703    25      3472   1% /media/pi/SANDISK
+    # or
+    #  xxx.xxx.xxx.xxx:/srv/c2db7b94 200561 148655 41651 79% /
+
+    tmpDrives = []
+    for currLine in trimmedLines:
+        lineParts = currLine.split()
+        print_line('lineParts({})=[{}]'.format(len(lineParts), lineParts), debug=True)
+        if len(lineParts) < 6:
+            print_line('BAD LINE FORMAT, Skipped=[{}]'.format(lineParts), debug=True, warning=True)
+            continue
+        # tuple { total blocks, used%, mountPoint, device }
+        total_size_in_gb = '{:.0f}'.format(next_power_of_2(lineParts[1]))
+        newTuple = ( total_size_in_gb, lineParts[4].replace('%',''), lineParts[5],  lineParts[0] )
+        tmpDrives.append(newTuple)
+        print_line('newTuple=[{}]'.format(newTuple), debug=True)
+        if newTuple[2] == '/':
+            rpi_filesystem_space_raw = currLine
+            rpi_filesystem_space = newTuple[0]
+            rpi_filesystem_percent = newTuple[1]
+            print_line('rpi_filesystem_space=[{}GB]'.format(newTuple[0]), debug=True)
+            print_line('rpi_filesystem_percent=[{}]'.format(newTuple[1]), debug=True)
+
+    rpi_filesystem = tmpDrives
+    print_line('rpi_filesystem=[{}]'.format(rpi_filesystem), debug=True)
+
+def next_power_of_2(size):  
+    size_as_nbr = int(size) - 1
+    return 1 if size == 0 else (1<<size_as_nbr.bit_length()) / 1024
 
 def getSystemTemperature():
     global rpi_system_temp
@@ -448,17 +472,6 @@ def getLastUpdateDate():
     print_line('rpi_last_update_date=[{}]'.format(rpi_last_update_date), debug=True)
 
 
-def getLastUpdateDateOLD():
-    #  GAH this is affected by log rotate... OBSOLETING this MECH.
-    global rpi_last_update_date_v2
-    apt_log_filespec = '/var/log/dpkg.log'
-    try:
-        mtime = os.path.getmtime(apt_log_filespec)
-    except OSError:
-        mtime = 0
-    last_modified_date = datetime.fromtimestamp(mtime, tz=local_tz)
-    rpi_last_update_date_v2  = last_modified_date
-    print_line('rpi_last_update_date_v2=[{}]'.format(rpi_last_update_date_v2), debug=True)
 
 # get our hostnames so we can setup MQTT
 getHostnames()
@@ -468,6 +481,7 @@ if(sensor_name == default_sensor_name):
 getDeviceModel()
 getLinuxRelease()
 getLinuxVersion()
+getFileSystemDrives()
 
 # -----------------------------------------------------------------------------
 #  timer and timer funcs for ALIVE MQTT Notices handling
@@ -701,6 +715,13 @@ RPI_SCRIPT = "reporter"
 RPI_NETWORK = "networking"
 RPI_INTERFACE = "interface"
 SCRIPT_REPORT_INTERVAL = "report_interval"
+# new drives dictionary
+RPI_DRIVES = "drives"
+RPI_DRV_BLOCKS = "size_gb"
+RPI_DRV_USED = "used_prcnt"
+RPI_DRV_MOUNT = "mount_pt"
+RPI_DRV_DEVCE = "device"
+
 
 def send_status(timestamp, nothing):
     global rpi_model
@@ -717,6 +738,7 @@ def send_status(timestamp, nothing):
     global rpi_gpu_temp
     global rpi_cpu_temp
     global rpi_mqtt_script
+    global rpi_filesystem
 
     rpiData = OrderedDict()
     rpiData[SCRIPT_TIMESTAMP] = timestamp.astimezone().replace(microsecond=0).isoformat()
@@ -727,6 +749,19 @@ def send_status(timestamp, nothing):
     rpiData[RPI_LINUX_RELEASE] = rpi_linux_release
     rpiData[RPI_LINUX_VERSION] = rpi_linux_version
     rpiData[RPI_UPTIME] = rpi_uptime
+
+    if len(rpi_filesystem) > 0:
+        rpiDrives = OrderedDict()
+        # tuple { total blocks, used%, mountPoint, device }
+        for driveTuple in rpi_filesystem:
+            rpiSingleDrive = OrderedDict()
+            rpiSingleDrive[RPI_DRV_BLOCKS] = driveTuple[0]
+            rpiSingleDrive[RPI_DRV_USED] = driveTuple[1]
+            rpiSingleDrive[RPI_DRV_DEVCE] = driveTuple[3]
+            rpiDrives[driveTuple[2]] = rpiSingleDrive
+
+        rpiData[RPI_DRIVES] = rpiDrives
+
 
     #  DON'T use V1 form of getting date (my dashbord mech)
     #actualDate = datetime.strptime(rpi_last_update_date, '%y%m%d%H%M%S')
@@ -800,7 +835,7 @@ def publishMonitorData(latestData, topic):
 def update_values():
     # nothing here yet
     getUptime()
-    getFileSystemSpace()
+    getFileSystemDrives()
     getSystemTemperature()
     getLastUpdateDate()
 
