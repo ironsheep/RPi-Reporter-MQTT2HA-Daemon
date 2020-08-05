@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "1.4.0"
+script_version = "1.4.1"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -362,7 +362,7 @@ def getFileSystemDrives():
     global rpi_filesystem_space
     global rpi_filesystem_percent
     global rpi_filesystem
-    out = subprocess.Popen("/bin/df -m | /bin/egrep -v 'tmpfs|boot|-blocks'", 
+    out = subprocess.Popen("/bin/df -m | /usr/bin/tail -n +2 | /bin/egrep -v 'tmpfs|boot'", 
             shell=True,
             stdout=subprocess.PIPE, 
             stderr=subprocess.STDOUT)
@@ -384,6 +384,19 @@ def getFileSystemDrives():
     #  /dev/sda1           3703    25      3472   1% /media/pi/SANDISK
     # or
     #  xxx.xxx.xxx.xxx:/srv/c2db7b94 200561 148655 41651 79% /
+
+    # FAILING Case v1.4.0:
+    # Here is the output of 'df -m'
+
+    # Sys. de fichiers blocs de 1M Utilisé Disponible Uti% Monté sur
+    # /dev/root 119774 41519 73358 37% /
+    # devtmpfs 1570 0 1570 0% /dev
+    # tmpfs 1699 0 1699 0% /dev/shm
+    # tmpfs 1699 33 1667 2% /run
+    # tmpfs 5 1 5 1% /run/lock
+    # tmpfs 1699 0 1699 0% /sys/fs/cgroup
+    # /dev/mmcblk0p1 253 55 198 22% /boot
+    # tmpfs 340 0 340 0% /run/user/1000
 
     tmpDrives = []
     for currLine in trimmedLines:

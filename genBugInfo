@@ -299,6 +299,46 @@ endCommand
 
 # ----------------------------------------------------------------------
 
+showCommand "/bin/ls -l /var/log/dpkg.log /var/log/dpkg.log.1 2>/dev/null"
+if [ ${VERBOSE_LEVEL} -gt 0 -a -z "${WITHOUT_DOING}" ]; then
+/bin/ls -l /var/log/dpkg.log /var/log/dpkg.log.1 2>/dev/null
+else 
+/bin/ls -l /var/log/dpkg.log /var/log/dpkg.log.1 2>/dev/null >>${OUTFILE} 2>&1
+fi
+endCommand
+
+# ----------------------------------------------------------------------
+
+showCommand "/bin/grep 'status installed' /var/log/dpkg.log /var/log/dpkg.log.1 2>/dev/null | sort | tail -1"
+if [ ${VERBOSE_LEVEL} -gt 0 -a -z "${WITHOUT_DOING}" ]; then
+/bin/grep 'status installed' /var/log/dpkg.log /var/log/dpkg.log.1 2>/dev/null | sort | tail -1
+else 
+/bin/grep 'status installed' /var/log/dpkg.log /var/log/dpkg.log.1 2>/dev/null | sort | tail -1 >>${OUTFILE} 2>&1
+fi
+endCommand
+
+# ----------------------------------------------------------------------
+
+showCommand "/bin/df -m"
+if [ ${VERBOSE_LEVEL} -gt 0 -a -z "${WITHOUT_DOING}" ]; then
+/bin/df -m
+else 
+/bin/df -m >>${OUTFILE} 2>&1
+fi
+endCommand
+
+# ----------------------------------------------------------------------
+
+showCommand "/bin/df -m | /usr/bin/tail -n +2 | /bin/egrep -v 'tmpfs|boot'"
+if [ ${VERBOSE_LEVEL} -gt 0 -a -z "${WITHOUT_DOING}" ]; then
+/bin/df -m | /usr/bin/tail -n +2 | /bin/egrep -v 'tmpfs|boot'
+else 
+/bin/df -m | /usr/bin/tail -n +2 | /bin/egrep -v 'tmpfs|boot' >>${OUTFILE} 2>&1
+fi
+endCommand
+
+# ----------------------------------------------------------------------
+
 if [ -f ${OUTFILE} ]; then
 	progressMessage "Wrote ${OUTFILE}"
 fi
