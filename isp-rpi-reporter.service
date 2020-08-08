@@ -1,7 +1,8 @@
 [Unit]
 Description=RPi Reporter MQTT Client/Daemon
 Documentation=https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon
-After=network.target mosquitto.service
+After=network.target mosquitto.service network-online.target
+Wants=network-online.target
 
 [Service]
 Type=notify
