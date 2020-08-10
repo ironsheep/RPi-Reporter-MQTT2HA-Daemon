@@ -3,6 +3,7 @@ Description=RPi Reporter MQTT Client/Daemon
 Documentation=https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon
 After=network.target mosquitto.service network-online.target
 Wants=network-online.target
+Requires=network.target
 
 [Service]
 Type=notify
@@ -16,6 +17,7 @@ StandardOutput=null
 StandardError=journal
 Environment=PYTHONUNBUFFERED=1
 Restart=always
+RestartSec=3
 
 [Install]
 WantedBy=multi-user.target
