@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "1.4.2"
+script_version = "1.4.3"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -98,6 +98,10 @@ if opt_debug:
 if opt_stall:
     print_line('TEST: Stall (no-re-reporting) enabled', debug=True)
 
+# -----------------------------------------------------------------------------
+#  MQTT handlers
+# -----------------------------------------------------------------------------
+
 # Eclipse Paho callbacks - http://www.eclipse.org/paho/clients/python/docs/#callbacks
 
 mqtt_client_connected = False
@@ -115,9 +119,9 @@ def on_connect(client, userdata, flags, rc):
     else:
         print_line('! Connection error with result code {} - {}'.format(str(rc), mqtt.connack_string(rc)), error=True)
         print_line('MQTT Connection error with result code {} - {}'.format(str(rc), mqtt.connack_string(rc)), error=True, sd_notify=True)
-        #kill main thread
         mqtt_client_connected = False   # technically NOT useful but readying possible new shape...
         print_line('on_connect() mqtt_client_connected=[{}]'.format(mqtt_client_connected), debug=True, error=True)
+        #kill main thread
         os._exit(1)
 
 def on_publish(client, userdata, mid):
@@ -388,6 +392,8 @@ def getFileSystemDrives():
     print_line('getFileSystemDrives() trimmedLines=[{}]'.format(trimmedLines), debug=True)
 
     #  EXAMPLES 
+    #
+    #  Filesystem     1M-blocks  Used Available Use% Mounted on
     #  /dev/root          59998   9290     48208  17% /
     #  /dev/sda1         937872 177420    712743  20% /media/data
     # or
@@ -417,8 +423,37 @@ def getFileSystemDrives():
             print_line('BAD LINE FORMAT, Skipped=[{}]'.format(lineParts), debug=True, warning=True)
             continue
         # tuple { total blocks, used%, mountPoint, device }
-        total_size_in_gb = '{:.0f}'.format(next_power_of_2(lineParts[1]))
-        newTuple = ( total_size_in_gb, lineParts[4].replace('%',''), lineParts[5],  lineParts[0] )
+        #
+        # new mech:
+        #  Filesystem     1M-blocks  Used Available Use% Mounted on
+        #     [0]           [1]       [2]     [3]    [4]   [5]
+        #     [--]         [n-3]     [n-2]   [n-1]   [n]   [--]
+        #  where  percent_field_index  is 'n'
+        #
+
+        # locate our % used field...
+        for percent_field_index in range(len(lineParts) - 2, 1, -1):
+            if '%' in lineParts[percent_field_index]:
+                break;
+        print_line('percent_field_index=[{}]'.format(percent_field_index), debug=True)
+        
+        total_size_idx = percent_field_index - 3
+        mount_idx = percent_field_index + 1
+
+        # do we have a two part device name?
+        device = lineParts[0]
+        if total_size_idx != 1:
+            device = '{} {}'.format(lineParts[0], lineParts[1])
+        print_line('device=[{}]'.format(device), debug=True)
+
+        # do we have a two part mount point?
+        mount_point = lineParts[mount_idx]
+        if len(lineParts) - 1 > mount_idx:
+            mount_point = '{} {}'.format(lineParts[mount_idx], lineParts[mount_idx + 1])
+        print_line('mount_point=[{}]'.format(mount_point), debug=True)
+
+        total_size_in_gb = '{:.0f}'.format(next_power_of_2(lineParts[total_size_idx]))
+        newTuple = ( total_size_in_gb, lineParts[percent_field_index].replace('%',''),  mount_point, device )
         tmpDrives.append(newTuple)
         print_line('newTuple=[{}]'.format(newTuple), debug=True)
         if newTuple[2] == '/':
@@ -435,6 +470,14 @@ def next_power_of_2(size):
     size_as_nbr = int(size) - 1
     return 1 if size == 0 else (1<<size_as_nbr.bit_length()) / 1024
 
+def getVcGenCmd():
+    cmd_locn1 = '/usr/bin/vcgencmd'
+    cmd_locn2 = '/opt/vc/bin/vcgencmd'
+    desiredCommand = cmd_locn1
+    if os.path.exists(cmd_locn1) == False:
+        desiredCommand = cmd_locn2
+    return desiredCommand
+
 def getSystemTemperature():
     global rpi_system_temp
     global rpi_gpu_temp
@@ -442,7 +485,9 @@ def getSystemTemperature():
     rpi_gpu_temp_raw = 'failed'
     retry_count = 3
     while retry_count > 0 and 'failed' in rpi_gpu_temp_raw:
-        out = subprocess.Popen("/opt/vc/bin/vcgencmd measure_temp | /bin/sed -e 's/\\x0//g'", 
+        cmd_fspec = getVcGenCmd()
+        cmd_string = "{} measure_temp | /bin/sed -e 's/\\x0//g'".format(cmd_fspec)
+        out = subprocess.Popen(cmd_string, 
                 shell=True,
                 stdout=subprocess.PIPE, 
                 stderr=subprocess.STDOUT)
@@ -788,6 +833,7 @@ def send_status(timestamp, nothing):
     #actualDate = datetime.strptime(rpi_last_update_date, '%y%m%d%H%M%S')
     #actualDate.replace(tzinfo=local_tz)
     #rpiData[RPI_DATE_LAST_UPDATE] = actualDate.astimezone().replace(microsecond=0).isoformat()
+    # also don't use V2 form...
     #if rpi_last_update_date_v2 != datetime.min:
     #    rpiData[RPI_DATE_LAST_UPDATE] = rpi_last_update_date_v2.astimezone().replace(microsecond=0).isoformat()
     #else:
