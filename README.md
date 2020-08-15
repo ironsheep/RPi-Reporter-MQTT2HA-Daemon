@@ -69,6 +69,7 @@ The monitored topic reports the following information:
 | `ux_version`       | os version (e.g., 4.19.66-v7+) |
 | `reporter`  | script name, version running on RPi |
 | `networking`       | lists for each interface: interface name, mac address (and IP if the interface is connected) |
+| `drives`       | lists for each drive mounted: size in GB, % used, device and mount point |
 
 ## Prerequisites
 
