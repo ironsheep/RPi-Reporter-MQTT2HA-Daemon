@@ -1,3 +1,8 @@
+Mon Aug 17 19:46:44 2020 -0600 v1.5.1
+
+  - Filter ignoring HA network devices was incomplete - fixed
+  - Possibly breaking change (UniqueID may change for some users)
+
 Mon Aug 17 01:26:21 2020 -0600 v1.5.0
 
   - Added Memory Reporting
