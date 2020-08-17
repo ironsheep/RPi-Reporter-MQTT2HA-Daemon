@@ -16,6 +16,10 @@ This script should be configured to be run in **daemon mode** continously in the
 
 *(Jump to below [Lovelace Custom Card](#lovelace-custom-card).)*
 
+## Script Updates
+
+We've been repairing this script as users report issues with it. For a list of fixes for each release see our [ChangeLog](./ChangeLog)
+
 ## Features
 
 * Tested on Raspberry Pi's 2/3/4 with Jessie, Stretch and Buster
@@ -70,6 +74,8 @@ The monitored topic reports the following information:
 | `reporter`  | script name, version running on RPi |
 | `networking`       | lists for each interface: interface name, mac address (and IP if the interface is connected) |
 | `drives`       | lists for each drive mounted: size in GB, % used, device and mount point |
+| `cpu`       | lists the model of cpu, number of cores, etc. |
+| `memory`       | shows the total amount of RAM in MB and the available ram in MB |
 
 ## Prerequisites
 
