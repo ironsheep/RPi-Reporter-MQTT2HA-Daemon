@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import _thread
-from datetime import datetime
+from datetime import datetime, timedelta
 from tzlocal import get_localzone
 import threading
 import socket
@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "1.5.1"
+script_version = "1.5.2"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -690,6 +690,43 @@ def getSystemTemperature():
         rpi_system_temp = rpi_cpu_temp
 
 def getLastUpdateDate():
+    global rpi_last_update_date
+    # apt-get update writes to following dir (so date changes on update)
+    apt_listdir_filespec = '/var/lib/apt/lists/partial'
+    # apt-get dist-upgrade | autoremove update the following file when actions are taken
+    apt_lockdir_filespec = '/var/lib/dpkg/lock'
+    cmdString = '/bin/ls -ltrd {} {}'.format(apt_listdir_filespec, apt_lockdir_filespec)
+    out = subprocess.Popen(cmdString,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+    stdout,_ = out.communicate()
+    lines = stdout.decode('utf-8').split("\n")
+    trimmedLines = []
+    for currLine in lines:
+        trimmedLine = currLine.lstrip().rstrip()
+        if len(trimmedLine) > 0:
+            trimmedLines.append(trimmedLine)
+    print_line('trimmedLines=[{}]'.format(trimmedLines), debug=True)
+
+    fileSpec_latest = ''
+    if len(trimmedLines) > 0:
+        lastLineIdx = len(trimmedLines) - 1
+        lineParts = trimmedLines[lastLineIdx].split()
+        if len(lineParts) > 0:
+            lastPartIdx = len(lineParts) - 1
+            fileSpec_latest = lineParts[lastPartIdx]
+    print_line('fileSpec_latest=[{}]'.format(fileSpec_latest), debug=True)
+
+    fileModDateInSeconds = os.path.getmtime(fileSpec_latest)
+    fileModDate = datetime.fromtimestamp(fileModDateInSeconds)
+    rpi_last_update_date = fileModDate.replace(tzinfo=local_tz)
+    print_line('rpi_last_update_date=[{}]'.format(rpi_last_update_date), debug=True)
+
+def to_datetime(time):
+    return datetime.fromordinal(int(time)) + datetime.timedelta(time % 1)
+
+def getLastInstallDate():
     global rpi_last_update_date
     #apt_log_filespec = '/var/log/dpkg.log'
     #apt_log_filespec2 = '/var/log/dpkg.log.1'
