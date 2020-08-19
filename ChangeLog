@@ -1,3 +1,11 @@
+Tue Aug 18 23:24:06 2020 -0600 v1.5.2
+
+  - Adjust hardware IF filter again... let's please see wlan0 and eth0 I/Fs
+
+Mon Aug 17 15:51:07 2020 -0600
+
+  - Adjust update mech to use update-check dates, too
+
 Mon Aug 17 19:46:44 2020 -0600 v1.5.1
 
   - Filter ignoring HA network devices was incomplete - fixed
