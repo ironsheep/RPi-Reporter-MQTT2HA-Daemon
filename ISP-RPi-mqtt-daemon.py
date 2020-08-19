@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "1.5.2"
+script_version = "1.5.3"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -418,9 +418,11 @@ def getNetworkIFsUsingIP(ip_cmd):
 
     for lineIdx in range(line_count):
         trimmedLine = lines[lineIdx].lstrip().rstrip()
-        lineParts = trimmedLine.split()
-        interfaceName = lineParts[1].replace(':', '')
-        interfaceNames.append(interfaceName)
+        if len(trimmedLine) > 0:
+            lineParts = trimmedLine.split()
+            interfaceName = lineParts[1].replace(':', '')
+            interfaceNames.append(interfaceName)
+
     print_line('interfaceNames=[{}]'.format(interfaceNames), debug=True)
 
     trimmedLines = []
