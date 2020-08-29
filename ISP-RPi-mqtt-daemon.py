@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
-script_version = "1.5.3"
+script_version = "1.5.4"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -40,6 +40,7 @@ local_tz = get_localzone()
 if False:
     # will be caught by python 2.7 to be illegal syntax
     print_line('Sorry, this script requires a python3 runtime environment.', file=sys.stderr)
+    os._exit(1)
 
 # Argparse
 opt_debug = False
@@ -207,6 +208,8 @@ rpi_filesystem = []
 rpi_memory_tuple = ''
 # Tuple (Hardware, Model Name, NbrCores, BogoMIPS, Serial)
 rpi_cpu_tuple = ''
+# for thermal status reporting
+rpi_throttle_status = []
 
 # -----------------------------------------------------------------------------
 #  monitor variable fetch routines
@@ -636,8 +639,12 @@ def getVcGenCmd():
     cmd_locn1 = '/usr/bin/vcgencmd'
     cmd_locn2 = '/opt/vc/bin/vcgencmd'
     desiredCommand = cmd_locn1
-    if os.path.exists(cmd_locn1) == False:
+    if os.path.exists(desiredCommand) == False:
         desiredCommand = cmd_locn2
+    if os.path.exists(desiredCommand) == False:
+        desiredCommand = ''
+    if desiredCommand != '':
+        print_line('Found vcgencmd(1)=[{}]'.format(desiredCommand), debug=True)
     return desiredCommand
 
 def getIPCmd():
@@ -657,39 +664,120 @@ def getSystemTemperature():
     global rpi_gpu_temp
     global rpi_cpu_temp
     rpi_gpu_temp_raw = 'failed'
-    retry_count = 3
-    while retry_count > 0 and 'failed' in rpi_gpu_temp_raw:
-        cmd_fspec = getVcGenCmd()
-        cmd_string = "{} measure_temp | /bin/sed -e 's/\\x0//g'".format(cmd_fspec)
+    cmd_fspec = getVcGenCmd()
+    if cmd_fspec == '':
+        rpi_system_temp = float('-1.0')
+        rpi_gpu_temp = float('-1.0')
+        rpi_cpu_temp = float('-1.0')
+    else:
+        retry_count = 3
+        while retry_count > 0 and 'failed' in rpi_gpu_temp_raw:
+
+            cmd_string = "{} measure_temp | /bin/sed -e 's/\\x0//g'".format(cmd_fspec)
+            out = subprocess.Popen(cmd_string,
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT)
+            stdout,_ = out.communicate()
+            rpi_gpu_temp_raw = stdout.decode('utf-8').rstrip().replace('temp=', '').replace('\'C', '')
+            retry_count -= 1
+            sleep(1)
+
+        if 'failed' in rpi_gpu_temp_raw:
+            interpretedTemp = float('-1.0')
+        else:
+            interpretedTemp = float(rpi_gpu_temp_raw)
+        rpi_gpu_temp = interpretedTemp
+        print_line('rpi_gpu_temp=[{}]'.format(rpi_gpu_temp), debug=True)
+
+        out = subprocess.Popen("/bin/cat /sys/class/thermal/thermal_zone0/temp",
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT)
+        stdout,_ = out.communicate()
+        rpi_cpu_temp_raw = stdout.decode('utf-8').rstrip()
+        rpi_cpu_temp = float(rpi_cpu_temp_raw) / 1000.0
+        print_line('rpi_cpu_temp=[{}]'.format(rpi_cpu_temp), debug=True)
+
+        # fallback to CPU temp is GPU not available
+        rpi_system_temp = rpi_gpu_temp
+        if rpi_gpu_temp == -1.0:
+            rpi_system_temp = rpi_cpu_temp
+
+def getSystemThermalStatus():
+    global rpi_throttle_status
+    # sudo vcgencmd get_throttled
+    #   throttled=0x0
+    #
+    #  REF: https://harlemsquirrel.github.io/shell/2019/01/05/monitoring-raspberry-pi-power-and-thermal-issues.html
+    #
+    rpi_throttle_status = []
+    cmd_fspec = getVcGenCmd()
+    if cmd_fspec == '':
+        rpi_throttle_status.append('Not Available')
+    else:
+        cmd_string = "{} get_throttled".format(cmd_fspec)
         out = subprocess.Popen(cmd_string,
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT)
         stdout,_ = out.communicate()
-        rpi_gpu_temp_raw = stdout.decode('utf-8').rstrip().replace('temp=', '').replace('\'C', '')
-        retry_count -= 1
-        sleep(1)
+        rpi_throttle_status_raw = stdout.decode('utf-8').rstrip()
 
-    if 'failed' in rpi_gpu_temp_raw:
-        interpretedTemp = float('-1.0')
-    else:
-        interpretedTemp = float(rpi_gpu_temp_raw)
-    rpi_gpu_temp = interpretedTemp
-    print_line('rpi_gpu_temp=[{}]'.format(rpi_gpu_temp), debug=True)
+        if not 'throttled' in rpi_throttle_status_raw:
+            rpi_throttle_status.append('bad response [{}] from vcgencmd'.format(rpi_throttle_status_raw))
+        else:
+            values = []
+            lineParts = rpi_throttle_status_raw.split('=')
+            rpi_throttle_value_raw = ''
+            if len(lineParts) > 1:
+                rpi_throttle_value_raw = lineParts[1]
+            rpi_throttle_value = int(0)
+            if len(rpi_throttle_value_raw) > 0:
+                values.append('throttled = {}'.format(rpi_throttle_value_raw))
+                if rpi_throttle_value_raw.startswith('0x'):
+                    rpi_throttle_value = int(rpi_throttle_value_raw, 16)
+                else:
+                    rpi_throttle_value = int(rpi_throttle_value_raw, 10)
+                if rpi_throttle_value > 0:
+                    values = interpretThrottleValue(rpi_throttle_value)
+                else:
+                    values.append('Not throttled')
+            if len(values) > 0:
+                rpi_throttle_status = values
 
-    out = subprocess.Popen("/bin/cat /sys/class/thermal/thermal_zone0/temp",
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT)
-    stdout,_ = out.communicate()
-    rpi_cpu_temp_raw = stdout.decode('utf-8').rstrip()
-    rpi_cpu_temp = float(rpi_cpu_temp_raw) / 1000.0
-    print_line('rpi_cpu_temp=[{}]'.format(rpi_cpu_temp), debug=True)
+    print_line('rpi_throttle_status=[{}]'.format(rpi_throttle_status), debug=True)
 
-    # fallback to CPU temp is GPU not available
-    rpi_system_temp = rpi_gpu_temp
-    if rpi_gpu_temp == -1.0:
-        rpi_system_temp = rpi_cpu_temp
+def interpretThrottleValue(throttleValue):
+    """
+    01110000000000000010
+    ||||            ||||_ Under-voltage detected
+    ||||            |||_ Arm frequency capped
+    ||||            ||_ Currently throttled
+    ||||            |_ Soft temperature limit active
+    ||||_ Under-voltage has occurred since last reboot
+    |||_ Arm frequency capped has occurred
+    ||_ Throttling has occurred
+    |_ Soft temperature limit has occurred
+    """
+    interpResult = []
+    meanings = [
+        ( 2**0, 'Under-voltage detected' ),
+        ( 2**1, 'Arm frequency capped' ),
+        ( 2**2, 'Currently throttled' ),
+        ( 2**3, 'Soft temperature limit active' ),
+        ( 2**16, 'Under-voltage has occurred' ),
+        ( 2**17, 'Arm frequency capped has occurred' ),
+        ( 2**18, 'Throttling has occurred' ),
+        ( 2**19, 'Soft temperature limit has occurred' ),
+    ]
+    for meaningIndex in range(len(meanings)):
+        bitTuple = meanings[meaningIndex]
+        if throttleValue & bitTuple[0] > 0:
+            interpResult.append(bitTuple[1])
+
+    print_line('interpResult=[{}]'.format(interpResult), debug=True)
+    return interpResult
 
 def getLastUpdateDate():
     global rpi_last_update_date
@@ -1018,23 +1106,10 @@ RPI_CPU_CORES = "number_cores"
 RPI_CPU_BOGOMIPS = "bogo_mips"
 RPI_CPU_SERIAL = "serial"
 
-def send_status(timestamp, nothing):
-    global rpi_model
-    global rpi_connections
-    global rpi_hostname
-    global rpi_fqdn
-    global rpi_linux_release
-    global rpi_linux_version
-    global rpi_uptime
-    global rpi_last_update_date
-    global rpi_filesystem_space
-    global rpi_filesystem_percent
-    global rpi_system_temp
-    global rpi_gpu_temp
-    global rpi_cpu_temp
-    global rpi_mqtt_script
-    global rpi_filesystem
+# list of throttle status
+RPI_THROTTLE = "throttle"
 
+def send_status(timestamp, nothing):
     rpiData = OrderedDict()
     rpiData[SCRIPT_TIMESTAMP] = timestamp.astimezone().replace(microsecond=0).isoformat()
     rpiData[RPI_MODEL] = rpi_model
@@ -1075,6 +1150,8 @@ def send_status(timestamp, nothing):
     if len(rpiCpu) > 0:
         rpiData[RPI_CPU] = rpiCpu
 
+    if len(rpi_throttle_status) > 0:
+        rpiData[RPI_THROTTLE] = rpi_throttle_status
 
     rpiData[RPI_SYSTEM_TEMP] = forceSingleDigit(rpi_system_temp)
     rpiData[RPI_GPU_TEMP] = forceSingleDigit(rpi_gpu_temp)
@@ -1188,6 +1265,7 @@ def update_values():
     getUptime()
     getFileSystemDrives()
     getSystemTemperature()
+    getSystemThermalStatus()
     getLastUpdateDate()
     getDeviceMemory()
 

@@ -76,6 +76,7 @@ The monitored topic reports the following information:
 | `drives`       | lists for each drive mounted: size in GB, % used, device and mount point |
 | `cpu`       | lists the model of cpu, number of cores, etc. |
 | `memory`       | shows the total amount of RAM in MB and the available ram in MB |
+| `throttle`    | reports the throttle status value plus interpretation thereof |
 
 ## Prerequisites
 
@@ -278,15 +279,15 @@ An example:
 ```json
 {
   "info": {
-    "timestamp": "2020-07-19T13:17:54-06:00",
+    "timestamp": "2020-08-29T17:43:38-06:00",
     "rpi_model": "RPi 3 Model B r1.2",
     "ifaces": "e,w,b",
     "host_name": "pi3plus",
     "fqdn": "pi3plus.home",
     "ux_release": "stretch",
     "ux_version": "4.19.66-v7+",
-    "up_time": "13:17:54 up 14 days",
-    "last_update": "2020-07-18T00:51:36-06:00",
+    "up_time": "19 days,  23:27",
+    "last_update": "2020-08-23T17:03:47-06:00",
     "fs_total_gb": 64,
     "fs_free_prcnt": 10,
     "networking": {
@@ -298,8 +299,40 @@ An example:
         "mac": "b8:27:eb:4f:a6:e9"
       }
     },
-    "temperature_c": 55.3,
-    "reporter": "ISP-RPi-mqtt-daemon v0.8.5"
+    "drives": {
+      "root": {
+        "size_gb": 64,
+        "used_prcnt": 10,
+        "device": "/dev/root",
+        "mount_pt": "/"
+      },
+      "media-pi-CRUZER": {
+        "size_gb": 2,
+        "used_prcnt": 1,
+        "device": "/dev/sda1",
+        "mount_pt": "/media/pi/CRUZER"
+      }
+    },
+    "memory": {
+      "size_mb": "926.078",
+      "free_mb": "575.414"
+    },
+    "cpu": {
+      "hardware": "BCM2835",
+      "model": "ARMv7 Processor rev 4 (v7l)",
+      "number_cores": 4,
+      "bogo_mips": "307.20",
+      "serial": "00000000661af3bc"
+    },
+    "throttle": [
+      "throttled = 0x0",
+      "Not throttled"
+    ],
+    "temperature_c": 53.7,
+    "temp_gpu_c": 53.7,
+    "temp_cpu_c": 52.6,
+    "reporter": "ISP-RPi-mqtt-daemon v1.5.4",
+    "report_interval": 5
   }
 }
 ```
