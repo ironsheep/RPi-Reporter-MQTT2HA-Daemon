@@ -723,12 +723,14 @@ def getSystemThermalStatus():
                 stderr=subprocess.STDOUT)
         stdout,_ = out.communicate()
         rpi_throttle_status_raw = stdout.decode('utf-8').rstrip()
+        print_line('rpi_throttle_status_raw=[{}]'.format(rpi_throttle_status_raw), debug=True)
 
         if not 'throttled' in rpi_throttle_status_raw:
             rpi_throttle_status.append('bad response [{}] from vcgencmd'.format(rpi_throttle_status_raw))
         else:
             values = []
             lineParts = rpi_throttle_status_raw.split('=')
+            print_line('lineParts=[{}]'.format(lineParts), debug=True)
             rpi_throttle_value_raw = ''
             if len(lineParts) > 1:
                 rpi_throttle_value_raw = lineParts[1]
@@ -739,6 +741,8 @@ def getSystemThermalStatus():
                     rpi_throttle_value = int(rpi_throttle_value_raw, 16)
                 else:
                     rpi_throttle_value = int(rpi_throttle_value_raw, 10)
+                # decode test code
+                #rpi_throttle_value = int('0x50002', 16)
                 if rpi_throttle_value > 0:
                     values = interpretThrottleValue(rpi_throttle_value)
                 else:
@@ -760,6 +764,7 @@ def interpretThrottleValue(throttleValue):
     ||_ Throttling has occurred
     |_ Soft temperature limit has occurred
     """
+    print_line('throttleValue=[{}]'.format(bin(throttleValue)), debug=True)
     interpResult = []
     meanings = [
         ( 2**0, 'Under-voltage detected' ),
@@ -771,6 +776,7 @@ def interpretThrottleValue(throttleValue):
         ( 2**18, 'Throttling has occurred' ),
         ( 2**19, 'Soft temperature limit has occurred' ),
     ]
+
     for meaningIndex in range(len(meanings)):
         bitTuple = meanings[meaningIndex]
         if throttleValue & bitTuple[0] > 0:
