@@ -20,6 +20,14 @@ This script should be configured to be run in **daemon mode** continously in the
 
 We've been repairing this script as users report issues with it. For a list of fixes for each release see our [ChangeLog](./ChangeLog)
 
+----
+
+If you like my work and/or this has helped you in some way then feel free to help me out for a couple of :coffee:'s or :pizza: slices!
+
+[![coffee](https://www.buymeacoffee.com/assets/img/custom_images/black_img.png)](https://www.buymeacoffee.com/ironsheep)
+
+----
+
 ## Features
 
 * Tested on Raspberry Pi's 2/3/4 with Jessie, Stretch and Buster
@@ -83,6 +91,14 @@ The monitored topic reports the following information:
 An MQTT broker is needed as the counterpart for this daemon.
 
 MQTT is huge help in connecting different parts of your smart home and setting up of a broker is quick and easy. In many cases you've already set one up when you installed Home Assistant.
+
+----
+
+If you like my work and/or this has helped you in some way then feel free to help me out for a couple of :coffee:'s or :pizza: slices!
+
+[![coffee](https://www.buymeacoffee.com/assets/img/custom_images/black_img.png)](https://www.buymeacoffee.com/ironsheep)
+
+----
 
 ## Installation
 
