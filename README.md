@@ -92,14 +92,6 @@ An MQTT broker is needed as the counterpart for this daemon.
 
 MQTT is huge help in connecting different parts of your smart home and setting up of a broker is quick and easy. In many cases you've already set one up when you installed Home Assistant.
 
-----
-
-If you like my work and/or this has helped you in some way then feel free to help me out for a couple of :coffee:'s or :pizza: slices!
-
-[![coffee](https://www.buymeacoffee.com/assets/img/custom_images/black_img.png)](https://www.buymeacoffee.com/ironsheep)
-
-----
-
 ## Installation
 
 On a modern Linux system just a few steps are needed to get the daemon working.
