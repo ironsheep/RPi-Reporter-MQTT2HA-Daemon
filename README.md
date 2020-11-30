@@ -98,7 +98,7 @@ On a modern Linux system just a few steps are needed to get the daemon working.
 The following example shows the installation under Debian/Raspbian below the `/opt` directory:
 
 ```shell
-sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama
+sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-paho-mqtt
 
 sudo git clone https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon.git /opt/RPi-Reporter-MQTT2HA-Daemon
 
@@ -109,11 +109,11 @@ sudo pip3 install -r requirements.txt
 ## Configuration
 
 To match personal needs, all operational details can be configured by modifying entries within the file [`config.ini`](config.ini.dist).
-The file needs to be created first:
+The file needs to be created first: (*in the following: if you don't have vim installed you might try nano*)
 
 ```shell
-cp /opt/RPi-Reporter-MQTT2HA-Daemon/config.{ini.dist,ini}
-vim /opt/RPi-Reporter-MQTT2HA-Daemon/config.ini
+sudo cp /opt/RPi-Reporter-MQTT2HA-Daemon/config.{ini.dist,ini}
+sudo vim /opt/RPi-Reporter-MQTT2HA-Daemon/config.ini
 ```
 
 You will likely want to locate and configure the following (at a minimum) in your config.ini:
