@@ -23,7 +23,6 @@ power down the computer. A possible workaround is this one:
    daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl poweroff,/usr/bin/systemctl halt,/usr/bin/systemctl reboot
    daemon <raspberrypihostname> =NOPASSWD: /sbin/reboot
    
-   #                 ^^^^^ now it is present
    ```
 
 [Original README.MD file follows]
