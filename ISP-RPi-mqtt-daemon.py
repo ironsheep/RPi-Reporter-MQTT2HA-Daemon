@@ -129,6 +129,50 @@ def on_publish(client, userdata, mid):
     #print_line('* Data successfully published.')
     pass
 
+# -----------------------------------------------------------------------------
+# Commands - MQTT Subscription Callback
+# -----------------------------------------------------------------------------
+# Command catalog
+CMD_LOG = "log"
+CMD_SHUTDOWN = "shutdown"
+CMD_REBOOT = "reboot"
+CMD_SERVICE_RESTART = "service-restart"
+
+def on_subscribe(client, userdata, mid, granted_qos):
+    print_line('* Subscribed to {} - {}'.format(str(mid),str(granted_qos)))
+
+def on_message(client, userdata, message):
+    decodedMsg = message.payload.decode('utf-8')
+
+    # First string is command
+    command = decodedMsg.split(' ')[0]
+
+    if (command == CMD_SHUTDOWN):
+        print_line('* Shutdown Command received. Topic=[{}] payload=[{}]'.format(message.topic,message.payload))
+        doShutdown()
+    elif (command == CMD_REBOOT):
+        print_line('* Reboot Command received. Topic=[{}] payload=[{}]'.format(message.topic,message.payload))
+        doReboot()
+    elif (command == CMD_LOG):
+        # Second string is message to log
+        logMessage = decodedMsg.split(' ')[1]
+        if (logMessage == ""):
+            print_line('* Log received - NULL - Topic=[{}] payload=[{}]'.format(message.topic,message.payload))
+        else:
+            print_line('* Log received - {} - Topic=[{}] payload=[{}]'.format(logMessage,message.topic,message.payload))
+    elif (command == CMD_SERVICE_RESTART):
+        # Second string is serviceName
+        serviceName = decodedMsg.split(' ')[1]
+        if (serviceName == ""):
+            print_line('* Invalid Restart Command received. Topic=[{}] payload=[{}]'.format(message.topic,message.payload))
+        else:
+            print_line('* Restart {} Service Command received. Topic=[{}] payload=[{}]'.format(serviceName,message.topic,message.payload))
+            doRestartService(serviceName)            
+    else:
+        print_line('* Invalid Command received. Topic=[{}] payload=[{}]'.format(message.topic,message.payload))
+
+# -----------------------------------------------------------------------------
+
 # Load configuration file
 config = ConfigParser(delimiters=('=', ), inline_comment_prefixes=('#'))
 config.optionxform = str
@@ -165,6 +209,9 @@ interval_in_minutes = config['Daemon'].getint('interval_in_minutes', default_int
 default_domain = ''
 fallback_domain = config['Daemon'].get('fallback_domain', default_domain).lower()
 
+# -----------------------------------------------------------------------------
+# Commands - TODO: Enable / disable command processing
+commands_support = config['Commands-support'].getboolean('enabled', True)
 
 # Check configuration
 #
@@ -858,6 +905,22 @@ getLinuxRelease()
 getLinuxVersion()
 getFileSystemDrives()
 
+
+# -----------------------------------------------------------------------------
+#  Commands
+# -----------------------------------------------------------------------------
+def doShutdown():
+    print_line('- COMMAND SHUTDOWN Received -', debug=True)
+    os.system("/usr/bin/sudo /sbin/shutdown -h now")
+
+def doReboot():
+    print_line('- COMMAND REBOOT Received -', debug=True)
+    os.system("/usr/bin/sudo /sbin/reboot")
+
+def doRestartService(serviceName):
+    print_line('- RESTART SERVICE Received - /usr/bin/sudo systemctl {} -'.format(serviceName), debug=True)
+    os.system("/usr/bin/sudo systemctl restart "+serviceName)
+
 # -----------------------------------------------------------------------------
 #  timer and timer funcs for ALIVE MQTT Notices handling
 # -----------------------------------------------------------------------------
@@ -914,7 +977,11 @@ mqtt_client = mqtt.Client()
 mqtt_client.on_connect = on_connect
 mqtt_client.on_publish = on_publish
 
-
+# -----------------------------------------------------------------------------
+#  Commands Subscription
+actuator_topic = '{}/actuator/{}/command'.format(base_topic, sensor_name.lower())
+mqtt_client.on_message = on_message
+# -----------------------------------------------------------------------------
 
 mqtt_client.will_set(lwt_topic, payload=lwt_offline_val, retain=True)
 
@@ -944,6 +1011,15 @@ except:
 else:
     mqtt_client.publish(lwt_topic, payload=lwt_online_val, retain=False)
     mqtt_client.loop_start()
+
+    # -------------------------------------------------------------------------
+    # Commands Subscription
+    if (commands_support):
+        print_line('* Commands support enabled')
+        mqtt_client.subscribe(actuator_topic)
+    else:
+        print_line('* Commands support disabled')
+    # -------------------------------------------------------------------------
 
     while mqtt_client_connected == False: #wait in loop
         print_line('* Wait on mqtt_client_connected=[{}]'.format(mqtt_client_connected), debug=True)

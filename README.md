@@ -1,3 +1,33 @@
+## Fork of the RPi Reporter MQTT2HA Daemon
+
+This is a fork of the great RPi Reporter MQTT2HA Daemon. I have added as a new feature the possibility to execute
+some handy commands in the monitored Raspberry Pis using MQTT:
+
+* shutdown
+* reboot
+* restart daemons (using systemctl)
+* simulate a key press (for chromium based kiosks without keyboard, for instance) [pending]
+
+Please refer to the original project for installation instructions.
+
+### Configuring a Raspberry Pi to be rebooted from a daemon
+
+The "daemon" user proposed to start the daemon in the installation instructions doesn't have enough privileges to reboot or 
+power down the computer. A possible workaround is this one:
+
+   ```shell
+   # edit sudoers file
+   sudo vim /etc/sudoers
+   
+   # add the following lines at the bottom:
+   daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl poweroff,/usr/bin/systemctl halt,/usr/bin/systemctl reboot
+   daemon <raspberrypihostname> =NOPASSWD: /sbin/reboot
+   
+   #                 ^^^^^ now it is present
+   ```
+
+[Original README.MD file follows]
+
 # RPi Reporter MQTT2HA Daemon
 
 ![Project Maintenance][maintenance-shield]
