@@ -6,9 +6,23 @@ some handy commands in the monitored Raspberry Pis using MQTT:
 * shutdown
 * reboot
 * restart daemons (using systemctl)
-* simulate a key press (for chromium based kiosks without keyboard, for instance) [pending]
+* execute a shell command (default '/home/pi/RPi-mqtt-daemon-script.sh') for instance, to simulate a key press for chromium based kiosks without keyboard
 
 Please refer to the original project for installation instructions.
+
+### New configuration options
+
+Added the following options to the [Daemon] section of the configuration file (config.ini):
+
+   ```shell
+# If Enabled, the daemon will subscribe to a topic (like {/home/nodes}/actuator/rpi{hostname})
+#  and listen to a reboot, shutdown, service-restart <service> or run-script payload.
+commands-enabled = True
+
+# If commands are enabled, and a message arrives with a run-script payload, the script specified here
+#  will be run
+commands_script = /home/pi/RPi-mqtt-daemon-script.sh
+   ```
 
 ### Configuring a Raspberry Pi to be rebooted from a daemon
 
@@ -21,8 +35,7 @@ power down the computer. A possible workaround is this one:
    
    # add the following lines at the bottom:
    daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl poweroff,/usr/bin/systemctl halt,/usr/bin/systemctl reboot
-   daemon <raspberrypihostname> =NOPASSWD: /sbin/reboot
-   
+   daemon <raspberrypihostname> =NOPASSWD: /sbin/reboot   
    ```
 
 [Original README.MD file follows]

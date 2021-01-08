@@ -137,6 +137,7 @@ CMD_LOG = "log"
 CMD_SHUTDOWN = "shutdown"
 CMD_REBOOT = "reboot"
 CMD_SERVICE_RESTART = "service-restart"
+CMD_RUN_SCRIPT = "run-script"
 
 def on_subscribe(client, userdata, mid, granted_qos):
     print_line('* Subscribed to {} - {}'.format(str(mid),str(granted_qos)))
@@ -153,6 +154,9 @@ def on_message(client, userdata, message):
     elif (command == CMD_REBOOT):
         print_line('* Reboot Command received. Topic=[{}] payload=[{}]'.format(message.topic,message.payload))
         doReboot()
+    elif (command == CMD_RUN_SCRIPT):
+        print_line('* Run Script Command received. Topic=[{}] payload=[{}]'.format(message.topic,message.payload))
+        doRunScript()
     elif (command == CMD_LOG):
         # Second string is message to log
         logMessage = decodedMsg.split(' ')[1]
@@ -167,7 +171,7 @@ def on_message(client, userdata, message):
             print_line('* Invalid Restart Command received. Topic=[{}] payload=[{}]'.format(message.topic,message.payload))
         else:
             print_line('* Restart {} Service Command received. Topic=[{}] payload=[{}]'.format(serviceName,message.topic,message.payload))
-            doRestartService(serviceName)            
+            doRestartService(serviceName)
     else:
         print_line('* Invalid Command received. Topic=[{}] payload=[{}]'.format(message.topic,message.payload))
 
@@ -211,7 +215,9 @@ fallback_domain = config['Daemon'].get('fallback_domain', default_domain).lower(
 
 # -----------------------------------------------------------------------------
 # Commands - TODO: Enable / disable command processing
-commands_support = config['Commands-support'].getboolean('enabled', True)
+commands_support = config['Daemon'].getboolean('commands-enabled', True)
+default_commands_script = '/home/pi/RPi-mqtt-daemon-script.sh'
+commands_script = config['Daemon'].get('commands-script', default_commands_script).lower()
 
 # Check configuration
 #
@@ -920,6 +926,10 @@ def doReboot():
 def doRestartService(serviceName):
     print_line('- RESTART SERVICE Received - /usr/bin/sudo systemctl {} -'.format(serviceName), debug=True)
     os.system("/usr/bin/sudo systemctl restart "+serviceName)
+
+def doRunScript():
+    print_line('- RESTART SERVICE Received - /usr/bin/sudo systemctl {} -'.format(serviceName), debug=True)
+    os.system(commands_script)
 
 # -----------------------------------------------------------------------------
 #  timer and timer funcs for ALIVE MQTT Notices handling
