@@ -91,6 +91,7 @@ opt_debug = parse_args.debug
 opt_verbose = parse_args.verbose
 opt_stall = parse_args.stall
 
+print_line('--------------------------------------------------------------------', debug=True)
 print_line(script_info, info=True)
 if opt_verbose:
     print_line('Verbose enabled', info=True)
@@ -140,41 +141,52 @@ CMD_SERVICE_RESTART = "service-restart"
 CMD_RUN_SCRIPT = "run-script"
 
 def on_subscribe(client, userdata, mid, granted_qos):
-    print_line('* Subscribed to {} - {}'.format(str(mid),str(granted_qos)))
+    print_line('on_subscribe() - {} - {}'.format(str(mid),str(granted_qos)), debug=True, sd_notify=True)
 
 def on_message(client, userdata, message):
     decodedMsg = message.payload.decode('utf-8')
+    print_line('on_message(). Topic=[{}] payload=[{}]'.format(message.topic,message.payload), console=True, sd_notify=True)
 
     # First string is command
     command = decodedMsg.split(' ')[0]
 
     if (command == CMD_SHUTDOWN):
-        print_line('* Shutdown Command received. Topic=[{}] payload=[{}]'.format(message.topic,message.payload))
         doShutdown()
     elif (command == CMD_REBOOT):
-        print_line('* Reboot Command received. Topic=[{}] payload=[{}]'.format(message.topic,message.payload))
         doReboot()
     elif (command == CMD_RUN_SCRIPT):
-        print_line('* Run Script Command received. Topic=[{}] payload=[{}]'.format(message.topic,message.payload))
         doRunScript()
     elif (command == CMD_LOG):
         # Second string is message to log
         logMessage = decodedMsg.split(' ')[1]
-        if (logMessage == ""):
-            print_line('* Log received - NULL - Topic=[{}] payload=[{}]'.format(message.topic,message.payload))
-        else:
-            print_line('* Log received - {} - Topic=[{}] payload=[{}]'.format(logMessage,message.topic,message.payload))
+        if logMessage != "":
+            print_line('* Log received - {}'.format(logMessage), console=True, sd_notify=True)
     elif (command == CMD_SERVICE_RESTART):
         # Second string is serviceName
         serviceName = decodedMsg.split(' ')[1]
-        if (serviceName == ""):
-            print_line('* Invalid Restart Command received. Topic=[{}] payload=[{}]'.format(message.topic,message.payload))
-        else:
-            print_line('* Restart {} Service Command received. Topic=[{}] payload=[{}]'.format(serviceName,message.topic,message.payload))
+        if serviceName != "":
             doRestartService(serviceName)
     else:
-        print_line('* Invalid Command received. Topic=[{}] payload=[{}]'.format(message.topic,message.payload))
+        print_line('* Invalid Command received.', error=True)
 
+# -----------------------------------------------------------------------------
+#  Commands
+# -----------------------------------------------------------------------------
+def doShutdown():
+    print_line('- COMMAND SHUTDOWN Received -', console=True, sd_notify=True)
+    os.system("/usr/bin/sudo /sbin/shutdown -h now")
+
+def doReboot():
+    print_line('- COMMAND REBOOT Received -', console=True, sd_notify=True)
+    os.system("/usr/bin/sudo /sbin/reboot")
+
+def doRestartService(serviceName):
+    print_line('- COMMAND RESTART SERVICE Received - sudo systemctl {} -'.format(serviceName), console=True, sd_notify=True)
+    os.system("/usr/bin/sudo systemctl restart "+serviceName)
+
+def doRunScript():
+    print_line('- COMMAND RUN SCRIPT Received - {} -'.format(script_name), console=True, sd_notify=True)
+    os.system(commands_script)
 # -----------------------------------------------------------------------------
 
 # Load configuration file
@@ -217,7 +229,8 @@ fallback_domain = config['Daemon'].get('fallback_domain', default_domain).lower(
 # Commands - TODO: Enable / disable command processing
 commands_support = config['Daemon'].getboolean('commands-enabled', True)
 default_commands_script = '/home/pi/RPi-mqtt-daemon-script.sh'
-commands_script = config['Daemon'].get('commands-script', default_commands_script).lower()
+commands_script = config['Daemon'].get('commands-script', default_commands_script)
+print_line('Configuration commands {} - Script {}'.format(commands_support, commands_script), debug=True)
 
 # Check configuration
 #
@@ -911,26 +924,6 @@ getLinuxRelease()
 getLinuxVersion()
 getFileSystemDrives()
 
-
-# -----------------------------------------------------------------------------
-#  Commands
-# -----------------------------------------------------------------------------
-def doShutdown():
-    print_line('- COMMAND SHUTDOWN Received -', debug=True)
-    os.system("/usr/bin/sudo /sbin/shutdown -h now")
-
-def doReboot():
-    print_line('- COMMAND REBOOT Received -', debug=True)
-    os.system("/usr/bin/sudo /sbin/reboot")
-
-def doRestartService(serviceName):
-    print_line('- RESTART SERVICE Received - /usr/bin/sudo systemctl {} -'.format(serviceName), debug=True)
-    os.system("/usr/bin/sudo systemctl restart "+serviceName)
-
-def doRunScript():
-    print_line('- RESTART SERVICE Received - /usr/bin/sudo systemctl {} -'.format(serviceName), debug=True)
-    os.system(commands_script)
-
 # -----------------------------------------------------------------------------
 #  timer and timer funcs for ALIVE MQTT Notices handling
 # -----------------------------------------------------------------------------
@@ -1022,18 +1015,18 @@ else:
     mqtt_client.publish(lwt_topic, payload=lwt_online_val, retain=False)
     mqtt_client.loop_start()
 
-    # -------------------------------------------------------------------------
-    # Commands Subscription
-    if (commands_support):
-        print_line('* Commands support enabled')
-        mqtt_client.subscribe(actuator_topic)
-    else:
-        print_line('* Commands support disabled')
-    # -------------------------------------------------------------------------
-
     while mqtt_client_connected == False: #wait in loop
         print_line('* Wait on mqtt_client_connected=[{}]'.format(mqtt_client_connected), debug=True)
         sleep(1.0) # some slack to establish the connection
+
+    # -------------------------------------------------------------------------
+    # Commands Subscription
+    if (commands_support == True):
+        print_line('MQTT subscription to {} enabled'.format(actuator_topic), console=True, sd_notify=True)
+        mqtt_client.subscribe(actuator_topic)
+    else:
+        print_line('MQTT subscripton to {} disabled'.format(actuator_topic), console=True, sd_notify=True)
+    # -------------------------------------------------------------------------
 
     startAliveTimer()
 

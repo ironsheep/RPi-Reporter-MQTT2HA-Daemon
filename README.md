@@ -17,26 +17,36 @@ Added the following options to the [Daemon] section of the configuration file (c
    ```shell
 # If Enabled, the daemon will subscribe to a topic (like {/home/nodes}/actuator/rpi{hostname})
 #  and listen to a reboot, shutdown, service-restart <service> or run-script payload.
-commands-enabled = True
+commands-enabled = true
 
 # If commands are enabled, and a message arrives with a run-script payload, the script specified here
 #  will be run
-commands_script = /home/pi/RPi-mqtt-daemon-script.sh
+commands-script = /home/pi/RPi-mqtt-daemon-script.sh
    ```
 
-### Configuring a Raspberry Pi to be rebooted from a daemon
+### Extended permissions for daemon for command execution
 
 The "daemon" user proposed to start the daemon in the installation instructions doesn't have enough privileges to reboot or 
-power down the computer. A possible workaround is this one:
+power down the computer. A possible workaround is to give permissions to daemon to the commands we want to execute using
+the sudoers configuration file:
 
    ```shell
    # edit sudoers file
    sudo vim /etc/sudoers
    
-   # add the following lines at the bottom:
-   daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl poweroff,/usr/bin/systemctl halt,/usr/bin/systemctl reboot
-   daemon <raspberrypihostname> =NOPASSWD: /sbin/reboot   
+   # add the following lines at the bottom.
+   # note that every service that we want to allow to restart must be specified here
+   daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl restart isp-rpi-reporter,/sbin/reboot,/sbin/shutdown
    ```
+
+Additionally, the daemon user needs permission to execute the shell script referenced in the run-script command (and
+any command referenced there/access to the directories specified). If the script has been created by the standard pi 
+user, a simple workaround could be:
+
+   ```shell
+   chown daemon RPi-mqtt-daemon-script.sh
+   ```
+
 
 [Original README.MD file follows]
 
