@@ -39,12 +39,16 @@ the sudoers configuration file:
    daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl restart isp-rpi-reporter,/sbin/reboot,/sbin/shutdown
    ```
 
+NOTE: In some systems the path for systemctl / reboot / shutdown can be different.
+
 Additionally, the daemon user needs permission to execute the shell script referenced in the run-script command (and
 any command referenced there/access to the directories specified). If the script has been created by the standard pi 
 user, a simple workaround could be:
 
    ```shell
    chown daemon RPi-mqtt-daemon-script.sh
+
+   groups
    ```
 
 

@@ -1053,26 +1053,31 @@ LD_SYS_TEMP= "temperature"
 LD_FS_USED = "disk_used"
 LDS_PAYLOAD_NAME = "info"
 
+LD_COMMAND = "command"
+
 # Publish our MQTT auto discovery
 #  table of key items to publish:
 detectorValues = OrderedDict([
-    (LD_MONITOR, dict(title="RPi Monitor {}".format(rpi_hostname), device_class="timestamp", no_title_prefix="yes", json_value="timestamp", json_attr="yes", icon='mdi:raspberry-pi', device_ident="RPi-{}".format(rpi_fqdn))),
-    (LD_SYS_TEMP, dict(title="RPi Temp {}".format(rpi_hostname), device_class="temperature", no_title_prefix="yes", unit="C", json_value="temperature_c", icon='mdi:thermometer')),
-    (LD_FS_USED, dict(title="RPi Used {}".format(rpi_hostname), no_title_prefix="yes", json_value="fs_free_prcnt", unit="%", icon='mdi:sd')),
+    (LD_MONITOR, dict(title="RPi Monitor {}".format(rpi_hostname), topic_category="sensor", device_class="timestamp", no_title_prefix="yes", json_value="timestamp", json_attr="yes", icon='mdi:raspberry-pi', device_ident="RPi-{}".format(rpi_fqdn))),
+    (LD_SYS_TEMP, dict(title="RPi Temp {}".format(rpi_hostname), topic_category="sensor", device_class="temperature", no_title_prefix="yes", unit="C", json_value="temperature_c", icon='mdi:thermometer')),
+    (LD_FS_USED, dict(title="RPi Used {}".format(rpi_hostname), topic_category="sensor", no_title_prefix="yes", json_value="fs_free_prcnt", unit="%", icon='mdi:sd')),
+    (LD_COMMAND, dict(title="RPi Command {}".format(rpi_hostname), topic_category="device_automation", automation_type="trigger", no_title_prefix="yes", trigger_type = "button_short_press", trigger_subtype = "turn_on", icon='mdi:raspberry-pi', device_ident="RPi-{}".format(rpi_fqdn)))
 ])
 
 print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
 
-base_topic = '{}/sensor/{}'.format(base_topic, sensor_name.lower())
+sensor_base_topic = '{}/sensor/{}'.format(base_topic, sensor_name.lower())
 values_topic_rel = '{}/{}'.format('~', LD_MONITOR)
-values_topic = '{}/{}'.format(base_topic, LD_MONITOR)
+values_topic = '{}/{}'.format(sensor_base_topic, LD_MONITOR)
 activity_topic_rel = '{}/status'.format('~')     # vs. LWT
-activity_topic = '{}/status'.format(base_topic)    # vs. LWT
+activity_topic = '{}/status'.format(sensor_base_topic)    # vs. LWT
 
 command_topic_rel = '~/set'
 
+# discovery_topic = '{}/sensor/{}/{}/config'.format(discovery_prefix, sensor_name.lower(), sensor)
 for [sensor, params] in detectorValues.items():
-    discovery_topic = '{}/sensor/{}/{}/config'.format(discovery_prefix, sensor_name.lower(), sensor)
+    topic_category = params['topic_category']    
+    discovery_topic = '{}/{}/{}/{}/config'.format(discovery_prefix, topic_category, sensor_name.lower(), sensor)
     payload = OrderedDict()
     if 'no_title_prefix' in params:
         payload['name'] = "{}".format(params['title'].title())
@@ -1086,15 +1091,25 @@ for [sensor, params] in detectorValues.items():
     if 'json_value' in params:
         payload['stat_t'] = values_topic_rel
         payload['val_tpl'] = "{{{{ value_json.{}.{} }}}}".format(LDS_PAYLOAD_NAME, params['json_value'])
-    payload['~'] = base_topic
+    if 'automation_type' in params:
+        payload['automation_type'] = params['automation_type']
+        command_base_topic = '{}/actuator/{}'.format(base_topic, sensor_name.lower())
+        payload['~'] = command_base_topic
+        payload['topic'] = '{}/{}'.format(command_base_topic, LD_COMMAND)
+    else:
+        payload['~'] = sensor_base_topic
+        payload['avty_t'] = activity_topic_rel
+    if 'trigger_type' in params:
+        payload['trigger_type'] = params['trigger_type']
+    if 'trigger_subtype' in params:
+        payload['trigger_subtype'] = params['trigger_subtype']
     payload['pl_avail'] = lwt_online_val
     payload['pl_not_avail'] = lwt_offline_val
     if 'icon' in params:
-        payload['ic'] = params['icon']
-    payload['avty_t'] = activity_topic_rel
+        payload['ic'] = params['icon']    
     if 'json_attr' in params:
         payload['json_attr_t'] = values_topic_rel
-        payload['json_attr_tpl'] = '{{{{ value_json.{} | tojson }}}}'.format(LDS_PAYLOAD_NAME)
+        payload['json_attr_tpl'] = '{{{{ value_json.{} | tojson }}}}'.format(LDS_PAYLOAD_NAME)    
     if 'device_ident' in params:
         payload['dev'] = {
                 'identifiers' : ["{}".format(uniqID)],
