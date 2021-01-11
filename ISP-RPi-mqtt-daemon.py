@@ -1094,17 +1094,17 @@ for [sensor, params] in detectorValues.items():
     if 'automation_type' in params:
         payload['automation_type'] = params['automation_type']
         command_base_topic = '{}/actuator/{}'.format(base_topic, sensor_name.lower())
-        payload['~'] = command_base_topic
+        # payload['~'] = command_base_topic
         payload['topic'] = '{}/{}'.format(command_base_topic, LD_COMMAND)
     else:
         payload['~'] = sensor_base_topic
         payload['avty_t'] = activity_topic_rel
+        payload['pl_avail'] = lwt_online_val
+        payload['pl_not_avail'] = lwt_offline_val        
     if 'trigger_type' in params:
-        payload['trigger_type'] = params['trigger_type']
+        payload['type'] = params['trigger_type']
     if 'trigger_subtype' in params:
-        payload['trigger_subtype'] = params['trigger_subtype']
-    payload['pl_avail'] = lwt_online_val
-    payload['pl_not_avail'] = lwt_offline_val
+        payload['subtype'] = params['trigger_subtype']
     if 'icon' in params:
         payload['ic'] = params['icon']    
     if 'json_attr' in params:
