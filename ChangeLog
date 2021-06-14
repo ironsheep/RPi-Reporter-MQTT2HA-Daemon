@@ -1,3 +1,13 @@
+Sun, 13 Jun 2021 21:13:32 -0600 v1.5.5
+
+ - BUGFIX allow special characters to be used in config.ini (#30)
+ - NEW add CPU Usage reports (#23)
+ - Add alternate install location assistance to README (#17)
+
+Sat Aug 29 17:50:42 2020 -0600 v1.5.4
+
+  - CPU throttle state reporting (#15)
+
 Wed Aug 19 12:33:14 2020 -0600 v1.5.3
 
   - BUGFIX: fixed broken Network IF parser when only one interface (think pizero)

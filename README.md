@@ -56,7 +56,7 @@ Each RPi device is reported as three topics:
 
 | Name            | Device Class | Units | Description
 |-----------------|-------------|-------------|-------------|
-| `~/monitor`   | 'timestamp' | n/a | Is a timestamp which shows when the RPi last sent information, carries a template payload conveying all monitored values (attach the lovelace custom card to this sensor!)
+| `~/monitor`   | 'timestamp' | n/a | Is a timestamp which shows when the RPi last sent information, carries a template payload conveying all monitored values (**attach the lovelace custom card to this sensor!**)
 | `~/temperature`   | 'temperature' | degrees C | Shows the latest system temperature
 | `~/disk_used`   | none | percent (%) | Shows the amount of root file system used
 
@@ -118,6 +118,13 @@ sudo git clone https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon.git /opt
 cd /opt/RPi-Reporter-MQTT2HA-Daemon
 sudo pip3 install -r requirements.txt
 ```
+
+**WARNING:** If you choose to install these files in a location other than `/opt/RPi-Reporter-MQTT2HA-Daemon`, you will need to modify some of the control files which are used when setting up to run this script automatically. The following files:
+
+- **rpi-reporter** - Sys V init script
+- **isp-rpi-reporter.service** - Systemd Daemon / Service description file
+
+... need to have any mention of `/opt/RPi-Reporter-MQTT2HA-Daemon` changed to your install location **before you can run this script as a service.**
 
 ## Configuration
 
