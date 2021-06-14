@@ -317,7 +317,7 @@ def getDeviceCpuInfo():
                            stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT)
     stdout, _ = out.communicate()
-    cpu_loads_raw = stdout.decode('utf-8')
+    cpu_loads_raw = stdout.decode('utf-8').split("\n")
     print_line('cpu_loads_raw=[{}]'.format(cpu_loads_raw), debug=True)
     cpu_loads_ar = cpu_loads_raw.split(',')
     print_line('cpu_loads_ar=[{}]'.format(cpu_loads_ar), debug=True)
