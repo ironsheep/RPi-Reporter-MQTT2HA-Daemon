@@ -64,27 +64,40 @@ Each RPi device is reported as three topics:
 
 The monitored topic reports the following information:
 
-| Name            | Description
-|-----------------|-------------
-| `rpi_model` | tinyfied hardware version string |
-| `ifaces`        | comma sep list of interfaces on board [w,e,b]
-| `temperature_c`   | System temperature, in [°C] (0.1°C resolution) Note: this is GPU temp. if available, else CPU temp. |
-| `temp_gpu_c`   | GPU temperature, in [°C] (0.1°C resolution) |
-| `temp_cpu_c`   | CPU temperature, in [°C] (0.1°C resolution) |
-| `up_time`      | duration since last booted, as [days] |
-| `last_update`  | updates last applied, as [date] |
-| `fs_total_gb`       | / total space in [GBytes] |
-| `fs_free_prcnt`       | / free space [%] |
-| `host_name`       | hostname |
-| `fqdn`       | hostname.domain |
-| `ux_release`       | os release name (e.g., buster) |
-| `ux_version`       | os version (e.g., 4.19.66-v7+) |
-| `reporter`  | script name, version running on RPi |
-| `networking`       | lists for each interface: interface name, mac address (and IP if the interface is connected) |
-| `drives`       | lists for each drive mounted: size in GB, % used, device and mount point |
-| `cpu`       | lists the model of cpu, number of cores, etc. |
-| `memory`       | shows the total amount of RAM in MB and the available ram in MB |
-| `throttle`    | reports the throttle status value plus interpretation thereof |
+| Name            | Sub-name | Description
+|-----------------|-------------|-------------
+| `rpi_model` | | tinyfied hardware version string |
+| `ifaces`        | |  comma sep list of interfaces on board [w,e,b]
+| `temperature_c`   | |  System temperature, in [°C] (0.1°C resolution) Note: this is GPU temp. if available, else CPU temp. |
+| `temp_gpu_c`   | |  GPU temperature, in [°C] (0.1°C resolution) |
+| `temp_cpu_c`   | |  CPU temperature, in [°C] (0.1°C resolution) |
+| `up_time`      | |  duration since last booted, as [days] |
+| `last_update`  | |  updates last applied, as [date] |
+| `fs_total_gb`       | |  / total space in [GBytes] |
+| `fs_free_prcnt`       | |  / free space [%] |
+| `host_name`       | |  hostname |
+| `fqdn`       | |  hostname.domain |
+| `ux_release`       | |  os release name (e.g., buster) |
+| `ux_version`       | |  os version (e.g., 4.19.66-v7+) |
+| `reporter`  | |  script name, version running on RPi |
+| `networking`       |  | lists for each interface: interface name, mac address (and IP if the interface is connected) |
+| `drives`       | |  lists for each drive mounted: size in GB, % used, device and mount point |
+| `cpu`       |  | lists the model of cpu, number of cores, etc. |
+|       | `hardware` | typically the Broadcom chip ID (e.g. BCM2835) |
+|        | `model` | model description string (e.g., ARMv7 Processor rev 4 (v7l)) |
+|        | `number_cores` | number of cpu cores [1,4] |
+|        | `bogo_mips` | reported performance of this RPi |
+|        | `serial` | serial number of this RPi |
+|        | `load1min` | average cpu load during prior minute |
+|        | `load5min` | average cpu load during prior 5 minutes |
+|        | `load15min` | average cpu load during prior 15 minutes |
+| `memory`       |  | shows the total amount of RAM in MB and the available ram in MB |
+| `reporter`    |  | name and version of the script reporting these values |
+| `report_interval`    |  | interval in minutes between reports from this script |
+| `throttle`    |  | reports the throttle status value plus interpretation thereof |
+| `timestamp`    |  | date, time when this report was generated |
+
+*NOTE: cpu load averages are divided by the number of cores*
 
 ## Prerequisites
 

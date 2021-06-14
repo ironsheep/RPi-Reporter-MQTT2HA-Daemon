@@ -47,7 +47,7 @@ Mon Aug 3 16:58:07 2020 -0600 v1.4.0
   - Split nfs mounts into two entries in drive dict
   - Shows drives under text keys, paths didnt work!
   - Report drive values as numbers not strings
-  - Cut over to new filesytem interp mech. Should now handle NFS and other mounts
+  - Cut over to new filesystem interp mech. Should now handle NFS and other mounts
 
 Sun Aug 2 04:20:10 2020 -0600 v1.3.4.1
 
@@ -97,7 +97,7 @@ Thu Jul 23 13:55:00 2020 -0600 v1.2.1
 Wed Jul 22 21:34:06 2020 -0600 v1.2.0
 
   - Update ISP-RPi-mqtt-daemon.py
-     Add two new endponts discovered per RPi (decr C and % space used)
+     Add two new endponts discovered per RPi (degr C and % space used)
      Add test mode for failed to report in
      Forward interval set to card
      New option for testing stall
