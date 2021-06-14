@@ -245,6 +245,10 @@ rpi_memory_tuple = ''
 rpi_cpu_tuple = ''
 # for thermal status reporting
 rpi_throttle_status = []
+# new cpu loads
+rpi_cpuload1 = ''
+rpi_cpuload5 = ''
+rpi_cpuload15 = ''
 
 # -----------------------------------------------------------------------------
 #  monitor variable fetch routines
@@ -307,9 +311,23 @@ def getDeviceCpuInfo():
             cpu_cores += 1
         if 'Serial' in currLine:
             cpu_serial = currValue
+
+    out = subprocess.Popen("/bin/cat /proc/loadavg | /usr/bin/awk '{ print $1 ", " $2 ", " $3 }'",
+                           shell=True,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+    stdout, _ = out.communicate()
+    cpu_loads_raw = stdout.decode('utf-8')
+    print_line('cpu_loads_raw=[{}]'.format(cpu_loads_raw), debug=True)
+    cpu_loads_ar = cpu_loads_raw.split(',')
+    print_line('cpu_loads_ar=[{}]'.format(cpu_loads_ar), debug=True)
+    cpu_load1 = round(float(float(cpu_loads_ar[0]) / int(cpu_cores) * 100), 1)
+    cpu_load5 = round(float(float(cpu_loads_ar[1]) / int(cpu_cores) * 100), 1)
+    cpu_load15 = round(float(float(cpu_loads_ar[2]) / int(cpu_cores) * 100), 1)
+
     # Tuple (Hardware, Model Name, NbrCores, BogoMIPS, Serial)
     rpi_cpu_tuple = (cpu_hardware, cpu_model, cpu_cores,
-                     cpu_bogoMIPS, cpu_serial)
+                     cpu_bogoMIPS, cpu_serial, cpu_load1, cpu_load5, cpu_load15)
     print_line('rpi_cpu_tuple=[{}]'.format(rpi_cpu_tuple), debug=True)
 
 
@@ -343,17 +361,6 @@ def getDeviceMemory():
     # Tuple (Total, Free, Avail.)
     rpi_memory_tuple = (mem_total, mem_free, mem_avail)
     print_line('rpi_memory_tuple=[{}]'.format(rpi_memory_tuple), debug=True)
-
-
-def getCpuLoadAverages():
-    global rpi_cpuload1
-    global rpi_cpuload5
-    global rpi_cpuload15
-    out = subprocess.Popen("/usr/bin/uptime  | /bin/sed -e 's/\\x0//g'",
-                           shell=True,
-                           stdout=subprocess.PIPE,
-                           stderr=subprocess.STDOUT)
-    stdout, _ = out.communicate()
 
 
 def getDeviceModel():
@@ -1230,7 +1237,9 @@ RPI_CPU_MODEL = "model"
 RPI_CPU_CORES = "number_cores"
 RPI_CPU_BOGOMIPS = "bogo_mips"
 RPI_CPU_SERIAL = "serial"
-
+RPI_CPU_LOAD1 = "load1min"
+RPI_CPU_LOAD5 = "load5min"
+RPI_CPU_LOAD15 = "load15min"
 # list of throttle status
 RPI_THROTTLE = "throttle"
 
@@ -1383,6 +1392,9 @@ def getCPUDictionary():
         cpuDict[RPI_CPU_CORES] = rpi_cpu_tuple[2]
         cpuDict[RPI_CPU_BOGOMIPS] = '{:.2f}'.format(rpi_cpu_tuple[3])
         cpuDict[RPI_CPU_SERIAL] = rpi_cpu_tuple[4]
+        cpuDict[RPI_CPU_LOAD1] = rpi_cpu_tuple[5]
+        cpuDict[RPI_CPU_LOAD5] = rpi_cpu_tuple[6]
+        cpuDict[RPI_CPU_LOAD15] = rpi_cpu_tuple[7]
     print_line('cpuDict:{}"'.format(cpuDict), debug=True)
     return cpuDict
 
