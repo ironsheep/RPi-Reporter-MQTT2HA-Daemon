@@ -312,18 +312,16 @@ def getDeviceCpuInfo():
         if 'Serial' in currLine:
             cpu_serial = currValue
 
-    out = subprocess.Popen("/bin/cat /proc/loadavg | /usr/bin/awk '{ print $1 ',' $2 ',' $3 }'",
+    out = subprocess.Popen("/bin/cat /proc/loadavg",
                            shell=True,
                            stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT)
     stdout, _ = out.communicate()
-    cpu_loads_raw = stdout.decode('utf-8').split("\n")
+    cpu_loads_raw = stdout.decode('utf-8').split()
     print_line('cpu_loads_raw=[{}]'.format(cpu_loads_raw), debug=True)
-    cpu_loads_ar = cpu_loads_raw.split(',')
-    print_line('cpu_loads_ar=[{}]'.format(cpu_loads_ar), debug=True)
-    cpu_load1 = round(float(float(cpu_loads_ar[0]) / int(cpu_cores) * 100), 1)
-    cpu_load5 = round(float(float(cpu_loads_ar[1]) / int(cpu_cores) * 100), 1)
-    cpu_load15 = round(float(float(cpu_loads_ar[2]) / int(cpu_cores) * 100), 1)
+    cpu_load1 = round(float(float(cpu_loads_raw[0]) / int(cpu_cores) * 100), 1)
+    cpu_load5 = round(float(float(cpu_loads_raw[1]) / int(cpu_cores) * 100), 1)
+    cpu_load15 = round(float(float(cpu_loads_raw[2]) / int(cpu_cores) * 100), 1)
 
     # Tuple (Hardware, Model Name, NbrCores, BogoMIPS, Serial)
     rpi_cpu_tuple = (cpu_hardware, cpu_model, cpu_cores,
@@ -1237,9 +1235,10 @@ RPI_CPU_MODEL = "model"
 RPI_CPU_CORES = "number_cores"
 RPI_CPU_BOGOMIPS = "bogo_mips"
 RPI_CPU_SERIAL = "serial"
-RPI_CPU_LOAD1 = "load1min"
-RPI_CPU_LOAD5 = "load5min"
-RPI_CPU_LOAD15 = "load15min"
+#  add new CPU Load
+RPI_CPU_LOAD1 = "load_1min_prcnt"
+RPI_CPU_LOAD5 = "load_5min_prcnt"
+RPI_CPU_LOAD15 = "load_15min_prcnt"
 # list of throttle status
 RPI_THROTTLE = "throttle"
 

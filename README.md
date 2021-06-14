@@ -88,9 +88,9 @@ The monitored topic reports the following information:
 |        | `number_cores` | number of cpu cores [1,4] |
 |        | `bogo_mips` | reported performance of this RPi |
 |        | `serial` | serial number of this RPi |
-|        | `load1min` | average cpu load during prior minute |
-|        | `load5min` | average cpu load during prior 5 minutes |
-|        | `load15min` | average cpu load during prior 15 minutes |
+|        | `load_1min_prcnt` | average % cpu load during prior minute (avg per core) |
+|        | `load_5min_prcnt` | average % cpu load during prior 5 minutes (avg per core) |
+|        | `load_15min_prcnt` | average % cpu load during prior 15 minutes (avg per core) |
 | `memory`       |  | shows the total amount of RAM in MB and the available ram in MB |
 | `reporter`    |  | name and version of the script reporting these values |
 | `report_interval`    |  | interval in minutes between reports from this script |
@@ -300,59 +300,56 @@ An example:
 ```json
 {
   "info": {
-    "timestamp": "2020-08-29T17:43:38-06:00",
+    "timestamp": "2021-06-13T20:47:11-06:00",
     "rpi_model": "RPi 3 Model B r1.2",
     "ifaces": "e,w,b",
-    "host_name": "pi3plus",
-    "fqdn": "pi3plus.home",
+    "host_name": "pibtle",
+    "fqdn": "pibtle.home",
     "ux_release": "stretch",
     "ux_version": "4.19.66-v7+",
-    "up_time": "19 days,  23:27",
-    "last_update": "2020-08-23T17:03:47-06:00",
-    "fs_total_gb": 64,
-    "fs_free_prcnt": 10,
+    "up_time": "27 days,   5:11",
+    "last_update": "2021-05-18T14:31:51-06:00",
+    "fs_total_gb": 32,
+    "fs_free_prcnt": 40,
     "networking": {
       "eth0": {
-        "mac": "b8:27:eb:1a:f3:bc"
+        "IP": "192.168.100.81",
+        "mac": "b8:27:eb:d1:16:42"
       },
       "wlan0": {
-        "IP": "192.168.100.189",
-        "mac": "b8:27:eb:4f:a6:e9"
+        "mac": "b8:27:eb:84:43:17"
       }
     },
     "drives": {
       "root": {
-        "size_gb": 64,
-        "used_prcnt": 10,
+        "size_gb": 32,
+        "used_prcnt": 40,
         "device": "/dev/root",
         "mount_pt": "/"
-      },
-      "media-pi-CRUZER": {
-        "size_gb": 2,
-        "used_prcnt": 1,
-        "device": "/dev/sda1",
-        "mount_pt": "/media/pi/CRUZER"
       }
     },
     "memory": {
       "size_mb": "926.078",
-      "free_mb": "575.414"
+      "free_mb": "304.453"
     },
     "cpu": {
       "hardware": "BCM2835",
       "model": "ARMv7 Processor rev 4 (v7l)",
       "number_cores": 4,
       "bogo_mips": "307.20",
-      "serial": "00000000661af3bc"
+      "serial": "00000000a8d11642",
+      "load_1min_prcnt": 36.2,
+      "load_5min_prcnt": 38.2,
+      "load_15min_prcnt": 33.2
     },
     "throttle": [
       "throttled = 0x0",
       "Not throttled"
     ],
-    "temperature_c": 53.7,
-    "temp_gpu_c": 53.7,
-    "temp_cpu_c": 52.6,
-    "reporter": "ISP-RPi-mqtt-daemon v1.5.4",
+    "temperature_c": 74.1,
+    "temp_gpu_c": 74.1,
+    "temp_cpu_c": 73.6,
+    "reporter": "ISP-RPi-mqtt-daemon v1.5.5",
     "report_interval": 5
   }
 }
