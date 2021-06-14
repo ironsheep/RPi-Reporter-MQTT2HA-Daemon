@@ -257,7 +257,7 @@ rpi_cpuload15 = ''
 
 def getDeviceCpuInfo():
     global rpi_cpu_tuple
-    #  cat /proc/cpuinfo | egrep -i "processor|model|bogo|hardware|serial"
+    #  cat /proc/cpuinfo | /bin/egrep -i "processor|model|bogo|hardware|serial"
     # MULTI-CORE
     #  processor	: 0
     #  model name	: ARMv7 Processor rev 4 (v7l)
@@ -281,7 +281,7 @@ def getDeviceCpuInfo():
     #  Hardware	: BCM2835
     #  Serial		: 00000000131030c0
     #  Model		: Raspberry Pi Zero W Rev 1.1
-    out = subprocess.Popen("cat /proc/cpuinfo | egrep -i 'processor|model|bogo|hardware|serial'",
+    out = subprocess.Popen("cat /proc/cpuinfo | /bin/egrep -i 'processor|model|bogo|hardware|serial'",
                            shell=True,
                            stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT)
@@ -312,7 +312,7 @@ def getDeviceCpuInfo():
         if 'Serial' in currLine:
             cpu_serial = currValue
 
-    out = subprocess.Popen("/bin/cat /proc/loadavg | /usr/bin/awk '{ print $1 ", " $2 ", " $3 }'",
+    out = subprocess.Popen("/bin/cat /proc/loadavg | /usr/bin/awk '{ print $1 ',' $2 ',' $3 }'",
                            shell=True,
                            stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT)
@@ -333,11 +333,11 @@ def getDeviceCpuInfo():
 
 def getDeviceMemory():
     global rpi_memory_tuple
-    #  $ cat /proc/meminfo | egrep -i "mem[TFA]"
+    #  $ cat /proc/meminfo | /bin/egrep -i "mem[TFA]"
     #  MemTotal:         948304 kB
     #  MemFree:           40632 kB
     #  MemAvailable:     513332 kB
-    out = subprocess.Popen("cat /proc/meminfo | egrep -i 'mem[tfa]'",
+    out = subprocess.Popen("cat /proc/meminfo | /bin/egrep -i 'mem[tfa]'",
                            shell=True,
                            stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT)
