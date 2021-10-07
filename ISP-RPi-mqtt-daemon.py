@@ -1089,7 +1089,7 @@ detectorValues = OrderedDict([
     (LD_MONITOR, dict(title="RPi Monitor {}".format(rpi_hostname), device_class="timestamp", no_title_prefix="yes",
      json_value="timestamp", json_attr="yes", icon='mdi:raspberry-pi', device_ident="RPi-{}".format(rpi_fqdn))),
     (LD_SYS_TEMP, dict(title="RPi Temp {}".format(rpi_hostname), device_class="temperature",
-     no_title_prefix="yes", unit="C", json_value="temperature_c", icon='mdi:thermometer')),
+     no_title_prefix="yes", unit="°C", json_value="temperature_c", icon='mdi:thermometer')),
     (LD_FS_USED, dict(title="RPi Used {}".format(rpi_hostname),
      no_title_prefix="yes", json_value="fs_free_prcnt", unit="%", icon='mdi:sd')),
 ])
