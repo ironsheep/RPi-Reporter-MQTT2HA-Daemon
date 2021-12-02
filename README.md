@@ -111,7 +111,12 @@ On a modern Linux system just a few steps are needed to get the daemon working.
 The following example shows the installation under Debian/Raspbian below the `/opt` directory:
 
 ```shell
+# For Ubuntu and the like
 sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-paho-mqtt
+
+# For Arch Linux
+sudo pacman -S python python-pip python-tzlocal python-notify2 python-colorama python-unidecode python-paho-mqtt inetutils
+
 
 sudo git clone https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon.git /opt/RPi-Reporter-MQTT2HA-Daemon
 
