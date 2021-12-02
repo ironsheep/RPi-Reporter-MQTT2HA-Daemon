@@ -878,41 +878,67 @@ def interpretThrottleValue(throttleValue):
 
 def getLastUpdateDate():
     global rpi_last_update_date
-    # apt-get update writes to following dir (so date changes on update)
-    apt_listdir_filespec = '/var/lib/apt/lists/partial'
-    # apt-get dist-upgrade | autoremove update the following file when actions are taken
-    apt_lockdir_filespec = '/var/lib/dpkg/lock'
-    cmdString = '/bin/ls -ltrd {} {}'.format(
-        apt_listdir_filespec, apt_lockdir_filespec)
-    out = subprocess.Popen(cmdString,
-                           shell=True,
-                           stdout=subprocess.PIPE,
-                           stderr=subprocess.STDOUT)
-    stdout, _ = out.communicate()
-    lines = stdout.decode('utf-8').split("\n")
-    trimmedLines = []
-    for currLine in lines:
-        trimmedLine = currLine.lstrip().rstrip()
-        if len(trimmedLine) > 0:
-            trimmedLines.append(trimmedLine)
-    print_line('trimmedLines=[{}]'.format(trimmedLines), debug=True)
+    # Check which files exist
+    # Ubuntu / Debian
+    ubuntuDebian = os.path.isdir("/var/lib/apt/lists/partial")
+    # Arch Linux
+    archLinux = os.path.isfile("/var/log/pacman.log")
 
-    fileSpec_latest = ''
-    if len(trimmedLines) > 0:
-        lastLineIdx = len(trimmedLines) - 1
-        lineParts = trimmedLines[lastLineIdx].split()
-        if len(lineParts) > 0:
-            lastPartIdx = len(lineParts) - 1
-            fileSpec_latest = lineParts[lastPartIdx]
-    print_line('fileSpec_latest=[{}]'.format(fileSpec_latest), debug=True)
+    if ubuntuDebian:
+        # apt-get update writes to following dir (so date changes on update)
+        apt_listdir_filespec = '/var/lib/apt/lists/partial'
+        # apt-get dist-upgrade | autoremove update the following file when actions are taken
+        apt_lockdir_filespec = '/var/lib/dpkg/lock'
+        cmdString = '/bin/ls -ltrd {} {}'.format(
+            apt_listdir_filespec, apt_lockdir_filespec)
+        out = subprocess.Popen(cmdString,
+                            shell=True,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT)
+        stdout, _ = out.communicate()
+        lines = stdout.decode('utf-8').split("\n")
+        trimmedLines = []
+        for currLine in lines:
+            trimmedLine = currLine.lstrip().rstrip()
+            if len(trimmedLine) > 0:
+                trimmedLines.append(trimmedLine)
+        print_line('trimmedLines=[{}]'.format(trimmedLines), debug=True)
 
-    fileModDateInSeconds = os.path.getmtime(fileSpec_latest)
-    fileModDate = datetime.fromtimestamp(fileModDateInSeconds)
-    rpi_last_update_date = fileModDate.replace(tzinfo=local_tz)
+        fileSpec_latest = ''
+        if len(trimmedLines) > 0:
+            lastLineIdx = len(trimmedLines) - 1
+            lineParts = trimmedLines[lastLineIdx].split()
+            if len(lineParts) > 0:
+                lastPartIdx = len(lineParts) - 1
+                fileSpec_latest = lineParts[lastPartIdx]
+        print_line('fileSpec_latest=[{}]'.format(fileSpec_latest), debug=True)
+
+        fileModDateInSeconds = os.path.getmtime(fileSpec_latest)
+        fileModDate = datetime.fromtimestamp(fileModDateInSeconds)
+        rpi_last_update_date = fileModDate.replace(tzinfo=local_tz)
+
+    elif archLinux:
+        # every change of installed packages modifies this file
+        pacman_log = '/var/log/pacman.log'
+        # Search for last line with "pacman -Syu" or "pacman -S -y -u" or "upgraded", indicates newest system update 
+        cmdString = 'egrep "pacman -Syu|pacman -S -y -u|upgraded" {} | tail -1'.format(
+            pacman_log)
+        out = subprocess.Popen(cmdString,
+                            shell=True,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT)
+        stdout, _ = out.communicate()
+        line = stdout.decode('utf-8')
+        trimmedLines = [line.lstrip().rstrip()]
+        print_line('trimmedLines=[{}]'.format(trimmedLines), debug=True)
+
+        # Date is at beginning of line, split and choose first
+        lineParts = trimmedLines[0].split()
+        # Remove [] and convert to time
+        rpi_last_update_date = datetime.strptime(lineParts[0].replace('[', '').replace(']', ''), '%Y-%m-%dT%H:%M:%S+%f')
+
     print_line('rpi_last_update_date=[{}]'.format(
         rpi_last_update_date), debug=True)
-
-
 def to_datetime(time):
     return datetime.fromordinal(int(time)) + datetime.timedelta(time % 1)
 
