@@ -187,7 +187,7 @@ discovery_prefix = config['MQTT'].get(
     'discovery_prefix', default_discovery_prefix).lower()
 
 # report our RPi values every 5min
-min_interval_in_minutes = 2
+min_interval_in_minutes = 1
 max_interval_in_minutes = 30
 default_interval_in_minutes = 5
 interval_in_minutes = config['Daemon'].getint(
@@ -1083,6 +1083,24 @@ LD_SYS_TEMP = "temperature"
 LD_FS_USED = "disk_used"
 LDS_PAYLOAD_NAME = "info"
 
+if interval_in_minutes < 5:
+    LD_CPU_USE_JSON = "cpu.load_1min_prcnt"
+elif interval_in_minutes < 15:
+    LD_CPU_USE_JSON = "cpu.load_5min_prcnt"
+else:    
+    LD_CPU_USE_JSON = "cpu.load_15min_prcnt"
+
+# RPI_CPU_MODEL
+if len(rpi_cpu_tuple) > 0:
+    RPI_CPU_MODEL = rpi_cpu_tuple[1]
+else:
+    RPI_CPU_MODEL = ''
+
+if RPI_CPU_MODEL.find("ARMv7") >= 0 or RPI_CPU_MODEL.find("ARMv6") >= 0:
+    LD_CPU_USE_ICON = "mdi:cpu-32-bit"
+else:
+    LD_CPU_USE_ICON = "mdi:cpu-64-bit"
+
 # Publish our MQTT auto discovery
 #  table of key items to publish:
 detectorValues = OrderedDict([
@@ -1092,6 +1110,8 @@ detectorValues = OrderedDict([
      no_title_prefix="yes", unit="C", json_value="temperature_c", icon='mdi:thermometer')),
     (LD_FS_USED, dict(title="RPi Used {}".format(rpi_hostname),
      no_title_prefix="yes", json_value="fs_free_prcnt", unit="%", icon='mdi:sd')),
+    (LD_CPU_USE, dict(title="RPi CPU Use {}".format(rpi_hostname),
+     no_title_prefix="yes", json_value=LD_CPU_USE_JSON, unit="%", icon=LD_CPU_USE_ICON)),
 ])
 
 print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
@@ -1408,6 +1428,7 @@ def publishMonitorData(latestData, topic):
 
 def update_values():
     # nothing here yet
+    getDeviceCpuInfo()
     getUptime()
     getFileSystemDrives()
     getSystemTemperature()
