@@ -113,10 +113,16 @@ The following example shows the installation under Debian/Raspbian below the `/o
 
 First install extra packages the script needs (select one of the two following commands)
 
-### Packages for Ubuntu, RaspiOS and the like
+### Packages for Ubuntu, Raspberry pi OS, and the like
 
 ```shell
 sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-paho-mqtt
+```
+
+**NOTE** if you are running a pure Ubuntu not Raspberry pi OS then you may need to install an additional package to get the binary we use to get the core temperatures. (*If you are NOT seeing temperatures in your Lovelace RPI Monitor Card this is likely the cause.*)  Do the following in this case:
+
+```shell
+sudo apt-get install libraspberrypi-bin
 ```
 
 ### Packages for Arch Linux
