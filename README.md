@@ -31,8 +31,8 @@ If you like my work and/or this has helped you in some way then feel free to hel
 ## Features
 
 * Tested on Raspberry Pi's 2/3/4 with Jessie, Stretch and Buster
-* Tested with Home Assistant v0.111.0
-* Tested with Mosquitto broker v5.1
+* Tested with Home Assistant v0.111.0 -> 2021.11.5
+* Tested with Mosquitto broker v5.1 - v6.0.1
 * Data is published via MQTT
 * MQTT discovery messages are sent so RPi's are automatically registered with Home Assistant (if MQTT discovery is enabled in your HA installation)
 * MQTT authentication support
