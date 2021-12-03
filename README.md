@@ -376,7 +376,8 @@ An example:
     "reporter": "ISP-RPi-mqtt-daemon v1.6.0",
     "report_interval": 5
   }
-}```
+}
+```
 
 **NOTE:** Where there's an IP address that interface is connected.
 
