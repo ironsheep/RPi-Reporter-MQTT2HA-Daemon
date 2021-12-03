@@ -1082,6 +1082,7 @@ LD_MONITOR = "monitor"
 LD_SYS_TEMP = "temperature"
 LD_FS_USED = "disk_used"
 LDS_PAYLOAD_NAME = "info"
+LD_CPU_USE = "cpu_load"
 
 if interval_in_minutes < 5:
     LD_CPU_USE_JSON = "cpu.load_1min_prcnt"
