@@ -1,3 +1,12 @@
+Thu, 02 Dec 2021 16:36:15 -0600 v1.6.0
+
+ - Merged 4 pull requests:
+    - Adjusted GetLastUpdateDate() to work on Arch Linux (#32)
+    - Added Arch Linux specific additional install info to README (#33)
+    - Adjusted reported temp units to °C from C (#35)
+    - Change min interval to 1 min., Fixed cpu load reporting, Added new sensor (#39)
+- Cleaned up README and added thankyou to github members who have contributed
+
 Sun, 13 Jun 2021 21:13:32 -0600 v1.5.5
 
  - BUGFIX allow special characters to be used in config.ini (#30)

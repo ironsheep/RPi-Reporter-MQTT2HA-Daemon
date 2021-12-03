@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
 
-script_version = "1.5.5"
+script_version = "1.6.0"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -920,7 +920,7 @@ def getLastUpdateDate():
     elif archLinux:
         # every change of installed packages modifies this file
         pacman_log = '/var/log/pacman.log'
-        # Search for last line with "pacman -Syu" or "pacman -S -y -u" or "upgraded", indicates newest system update 
+        # Search for last line with "pacman -Syu" or "pacman -S -y -u" or "upgraded", indicates newest system update
         cmdString = 'egrep "pacman -Syu|pacman -S -y -u|upgraded" {} | tail -1'.format(
             pacman_log)
         out = subprocess.Popen(cmdString,
@@ -939,6 +939,8 @@ def getLastUpdateDate():
 
     print_line('rpi_last_update_date=[{}]'.format(
         rpi_last_update_date), debug=True)
+
+
 def to_datetime(time):
     return datetime.fromordinal(int(time)) + datetime.timedelta(time % 1)
 
