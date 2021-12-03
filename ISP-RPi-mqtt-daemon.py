@@ -25,7 +25,7 @@ import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
 
-script_version = "1.5.5"
+script_version = "1.6.0"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -1087,7 +1087,7 @@ if interval_in_minutes < 5:
     LD_CPU_USE_JSON = "cpu.load_1min_prcnt"
 elif interval_in_minutes < 15:
     LD_CPU_USE_JSON = "cpu.load_5min_prcnt"
-else:    
+else:
     LD_CPU_USE_JSON = "cpu.load_15min_prcnt"
 
 # RPI_CPU_MODEL

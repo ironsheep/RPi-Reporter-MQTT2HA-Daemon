@@ -1,112 +1,121 @@
+Thu, 02 Dec 2021 16:36:15 -0600 v1.6.0
+
+- Merged 4 pull requests:
+  - Adjusted GetLastUpdateDate() to work on Arch Linux (#32)
+  - Added Arch Linux specific additional install info to README (#33)
+  - Adjusted reported temp units to °C from C (#35)
+  - Change min interval to 1 min., Fixed cpu load reporting, Added new sensor (#39)
+- Cleaned up README and added thankyou to github members who have contributed
+
 Sun, 13 Jun 2021 21:13:32 -0600 v1.5.5
 
- - BUGFIX allow special characters to be used in config.ini (#30)
- - NEW add CPU Usage reports (#23)
- - Add alternate install location assistance to README (#17)
+- BUGFIX allow special characters to be used in config.ini (#30)
+- NEW add CPU Usage reports (#23)
+- Add alternate install location assistance to README (#17)
 
 Sat Aug 29 17:50:42 2020 -0600 v1.5.4
 
-  - CPU throttle state reporting (#15)
+- CPU throttle state reporting (#15)
 
 Wed Aug 19 12:33:14 2020 -0600 v1.5.3
 
-  - BUGFIX: fixed broken Network IF parser when only one interface (think pizero)
+- BUGFIX: fixed broken Network IF parser when only one interface (think pizero)
 
 Tue Aug 18 23:24:06 2020 -0600 v1.5.2
 
-  - Adjust hardware IF filter again... let's please see wlan0 and eth0 I/Fs
+- Adjust hardware IF filter again... let's please see wlan0 and eth0 I/Fs
 
 Mon Aug 17 15:51:07 2020 -0600
 
-  - Adjust update mech to use update-check dates, too
+- Adjust update mech to use update-check dates, too
 
 Mon Aug 17 19:46:44 2020 -0600 v1.5.1
 
-  - Filter ignoring HA network devices was incomplete - fixed
-  - Possibly breaking change (UniqueID may change for some users)
+- Filter ignoring HA network devices was incomplete - fixed
+- Possibly breaking change (UniqueID may change for some users)
 
 Mon Aug 17 01:26:21 2020 -0600 v1.5.0
 
-  - Added Memory Reporting
-  - Added CPU Reporting
-  - Removed reporting of non-hardware net devices (Hassio, Docker, etc.)
-  - Possibly breaking change (UniqueID may change for some users)
+- Added Memory Reporting
+- Added CPU Reporting
+- Removed reporting of non-hardware net devices (Hassio, Docker, etc.)
+- Possibly breaking change (UniqueID may change for some users)
 
 Sat Aug 15 03:25:26 2020 -0600 v1.4.4
 
-  - Fix log file grep (for some systems)
+- Fix log file grep (for some systems)
      Add option for grep to treat  dpkg log files a text (#8)
      README: show new drives entry in MQTT payload
 
 Tue Aug 11 18:42:34 2020 -0600 v1.4.3
 
-  - Add alternate locn for vcgen* cmd, use alternate drive space parser
+- Add alternate locn for vcgen* cmd, use alternate drive space parser
 
 Sun Aug 9 18:25:57 2020 -0600 v1.4.2
 
-  - Adjust retry timer for systemd service
-  - Update README, adjust systemd script to start at later time
+- Adjust retry timer for systemd service
+- Update README, adjust systemd script to start at later time
 
 Wed Aug 5 12:41:34 2020 -0600 v1.4.1
 
-  - Fix df use on non-english systems
-  - Update genBugInfo to latest commands
+- Fix df use on non-english systems
+- Update genBugInfo to latest commands
 
 Mon Aug 3 16:58:07 2020 -0600 v1.4.0
 
-  - Split nfs mounts into two entries in drive dict
-  - Shows drives under text keys, paths didnt work!
-  - Report drive values as numbers not strings
-  - Cut over to new filesystem interp mech. Should now handle NFS and other mounts
+- Split nfs mounts into two entries in drive dict
+- Shows drives under text keys, paths didnt work!
+- Report drive values as numbers not strings
+- Cut over to new filesystem interp mech. Should now handle NFS and other mounts
 
 Sun Aug 2 04:20:10 2020 -0600 v1.3.4.1
 
-  - More README touches
-  - Changes after first test
-  - Add new sysV init script startup form
+- More README touches
+- Changes after first test
+- Add new sysV init script startup form
 
 Sat Aug 1 21:20:18 2020 -0600 v1.3.4
 
-  - Block errors from log grep
+- Block errors from log grep
 
 Sat Aug 1 20:44:30 2020 -0600 v1.3.3
 
-  - Fix date handling - handle not found
+- Fix date handling - handle not found
 
 Sat Aug 1 19:10:26 2020 -0600 v1.3.2
 
-  - Fix uniqueID code, last upd date code
+- Fix uniqueID code, last upd date code
      Last update date was being affected by log-rotate... move to another technique
      Damaged unique ID generation with v1.3.0... fixed it now
 
 Sat Aug 1 16:02:38 2020 -0600 v1.3.1
 
-  - Fix fqdn returned when no fallback and no domain
+- Fix fqdn returned when no fallback and no domain
 
 Sat Aug 1 15:14:06 2020 -0600 v1.3.0
 
-  - Add new Config Variables
+- Add new Config Variables
      Add fallback_domain and discovery_prefix to config file reader
      Adjust discovery advert to use new prefix
      Adjust hostname fetch to use new fallback
      Add temp fallback to cpu when gpu not avail
      Ship both cpu and gpu temps in status dict
-  - Add bug report info script and instru. in bug report template
-  - Add Jessie notes
+- Add bug report info script and instru. in bug report template
+- Add Jessie notes
 
 Fri Jul 24 18:54:50 2020 -0600 v1.2.2
 
-  - Fix hardware mac/network info fetch on jessie 4.9.35-v7+
-  - Update README - minor
-  - Update README: add topics and new pic
+- Fix hardware mac/network info fetch on jessie 4.9.35-v7+
+- Update README - minor
+- Update README: add topics and new pic
 
 Thu Jul 23 13:55:00 2020 -0600 v1.2.1
 
-  - Thin out our two new topics - dont advert json template
+- Thin out our two new topics - dont advert json template
 
 Wed Jul 22 21:34:06 2020 -0600 v1.2.0
 
-  - Update ISP-RPi-mqtt-daemon.py
+- Update ISP-RPi-mqtt-daemon.py
      Add two new endponts discovered per RPi (degr C and % space used)
      Add test mode for failed to report in
      Forward interval set to card
@@ -114,19 +123,19 @@ Wed Jul 22 21:34:06 2020 -0600 v1.2.0
 
 Wed Jul 22 13:47:18 2020 -0600 v1.1.2
 
-  - Fix uptime reporting bug at first boot
-  - Adjust README config steps
-  - Minor cleanup incl, uptime
-  - Adjust to any network IF name, fix uptime read
+- Fix uptime reporting bug at first boot
+- Adjust README config steps
+- Minor cleanup incl, uptime
+- Adjust to any network IF name, fix uptime read
 
 Sun Jul 19 22:04:30 2020 -0600 v1.0.1
 
-  - Fix naive datetime script fail
-  - Add notes about script enable
-  - Added why manually test
-  - Add config.ini setup instru, fix script name
-  - Better image for README
+- Fix naive datetime script fail
+- Add notes about script enable
+- Added why manually test
+- Add config.ini setup instru, fix script name
+- Better image for README
 
 Sun Jul 19 13:36:11 2020 -0600 v1.0.0
 
-  - First fully working version
+- First fully working version

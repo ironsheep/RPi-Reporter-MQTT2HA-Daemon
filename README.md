@@ -110,9 +110,25 @@ MQTT is huge help in connecting different parts of your smart home and setting u
 On a modern Linux system just a few steps are needed to get the daemon working.
 The following example shows the installation under Debian/Raspbian below the `/opt` directory:
 
+First install extra packages the script needs (select one of the two following commands)
+
+### Packages for Ubuntu, RaspiOS and the like
+
 ```shell
 sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-paho-mqtt
+```
 
+### Packages for Arch Linux
+
+```shell
+sudo pacman -S python python-pip python-tzlocal python-notify2 python-colorama python-unidecode python-paho-mqtt inetutils
+```
+
+### Now finish with the script install
+
+Now that the extra packages are installed let's install our script and any remaining supporting python modules.
+
+```shell
 sudo git clone https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon.git /opt/RPi-Reporter-MQTT2HA-Daemon
 
 cd /opt/RPi-Reporter-MQTT2HA-Daemon
@@ -371,6 +387,17 @@ This data can be subscribed to and processed by your home assistant installation
 We have a Lovelace Custom Card that makes displaying this RPi Monitor data very easy.  
 
 See my project: [Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card)
+
+## Contributors
+
+This project is enjoyed by users in many countries. A number of these users have taken the time so submit pull requests which contribute changes/fixes to this project.
+
+Thank you to the following github users for taking the time to help make this project function better for all of us!:
+
+- [dflvunoooooo](https://github.com/dflvunoooooo)
+- [woodmj74](https://github.com/woodmj74)
+- [Henry-Sir](https://github.com/Henry-Sir)
+
 
 ## Credits
 
