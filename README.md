@@ -116,13 +116,15 @@ First install extra packages the script needs (select one of the two following c
 ### Packages for Ubuntu, Raspberry pi OS, and the like
 
 ```shell
-sudo apt-get install git net-tools python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-paho-mqtt 
+sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-paho-mqtt 
 ```
 
-**NOTE** if you are running a pure Ubuntu not Raspberry pi OS then you may need to install an additional package to get the binary we use to get the core temperatures. (*If you are NOT seeing temperatures in your Lovelace RPI Monitor Card this is likely the cause.*)  Do the following in this case:
+### Packages for pure Ubuntu
+
+**NOTE** if you are running a **pure Ubuntu** not Raspberry pi OS then you may need to install additional packages to get the binary we use to get the core temperatures and tools to inspec the network interfaces. (*If you are NOT seeing temperatures in your Lovelace RPI Monitor Card this is likely the cause.  Or if some of your RPis don't show up in Home Assistant*)  Do the following in this case:
 
 ```shell
-sudo apt-get install libraspberrypi-bin
+sudo apt-get install libraspberrypi-bin net-tools 
 ```
 
 
