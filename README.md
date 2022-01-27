@@ -116,7 +116,7 @@ First install extra packages the script needs (select one of the two following c
 ### Packages for Ubuntu, Raspberry pi OS, and the like
 
 ```shell
-sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-paho-mqtt
+sudo apt-get install git net-tools python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-paho-mqtt 
 ```
 
 **NOTE** if you are running a pure Ubuntu not Raspberry pi OS then you may need to install an additional package to get the binary we use to get the core temperatures. (*If you are NOT seeing temperatures in your Lovelace RPI Monitor Card this is likely the cause.*)  Do the following in this case:
@@ -124,6 +124,7 @@ sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify py
 ```shell
 sudo apt-get install libraspberrypi-bin
 ```
+
 
 ### Packages for Arch Linux
 
@@ -195,6 +196,7 @@ Using the command line argument `--config`, a directory where to read the config
 ```shell
 python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py --config /opt/RPi-Reporter-MQTT2HA-Daemon
 ```
+
 
 ### Preparing to run full time
 
@@ -394,6 +396,25 @@ This data can be subscribed to and processed by your home assistant installation
 We have a Lovelace Custom Card that makes displaying this RPi Monitor data very easy.  
 
 See my project: [Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card)
+
+## Troubleshooting
+
+### Issue: Some of my RPi's don't show up in HA
+
+Most often fix: *install the missing package.*
+
+We occasionaly have reports of users with more than one RPi on their network but only one shows up in Home Assistant. This is most often caused when this script generats a non-unique id for the RPi's.  This in turn is most often caused by an inability to get network interface details.  I've just updated the install to ensure that we have net-tools package installed. On Raspberry Pi OS this package is already present while on Ubuntu this is not installed by default.  If you can successfully run ifconfig(8) then you have what's needed. If not then simply run `sudo apt-get install net-tools`.
+
+### General debug 
+
+The deamon script can be run my hand while enabling debug and verbose messaging:
+
+```shell
+python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py -d -v
+```
+
+This let's you inspect many of the values the script is going to use and to see the data being sent to the MQTT broker.
+
 
 ## Contributors
 
