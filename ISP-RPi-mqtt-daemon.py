@@ -1085,7 +1085,7 @@ mqtt_client.on_publish = on_publish
 
 # -----------------------------------------------------------------------------
 #  Commands Subscription
-actuator_topic = '{}/actuator/{}/command'.format(base_topic, sensor_name.lower())
+command_topic = '{}/command/{}'.format(base_topic, sensor_name.lower())
 mqtt_client.on_message = on_message
 # -----------------------------------------------------------------------------
 
@@ -1129,10 +1129,10 @@ else:
     # -------------------------------------------------------------------------
     # Commands Subscription
     if (commands_support == True):
-        print_line('MQTT subscription to {} enabled'.format(actuator_topic), console=True, sd_notify=True)
-        mqtt_client.subscribe(actuator_topic)
+        print_line('MQTT subscription to {} enabled'.format(command_topic), console=True, sd_notify=True)
+        mqtt_client.subscribe(command_topic)
     else:
-        print_line('MQTT subscripton to {} disabled'.format(actuator_topic), console=True, sd_notify=True)
+        print_line('MQTT subscripton to {} disabled'.format(command_topic), console=True, sd_notify=True)
     # -------------------------------------------------------------------------
 
     startAliveTimer()
@@ -1262,9 +1262,7 @@ for [sensor, params] in detectorValues.items():
         payload['val_tpl'] = "{{{{ value_json.{}.{} }}}}".format(LDS_PAYLOAD_NAME, params['json_value'])
     if 'automation_type' in params:
         payload['automation_type'] = params['automation_type']
-        command_base_topic = '{}/actuator/{}'.format(base_topic, sensor_name.lower())
-        # payload['~'] = command_base_topic
-        payload['topic'] = '{}/{}'.format(command_base_topic, LD_COMMAND)
+        payload['topic'] = command_topic
     else:
         payload['~'] = sensor_base_topic
         payload['avty_t'] = activity_topic_rel
