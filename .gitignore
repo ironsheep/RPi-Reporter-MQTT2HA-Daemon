@@ -12,6 +12,9 @@ config.ini
 # yeah, don't commit reference files
 *REF
 
+# VSCode stuff
+.history/
+
 # C extensions
 *.so
 
