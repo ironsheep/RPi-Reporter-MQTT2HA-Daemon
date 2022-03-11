@@ -1,6 +1,24 @@
 {
     "editor.codeActionsOnSave": {
         "source.fixAll.markdownlint": true
-    }
+    },
+    "cSpell.words": [
+        "Hassio",
+        "datetime",
+        "degr",
+        "didnt",
+        "dont",
+        "dpkg",
+        "endponts",
+        "instru",
+        "interp",
+        "lastupd",
+        "locn",
+        "mqtt",
+        "pizero",
+        "vcgen",
+        "wlan"
+    ],
+    "python.formatting.provider": "autopep8"
 
 }
