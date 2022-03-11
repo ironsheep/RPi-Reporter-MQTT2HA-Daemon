@@ -160,61 +160,22 @@ def on_publish(client, userdata, mid):
 # Commands - MQTT Subscription Callback
 # -----------------------------------------------------------------------------
 # Command catalog
-CMD_LOG = "log"
-CMD_SHUTDOWN = "shutdown"
-CMD_REBOOT = "reboot"
-CMD_SERVICE_RESTART = "service-restart"
-CMD_RUN_SCRIPT = "run-script"
-
 def on_subscribe(client, userdata, mid, granted_qos):
     print_line('on_subscribe() - {} - {}'.format(str(mid),str(granted_qos)), debug=True, sd_notify=True)
 
 def on_message(client, userdata, message):
-    decodedMsg = message.payload.decode('utf-8')
-    print_line('on_message(). Topic=[{}] payload=[{}]'.format(message.topic,message.payload), console=True, sd_notify=True)
-
-    # First string is command
-    command = decodedMsg.split(' ')[0]
-
-    if (command == CMD_SHUTDOWN):
-        doShutdown()
-    elif (command == CMD_REBOOT):
-        doReboot()
-    elif (command == CMD_RUN_SCRIPT):
-        doRunScript()
-    elif (command == CMD_LOG):
-        # Second string is message to log
-        logMessage = decodedMsg.split(' ')[1]
-        if logMessage != "":
-            print_line('* Log received - {}'.format(logMessage), console=True, sd_notify=True)
-    elif (command == CMD_SERVICE_RESTART):
-        # Second string is serviceName
-        serviceName = decodedMsg.split(' ')[1]
-        if serviceName != "":
-            doRestartService(serviceName)
+    print_line('on_message(). Topic=[{}] payload=[{}]'.format(message.topic, message.payload), console=True, sd_notify=True, debug=True)
+    
+    decoded_payload = message.payload.decode('utf-8')
+    command = message.topic.split('/')[-1]
+    
+    if command in commands:
+        print_line('- Command "{}" Received - Run {} {} -'.format(command, commands[command], decoded_payload), console=True, debug=True)
+        print_line(os.popen(commands[command].format(decoded_payload)).read().strip(), console=True)
     else:
         print_line('* Invalid Command received.', error=True)
 
 # -----------------------------------------------------------------------------
-#  Commands
-# -----------------------------------------------------------------------------
-def doShutdown():
-    print_line('- COMMAND SHUTDOWN Received -', console=True, sd_notify=True)
-    os.system("/usr/bin/sudo /sbin/shutdown -h now")
-
-def doReboot():
-    print_line('- COMMAND REBOOT Received -', console=True, sd_notify=True)
-    os.system("/usr/bin/sudo /sbin/reboot")
-
-def doRestartService(serviceName):
-    print_line('- COMMAND RESTART SERVICE Received - sudo systemctl {} -'.format(serviceName), console=True, sd_notify=True)
-    os.system("/usr/bin/sudo systemctl restart "+serviceName)
-
-def doRunScript():
-    print_line('- COMMAND RUN SCRIPT Received - {} -'.format(script_name), console=True, sd_notify=True)
-    os.system(commands_script)
-# -----------------------------------------------------------------------------
-
 # Load configuration file
 config = ConfigParser(delimiters=(
     '=', ), inline_comment_prefixes=('#'), interpolation=None)
@@ -259,10 +220,10 @@ fallback_domain = config['Daemon'].get(
 
 # -----------------------------------------------------------------------------
 # Commands - TODO: Enable / disable command processing
-commands_support = config['Daemon'].getboolean('commands-enabled', True)
-default_commands_script = '/home/pi/RPi-mqtt-daemon-script.sh'
-commands_script = config['Daemon'].get('commands-script', default_commands_script)
-print_line('Configuration commands {} - Script {}'.format(commands_support, commands_script), debug=True)
+commands = OrderedDict([])
+
+if config.has_section('Commands'):
+    commands.update(dict(config['Commands'].items()))
 
 # Check configuration
 #
@@ -1085,7 +1046,7 @@ mqtt_client.on_publish = on_publish
 
 # -----------------------------------------------------------------------------
 #  Commands Subscription
-command_topic = '{}/command/{}'.format(base_topic, sensor_name.lower())
+base_command_topic = '{}/command/{}'.format(base_topic, sensor_name.lower())
 mqtt_client.on_message = on_message
 # -----------------------------------------------------------------------------
 
@@ -1128,11 +1089,11 @@ else:
 
     # -------------------------------------------------------------------------
     # Commands Subscription
-    if (commands_support == True):
-        print_line('MQTT subscription to {} enabled'.format(command_topic), console=True, sd_notify=True)
-        mqtt_client.subscribe(command_topic)
+    if (len(commands) > 0):
+        print_line('MQTT subscription to {}/+ enabled'.format(base_command_topic), console=True, sd_notify=True)
+        mqtt_client.subscribe('{}/+'.format(base_command_topic))
     else:
-        print_line('MQTT subscripton to {} disabled'.format(command_topic), console=True, sd_notify=True)
+        print_line('MQTT subscripton to {}/+ disabled'.format(base_command_topic), console=True, sd_notify=True)
     # -------------------------------------------------------------------------
 
     startAliveTimer()
@@ -1181,8 +1142,6 @@ if RPI_CPU_MODEL.find("ARMv7") >= 0 or RPI_CPU_MODEL.find("ARMv6") >= 0:
 else:
     LD_CPU_USE_ICON = "mdi:cpu-64-bit"
 
-LD_COMMAND = "command"
-
 # Publish our MQTT auto discovery
 #  table of key items to publish:
 detectorValues = OrderedDict([
@@ -1220,18 +1179,20 @@ detectorValues = OrderedDict([
         unit="%",
         icon=LD_CPU_USE_ICON,
         json_value=LD_CPU_USE_JSON,
-    )),
-    (LD_COMMAND, dict(
-        title="RPi Command {}".format(rpi_hostname),
-        topic_category="device_automation",
-        automation_type="trigger",
-        device_ident="RPi-{}".format(rpi_fqdn),
-        no_title_prefix="yes", 
-        icon='mdi:raspberry-pi',
-        trigger_type = "button_short_press",
-        trigger_subtype = "turn_on",
     ))
 ])
+
+for [command, _] in commands.items():
+    detectorValues.update({
+        command: dict(
+            title='RPi Command {} {}'.format(rpi_hostname, command),
+            topic_category='button',
+            no_title_prefix='yes',
+            icon='mdi:gesture-tap',
+            command = command,
+            command_topic = '{}/{}'.format(base_command_topic, command)
+        )
+    })
 
 print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
 
@@ -1260,9 +1221,9 @@ for [sensor, params] in detectorValues.items():
     if 'json_value' in params:
         payload['stat_t'] = values_topic_rel
         payload['val_tpl'] = "{{{{ value_json.{}.{} }}}}".format(LDS_PAYLOAD_NAME, params['json_value'])
-    if 'automation_type' in params:
-        payload['automation_type'] = params['automation_type']
-        payload['topic'] = command_topic
+    if 'command' in params:
+        payload['~'] = base_command_topic
+        payload['cmd_t'] = '~/{}'.format(params['command'])
     else:
         payload['~'] = sensor_base_topic
         payload['avty_t'] = activity_topic_rel
