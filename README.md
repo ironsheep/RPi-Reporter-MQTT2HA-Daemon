@@ -1,28 +1,21 @@
 ## Fork of the RPi Reporter MQTT2HA Daemon
 
-This is a fork of the great RPi Reporter MQTT2HA Daemon. I have added as a new feature the possibility to execute
-some handy commands in the monitored Raspberry Pis using MQTT:
-
-* shutdown
-* reboot
-* restart daemons (using systemctl)
-* execute a shell command (default '/home/pi/RPi-mqtt-daemon-script.sh') for instance, to simulate a key press for chromium based kiosks without keyboard
+This is a fork of the great RPi Reporter MQTT2HA Daemon.
+I have added as a new feature the possibility to add and execute commands in the monitored Raspberry Pis using MQTT.
+Examples are in `config.ini.dist` in the `Commands` section
 
 Please refer to the original project for installation instructions.
 
 ### New configuration options
 
-Added the following options to the [Daemon] section of the configuration file (config.ini):
+Added the new `Commands` section to `config.ini`.
+An example to reboot or shutdown the Pi:
 
-   ```shell
-# If Enabled, the daemon will subscribe to a topic (like {/home/nodes}/actuator/rpi{hostname})
-#  and listen to a reboot, shutdown, service-restart <service> or run-script payload.
-commands-enabled = true
-
-# If commands are enabled, and a message arrives with a run-script payload, the script specified here
-#  will be run
-commands-script = /home/pi/RPi-mqtt-daemon-script.sh
-   ```
+  ```shell
+  [Commands]
+  shutdown = /usr/bin/sudo /sbin/shutdown -h now
+  reboot = /usr/bin/sudo /sbin/reboot
+  ```
 
 ### Extended permissions for daemon for command execution
 
@@ -30,14 +23,14 @@ The "daemon" user proposed to start the daemon in the installation instructions 
 power down the computer. A possible workaround is to give permissions to daemon to the commands we want to execute using
 the sudoers configuration file:
 
-   ```shell
-   # edit sudoers file
-   sudo vim /etc/sudoers
-   
-   # add the following lines at the bottom.
-   # note that every service that we want to allow to restart must be specified here
-   daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl restart isp-rpi-reporter,/sbin/reboot,/sbin/shutdown
-   ```
+  ```shell
+  # edit sudoers file
+  sudo vim /etc/sudoers
+  
+  # add the following lines at the bottom.
+  # note that every service that we want to allow to restart must be specified here
+  daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl restart isp-rpi-reporter,/sbin/reboot,/sbin/shutdown
+  ```
 
 NOTE: In some systems the path for systemctl / reboot / shutdown can be different.
 
@@ -45,11 +38,11 @@ Additionally, the daemon user needs permission to execute the shell script refer
 any command referenced there/access to the directories specified). If the script has been created by the standard pi 
 user, a simple workaround could be:
 
-   ```shell
-   chown daemon RPi-mqtt-daemon-script.sh
+  ```shell
+  chown daemon RPi-mqtt-daemon-script.sh
 
-   groups
-   ```
+  groups
+  ```
 
 
 [Original README.MD file follows]
