@@ -1224,6 +1224,7 @@ for [sensor, params] in detectorValues.items():
     if 'command' in params:
         payload['~'] = base_command_topic
         payload['cmd_t'] = '~/{}'.format(params['command'])
+        payload['json_attr_t'] = '~/{}/attributes'.format(params['command'])
     else:
         payload['~'] = sensor_base_topic
         payload['avty_t'] = activity_topic_rel
