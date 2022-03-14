@@ -171,7 +171,7 @@ def on_message(client, userdata, message):
     
     if command in commands:
         print_line('- Command "{}" Received - Run {} {} -'.format(command, commands[command], decoded_payload), console=True, debug=True)
-        print_line(os.popen(commands[command].format(decoded_payload)).read().strip(), console=True)
+        subprocess.Popen(["/usr/bin/sh", "-c", commands[command].format(decoded_payload)])
     else:
         print_line('* Invalid Command received.', error=True)
 
