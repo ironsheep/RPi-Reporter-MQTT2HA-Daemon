@@ -139,6 +139,17 @@ def on_connect(client, userdata, flags, rc):
         mqtt_client_connected = True
         print_line('on_connect() mqtt_client_connected=[{}]'.format(
             mqtt_client_connected), debug=True)
+        client.on_publish = on_publish
+        
+        # -------------------------------------------------------------------------
+        # Commands Subscription
+        if (len(commands) > 0):
+            print_line('MQTT subscription to {}/+ enabled'.format(base_command_topic), console=True, sd_notify=True)
+            client.on_message = on_message
+            client.subscribe('{}/+'.format(base_command_topic))
+        else:
+            print_line('MQTT subscripton to {}/+ disabled'.format(base_command_topic), console=True, sd_notify=True)
+        # -------------------------------------------------------------------------
     else:
         print_line('! Connection error with result code {} - {}'.format(str(rc),
                    mqtt.connack_string(rc)), error=True)
@@ -219,9 +230,10 @@ fallback_domain = config['Daemon'].get(
     'fallback_domain', default_domain).lower()
 
 # -----------------------------------------------------------------------------
-# Commands - TODO: Enable / disable command processing
+#  Commands Subscription
+base_command_topic = '{}/command/{}'.format(base_topic, sensor_name.lower())
+# -----------------------------------------------------------------------------
 commands = OrderedDict([])
-
 if config.has_section('Commands'):
     commands.update(dict(config['Commands'].items()))
 
@@ -1042,13 +1054,7 @@ lwt_offline_val = 'offline'
 print_line('Connecting to MQTT broker ...', verbose=True)
 mqtt_client = mqtt.Client()
 mqtt_client.on_connect = on_connect
-mqtt_client.on_publish = on_publish
 
-# -----------------------------------------------------------------------------
-#  Commands Subscription
-base_command_topic = '{}/command/{}'.format(base_topic, sensor_name.lower())
-mqtt_client.on_message = on_message
-# -----------------------------------------------------------------------------
 
 mqtt_client.will_set(lwt_topic, payload=lwt_offline_val, retain=True)
 
@@ -1086,15 +1092,6 @@ else:
         print_line(
             '* Wait on mqtt_client_connected=[{}]'.format(mqtt_client_connected), debug=True)
         sleep(1.0)  # some slack to establish the connection
-
-    # -------------------------------------------------------------------------
-    # Commands Subscription
-    if (len(commands) > 0):
-        print_line('MQTT subscription to {}/+ enabled'.format(base_command_topic), console=True, sd_notify=True)
-        mqtt_client.subscribe('{}/+'.format(base_command_topic))
-    else:
-        print_line('MQTT subscripton to {}/+ disabled'.format(base_command_topic), console=True, sd_notify=True)
-    # -------------------------------------------------------------------------
 
     startAliveTimer()
 
