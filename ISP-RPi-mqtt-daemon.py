@@ -249,6 +249,7 @@ rpi_throttle_status = []
 rpi_cpuload1 = ''
 rpi_cpuload5 = ''
 rpi_cpuload15 = ''
+rpi_memory_percent = ''
 
 # -----------------------------------------------------------------------------
 #  monitor variable fetch routines
@@ -331,6 +332,7 @@ def getDeviceCpuInfo():
 
 def getDeviceMemory():
     global rpi_memory_tuple
+    global rpi_memory_percent
     #  $ cat /proc/meminfo | /bin/egrep -i "mem[TFA]"
     #  MemTotal:         948304 kB
     #  MemFree:           40632 kB
@@ -358,6 +360,7 @@ def getDeviceMemory():
             mem_avail = float(lineParts[1]) / 1024
     # Tuple (Total, Free, Avail.)
     rpi_memory_tuple = (mem_total, mem_free, mem_avail)
+    rpi_memory_percent = (mem_total - mem_free) / mem_total * 100
     print_line('rpi_memory_tuple=[{}]'.format(rpi_memory_tuple), debug=True)
 
 
@@ -1249,6 +1252,7 @@ RPI_DVC_PATH = "dvc"
 RPI_MEMORY = "memory"
 RPI_MEM_TOTAL = "size_mb"
 RPI_MEM_FREE = "free_mb"
+RPI_MEM_PERCENT = 'memory_percent'
 # Tuple (Hardware, Model Name, NbrCores, BogoMIPS, Serial)
 RPI_CPU = "cpu"
 RPI_CPU_HARDWARE = "hardware"
@@ -1302,6 +1306,7 @@ def send_status(timestamp, nothing):
     rpiRam = getMemoryDictionary()
     if len(rpiRam) > 0:
         rpiData[RPI_MEMORY] = rpiRam
+        rpiData[RPI_MEM_PERCENT] = '{:.1f}'.format(rpi_memory_percent)
 
     rpiCpu = getCPUDictionary()
     if len(rpiCpu) > 0:
