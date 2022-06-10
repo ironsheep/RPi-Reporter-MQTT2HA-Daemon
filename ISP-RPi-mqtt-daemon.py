@@ -751,7 +751,9 @@ def getSystemTemperature():
     if cmd_fspec == '':
         rpi_system_temp = float('-1.0')
         rpi_gpu_temp = float('-1.0')
-        rpi_cpu_temp = float('-1.0')
+        rpi_cpu_temp = getSystemCPUTemperature()
+        if rpi_cpu_temp != -1.0:
+            rpi_system_temp = rpi_cpu_temp
     else:
         retry_count = 3
         while retry_count > 0 and 'failed' in rpi_gpu_temp_raw:
@@ -775,19 +777,29 @@ def getSystemTemperature():
         rpi_gpu_temp = interpretedTemp
         print_line('rpi_gpu_temp=[{}]'.format(rpi_gpu_temp), debug=True)
 
-        out = subprocess.Popen("/bin/cat /sys/class/thermal/thermal_zone0/temp",
-                               shell=True,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT)
-        stdout, _ = out.communicate()
-        rpi_cpu_temp_raw = stdout.decode('utf-8').rstrip()
-        rpi_cpu_temp = float(rpi_cpu_temp_raw) / 1000.0
-        print_line('rpi_cpu_temp=[{}]'.format(rpi_cpu_temp), debug=True)
+        rpi_cpu_temp = getSystemCPUTemperature()
 
         # fallback to CPU temp is GPU not available
         rpi_system_temp = rpi_gpu_temp
         if rpi_gpu_temp == -1.0:
             rpi_system_temp = rpi_cpu_temp
+
+
+def getSystemCPUTemperature():
+    cmd_locn1 = '/sys/class/thermal/thermal_zone0/temp'
+    cmdString = '/bin/cat {}'.format(
+        cmd_locn1)
+    if os.path.exists(cmd_locn1) == False:
+        return float('-1.0')
+    out = subprocess.Popen(cmdString,
+                           shell=True,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+    stdout, _ = out.communicate()
+    rpi_cpu_temp_raw = stdout.decode('utf-8').rstrip()
+    rpi_cpu_temp = float(rpi_cpu_temp_raw) / 1000.0
+    print_line('rpi_cpu_temp=[{}]'.format(rpi_cpu_temp), debug=True)
+    return rpi_cpu_temp
 
 
 def getSystemThermalStatus():
