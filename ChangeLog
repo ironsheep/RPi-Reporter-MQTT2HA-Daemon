@@ -1,3 +1,7 @@
+Tue, 02 Aug 2022 18:37:21 -0600 v1.6.1
+
+- Fix 'bullseye' name determination - remove extra sources output
+
 Thu, 02 Dec 2021 16:36:15 -0600 v1.6.0
 
 - Merged 4 pull requests:
