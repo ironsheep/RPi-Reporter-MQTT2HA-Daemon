@@ -397,12 +397,12 @@ def getDeviceModel():
 
 def getLinuxRelease():
     global rpi_linux_release
-    out = subprocess.Popen("/bin/cat /etc/apt/sources.list | /bin/egrep -v '#' | /usr/bin/awk '{ print $3 }' | /bin/sed -e 's/-/ /g' | /bin/cut -f1 -d' ' | /bin/grep . | /usr/bin/sort -u",
+    out = subprocess.Popen("/bin/cat /etc/os-release | /bin/egrep 'PRETTY_NAME' | /bin/sed -e 's/PRETTY_NAME=\"//'",
                            shell=True,
                            stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT)
     stdout, _ = out.communicate()
-    rpi_linux_release = stdout.decode('utf-8').rstrip()
+    rpi_linux_release = stdout.decode('utf-8').rstrip()[:-1]
     print_line('rpi_linux_release=[{}]'.format(rpi_linux_release), debug=True)
 
 
