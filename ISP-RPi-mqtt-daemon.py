@@ -53,7 +53,7 @@ sd_notifier = sdnotify.SystemdNotifier()
 # Logging function
 
 
-def print_line(text, error=False, warning=False, info=False, verbose=False, debug=False, console=True, sd_notify=False):
+def print_line(text, error=True, warning=True, info=True, verbose=True, debug=True, console=True, sd_notify=False):
     timestamp = strftime('%Y-%m-%d %H:%M:%S', localtime())
     if console:
         if error:
@@ -494,15 +494,16 @@ def getNetworkIFsUsingIP(ip_cmd):
 
     trimmedLines = []
     for interface in interfaceNames:
-        lines = getSingleInterfaceDetails(interface)
+        lines = getSingleInterfaceDetails(interface, ip_cmd)
         for currLine in lines:
             trimmedLines.append(currLine)
 
     loadNetworkIFDetailsFromLines(trimmedLines)
 
 
-def getSingleInterfaceDetails(interfaceName):
-    cmdString = '/sbin/ifconfig {} | /bin/egrep "Link|flags|inet |ether " | /bin/egrep -v -i "lo:|loopback|inet6|\:\:1|127\.0\.0\.1"'.format(
+def getSingleInterfaceDetails(interfaceName, ip_cmd):
+    cmdString = '{} address show {} | /bin/egrep "Link|flags|inet |ether " | /bin/egrep -v -i "lo:|loopback|inet6|\:\:1|127\.0\.0\.1"'.format(
+        ip_cmd,
         interfaceName)
     out = subprocess.Popen(cmdString,
                            shell=True,
@@ -516,7 +517,7 @@ def getSingleInterfaceDetails(interfaceName):
         if len(trimmedLine) > 0:
             trimmedLines.append(trimmedLine)
 
-    #print_line('interface:[{}] trimmedLines=[{}]'.format(interfaceName, trimmedLines), debug=True)
+    print_line('interface:[{}] trimmedLines=[{}]'.format(interfaceName, trimmedLines), debug=True)
     return trimmedLines
 
 
