@@ -53,7 +53,7 @@ sd_notifier = sdnotify.SystemdNotifier()
 # Logging function
 
 
-def print_line(text, error=True, warning=True, info=True, verbose=True, debug=True, console=True, sd_notify=False):
+def print_line(text, error=False, warning=False, info=False, verbose=False, debug=False, console=True, sd_notify=False):
     timestamp = strftime('%Y-%m-%d %H:%M:%S', localtime())
     if console:
         if error:
@@ -577,8 +577,6 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
                     print_line('rpi_mac=[{}]'.format(rpi_mac), debug=True)
                 tmpInterfaces.append(newTuple)
                 print_line('newTuple=[{}]'.format(newTuple), debug=True)
-            #  - lineParts=[['link/ether', 'e4:5f:01:ac:50:47', 'brd', 'ff:ff:ff:ff:ff:ff']]
-            #  - lineParts=[['inet', '192.168.1.7/24', 'metric', '100', 'brd', '192.168.1.255', 'scope', 'global', 'dynamic', 'eth0']]
             elif haveIF is True and isIpCommand is False:
                 print_line('IF=[{}], lineParts=[{}]'.format(
                     imterfc, lineParts), debug=True)
