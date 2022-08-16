@@ -582,6 +582,8 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
                 elif 'ether' in currLine:  # NEWER ONLY
                     newTuple = (imterfc, 'mac', lineParts[1])
                     tmpInterfaces.append(newTuple)
+                    print_line('rpi_macTemp=[{}]'.format(rpi_mac), debug=True)
+                    print_line('newTupleTemp=[{}]'.format(newTuple), debug=True)
                     if rpi_mac == '':
                         rpi_mac = lineParts[1]
                         print_line('rpi_mac=[{}]'.format(rpi_mac), debug=True)
