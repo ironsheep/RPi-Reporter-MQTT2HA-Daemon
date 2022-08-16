@@ -565,6 +565,7 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
                 tmpInterfaces.append(newTuple)
                 print_line('newTuple=[{}]'.format(newTuple), debug=True)
             elif haveIF == True:
+                print_line('in haveIf', debug=True)
                 print_line('IF=[{}], lineParts=[{}]'.format(
                     imterfc, lineParts), debug=True)
                 if 'inet' in currLine:  # OLDER & NEWER
