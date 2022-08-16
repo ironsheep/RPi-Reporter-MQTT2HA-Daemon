@@ -598,14 +598,14 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
             elif haveIF is True and isIpCommand is True:
                 print_line('IF=[{}], lineParts=[{}]'.format(
                     imterfc, lineParts), debug=True)
-                if 'inet' in currLine:  # OLDER & NEWER
+                if 'inet' in currLine:
                     newTuple = (imterfc, 'IP',
-                                lineParts[1].replace('addr:', ''))
+                                lineParts[1][0:lineParts[1].index('/')])
                     tmpInterfaces.append(newTuple)
                     print_line('newTuple=[{}]'.format(newTuple), debug=True)
                     haveIF = False
                     isIpCommand = False
-                elif 'link/ether' in currLine:  # NEWER ONLY
+                elif 'link/ether' in currLine:
                     newTuple = (imterfc, 'mac', lineParts[1])
                     tmpInterfaces.append(newTuple)
                     if rpi_mac == '':
