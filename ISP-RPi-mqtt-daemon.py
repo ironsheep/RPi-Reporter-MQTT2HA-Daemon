@@ -538,8 +538,15 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
     #    inet 192.168.100.189  netmask 255.255.255.0  broadcast 192.168.100.255
     #    ether b8:27:eb:4f:a6:e9  txqueuelen 1000  (Ethernet)
     #
+    # IP command
+    #  2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000
+    #     link/ether e4:5f:01:ac:50:47 brd ff:ff:ff:ff:ff:ff
+    #     inet 192.168.1.7/24 metric 100 brd 192.168.1.255 scope global dynamic eth0
+    #  3: wlan0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    #     link/ether e4:5f:01:ac:50:48 brd ff:ff:ff:ff:ff:ff
     tmpInterfaces = []
     haveIF = False
+    isIpCommand = False
     imterfc = ''
     rpi_mac = ''
     for currLine in ifConfigLines:
@@ -558,6 +565,7 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
                 print_line('newIF=[{}]'.format(imterfc), debug=True)
             if 'mtu' in currLine and 'qlen' in currLine: #IP command only
                 haveIF = True
+                isIpCommand = True
                 imterfc = lineParts[1].replace(':', '')
                 print_line('newIF=[{}]'.format(imterfc), debug=True)
             elif 'Link' in currLine:  # OLDER ONLY
@@ -571,7 +579,7 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
                 print_line('newTuple=[{}]'.format(newTuple), debug=True)
             #  - lineParts=[['link/ether', 'e4:5f:01:ac:50:47', 'brd', 'ff:ff:ff:ff:ff:ff']]
             #  - lineParts=[['inet', '192.168.1.7/24', 'metric', '100', 'brd', '192.168.1.255', 'scope', 'global', 'dynamic', 'eth0']]
-            elif haveIF == True:
+            elif haveIF is True and isIpCommand is False:
                 print_line('IF=[{}], lineParts=[{}]'.format(
                     imterfc, lineParts), debug=True)
                 if 'inet' in currLine:  # OLDER & NEWER
@@ -582,13 +590,28 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
                 elif 'ether' in currLine:  # NEWER ONLY
                     newTuple = (imterfc, 'mac', lineParts[1])
                     tmpInterfaces.append(newTuple)
-                    print_line('rpi_macTemp=[{}]'.format(rpi_mac), debug=True)
-                    print_line('newTupleTemp=[{}]'.format(newTuple), debug=True)
                     if rpi_mac == '':
                         rpi_mac = lineParts[1]
                         print_line('rpi_mac=[{}]'.format(rpi_mac), debug=True)
                     print_line('newTuple=[{}]'.format(newTuple), debug=True)
                     haveIF = False
+            elif haveIF is True and isIpCommand is True:
+                print_line('IF=[{}], lineParts=[{}]'.format(
+                    imterfc, lineParts), debug=True)
+                if 'inet' in currLine:  # OLDER & NEWER
+                    newTuple = (imterfc, 'IP',
+                                lineParts[1].replace('addr:', ''))
+                    tmpInterfaces.append(newTuple)
+                    print_line('newTuple=[{}]'.format(newTuple), debug=True)
+                    haveIF = False
+                    isIpCommand = False
+                elif 'link/ether' in currLine:  # NEWER ONLY
+                    newTuple = (imterfc, 'mac', lineParts[1])
+                    tmpInterfaces.append(newTuple)
+                    if rpi_mac == '':
+                        rpi_mac = lineParts[1]
+                        print_line('rpi_mac=[{}]'.format(rpi_mac), debug=True)
+                    print_line('newTuple=[{}]'.format(newTuple), debug=True)
 
     rpi_interfaces = tmpInterfaces
     print_line('rpi_interfaces=[{}]'.format(rpi_interfaces), debug=True)
