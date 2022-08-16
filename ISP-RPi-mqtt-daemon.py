@@ -556,6 +556,10 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
                 haveIF = True
                 imterfc = lineParts[0].replace(':', '')
                 print_line('newIF=[{}]'.format(imterfc), debug=True)
+            if 'mtu' in currLine and 'qlen' in currLine: #IP command only
+                haveIf = True
+                imterfc = lineParts[1].replace(':', '')
+                print_line('newIF=[{}]'.format(imterfc), debug=True)
             elif 'Link' in currLine:  # OLDER ONLY
                 haveIF = True
                 imterfc = lineParts[0].replace(':', '')
