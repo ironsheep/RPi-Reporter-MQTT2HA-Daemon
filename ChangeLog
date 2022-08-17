@@ -1,3 +1,8 @@
+Tue, 17 Aug 2022 18:37:21 -0600 v1.6.2
+
+- (#63) Fix path to cut(1) command
+- (#61) add filter to prevent df reporting "No such device or address" from breaking the script
+
 Tue, 02 Aug 2022 18:37:21 -0600 v1.6.1
 
 - Fix 'bullseye' name determination - remove extra sources output

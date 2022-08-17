@@ -397,7 +397,7 @@ def getDeviceModel():
 
 def getLinuxRelease():
     global rpi_linux_release
-    out = subprocess.Popen("/bin/cat /etc/apt/sources.list | /bin/egrep -v '#' | /usr/bin/awk '{ print $3 }' | /bin/sed -e 's/-/ /g' | /bin/cut -f1 -d' ' | /bin/grep . | /usr/bin/sort -u",
+    out = subprocess.Popen("/bin/cat /etc/apt/sources.list | /bin/egrep -v '#' | /usr/bin/awk '{ print $3 }' | /bin/sed -e 's/-/ /g' | /usr/bin/cut -f1 -d' ' | /bin/grep . | /usr/bin/sort -u",
                            shell=True,
                            stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT)
@@ -651,8 +651,17 @@ def getFileSystemDrives():
     # /dev/mmcblk0p1 253 55 198 22% /boot
     # tmpfs 340 0 340 0% /run/user/1000
 
+    # FAILING Case v1.6.x (issue #61)
+    # [[/bin/df: /mnt/sabrent: No such device or address',
+    #   '/dev/root         119756  19503     95346  17% /',
+    #   '/dev/sda1         953868 882178     71690  93% /media/usb0',
+    #   '/dev/sdb1         976761  93684    883078  10% /media/pi/SSD']]
+
     tmpDrives = []
     for currLine in trimmedLines:
+        if 'no such device' in currLine.lower():
+            print_line('BAD LINE FORMAT, Skipped=[{}]'.format(currLine), debug=True, warning=True)
+            continue
         lineParts = currLine.split()
         print_line('lineParts({})=[{}]'.format(
             len(lineParts), lineParts), debug=True)
