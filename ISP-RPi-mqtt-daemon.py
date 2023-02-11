@@ -24,8 +24,9 @@ import paho.mqtt.client as mqtt
 import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
+import urllib3
 
-script_version = "1.6.1"
+script_version = "1.7.0"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -55,6 +56,8 @@ sd_notifier = sdnotify.SystemdNotifier()
 
 def print_line(text, error=False, warning=False, info=False, verbose=False, debug=False, console=True, sd_notify=False):
     timestamp = strftime('%Y-%m-%d %H:%M:%S', localtime())
+    if(sd_notify):
+        text = '* NOTIFY: {}'.format(text)
     if console:
         if error:
             print(Fore.RED + Style.BRIGHT + '[{}] '.format(
@@ -215,6 +218,51 @@ if not config['MQTT']:
 print_line('Configuration accepted', console=False, sd_notify=True)
 
 # -----------------------------------------------------------------------------
+#  Daemon variables monitored
+# -----------------------------------------------------------------------------
+
+daemon_version_list = [ 'NOT-LOADED' ]
+
+def getDaemonReleases():
+# retrieve latest formal release versions list from repo
+    global daemon_version_list
+    newVersionList = []
+    latestVersion = ''
+    http = urllib3.PoolManager()
+    result = http.request('GET', 'https://raw.githubusercontent.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/master/Release')
+    if result.status != 200:
+        print_line('- getDaemonReleases() RQST status=({})'.format(result.status), error=True)
+    else:
+        content = result.data.decode('utf-8')
+        lines = content.split('\n')
+        for line in lines:
+            if len(line) > 0:
+                #print_line('- RLS Line=[{}]'.format(line), debug=True)
+                lineParts = line.split(' ')
+                #print_line('- RLS lineParts=[{}]'.format(lineParts), debug=True)
+                if len(lineParts) >= 2:
+                    currVersion = lineParts[0]
+                    rlsType = lineParts[1]
+                    if not currVersion in newVersionList:
+                        if not 'latest' in rlsType.lower():
+                            newVersionList.append(currVersion)  # append to list
+                        else:
+                            latestVersion = currVersion
+
+        if len(newVersionList) > 1:
+            newVersionList.sort()
+        if len(latestVersion) > 0:
+            if not latestVersion in newVersionList:
+                newVersionList.insert(0, currVersion)  # append to list
+
+        daemon_version_list = newVersionList
+        print_line('- RQST daemon_version_list=({})'.format(daemon_version_list), debug=True)
+
+getDaemonReleases() # and load them!
+
+
+
+# -----------------------------------------------------------------------------
 #  RPi variables monitored
 # -----------------------------------------------------------------------------
 
@@ -360,6 +408,24 @@ def getDeviceMemory():
     rpi_memory_tuple = (mem_total, mem_free, mem_avail)
     print_line('rpi_memory_tuple=[{}]'.format(rpi_memory_tuple), debug=True)
 
+def refreshPackageInfo():
+    out = subprocess.Popen("/usr/bin/sudo /usr/bin/apt-get update",
+                           shell=True,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+    stdout, _ = out.communicate()
+    update_rslts = stdout.decode('utf-8')
+    print_line('update_rslts=[{}]'.format(update_rslts), warning=True, sd_notify=True)
+
+def getUpdateCounts():
+    # /usr/bin/sudo
+    out = subprocess.Popen("/usr/bin/sudo /usr/bin/apt-get --assume-no dist-upgrade",
+                           shell=True,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+    stdout, _ = out.communicate()
+    package_rslts = stdout.decode('utf-8')
+    print_line('package_rslts=[{}]'.format(package_rslts), warning=True, sd_notify=True)
 
 def getDeviceModel():
     global rpi_model
@@ -850,7 +916,6 @@ def getSystemThermalStatus():
     print_line('rpi_throttle_status=[{}]'.format(
         rpi_throttle_status), debug=True)
 
-
 def interpretThrottleValue(throttleValue):
     """
     01110000000000000010
@@ -952,7 +1017,6 @@ def getLastInstallDate():
 
     print_line('rpi_last_update_date=[{}]'.format(
         rpi_last_update_date), debug=True)
-
 
 # get our hostnames so we can setup MQTT
 getHostnames()
@@ -1069,6 +1133,13 @@ else:
 
 sd_notifier.notify('READY=1')
 
+# -----------------------------------------------------------------------------
+#  Perform our MQTT Discovery Announcement...
+# -----------------------------------------------------------------------------
+
+#  findings: both sudo and not sudo fail (suders doesn't contain daemon and shouldn't)
+#refreshPackageInfo()
+#getUpdateCounts()
 
 # -----------------------------------------------------------------------------
 #  Perform our MQTT Discovery Announcement...
@@ -1242,6 +1313,7 @@ RPI_SYSTEM_TEMP = "temperature_c"
 RPI_GPU_TEMP = "temp_gpu_c"
 RPI_CPU_TEMP = "temp_cpu_c"
 RPI_SCRIPT = "reporter"
+RPI_SCRIPT_VERSIONS = "reporter_releases"
 RPI_NETWORK = "networking"
 RPI_INTERFACE = "interface"
 SCRIPT_REPORT_INTERVAL = "report_interval"
@@ -1324,6 +1396,7 @@ def send_status(timestamp, nothing):
     rpiData[RPI_CPU_TEMP] = forceSingleDigit(rpi_cpu_temp)
 
     rpiData[RPI_SCRIPT] = rpi_mqtt_script.replace('.py', '')
+    rpiData[RPI_SCRIPT_VERSIONS] = ','.join(daemon_version_list)
     rpiData[SCRIPT_REPORT_INTERVAL] = interval_in_minutes
 
     rpiTopDict = OrderedDict()
@@ -1485,7 +1558,6 @@ def afterMQTTConnect():
 # TESTING, early abort
 # stopAliveTimer()
 # exit(0)
-
 
 afterMQTTConnect()  # now instead of after?
 
