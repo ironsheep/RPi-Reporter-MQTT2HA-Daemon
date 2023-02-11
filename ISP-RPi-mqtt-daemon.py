@@ -26,7 +26,7 @@ from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
 import urllib3
 
-script_version = "1.7.0"
+script_version = "1.7.1"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -253,7 +253,7 @@ def getDaemonReleases():
             newVersionList.sort()
         if len(latestVersion) > 0:
             if not latestVersion in newVersionList:
-                newVersionList.insert(0, currVersion)  # append to list
+                newVersionList.insert(0, latestVersion)  # append to list
 
         daemon_version_list = newVersionList
         print_line('- RQST daemon_version_list=({})'.format(daemon_version_list), debug=True)

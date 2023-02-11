@@ -8,97 +8,98 @@
 
 [![GitHub Release][releases-shield]][releases]
 
-A simple Linux python script to query the Raspberry Pi on which it is running for various configuration and status values which it then reports via via [MQTT](https://projects.eclipse.org/projects/iot.mosquitto) to your [Home Assistant](https://www.home-assistant.io/) installation.  This allows you to install and run this on each of your RPi's so you can track them all via your own Home Assistant Dashboard.
+A simple Linux python script to query the Raspberry Pi on which it is running for various configuration and status values which it then reports via via [MQTT](https://projects.eclipse.org/projects/iot.mosquitto) to your [Home Assistant](https://www.home-assistant.io/) installation. This allows you to install and run this on each of your RPi's so you can track them all via your own Home Assistant Dashboard.
 
 ![Discovery image](./Docs/images/DiscoveryV3.png)
 
-This script should be configured to be run in **daemon mode** continously in the background as a systemd service (or optionally as a SysV init script).  Instructions are provided below.
+This script should be configured to be run in **daemon mode** continously in the background as a systemd service (or optionally as a SysV init script). Instructions are provided below.
 
-*(Jump to below [Lovelace Custom Card](#lovelace-custom-card).)*
+_(Jump to below [Lovelace Custom Card](#lovelace-custom-card).)_
 
 ## Script Updates
 
 We've been repairing this script as users report issues with it. For a list of fixes for each release see our [ChangeLog](./ChangeLog)
 
-----
+---
 
 If you like my work and/or this has helped you in some way then feel free to help me out for a couple of :coffee:'s or :pizza: slices!
 
 [![coffee](https://www.buymeacoffee.com/assets/img/custom_images/black_img.png)](https://www.buymeacoffee.com/ironsheep)
 
-----
+---
 
 ## Features
 
-* Tested on Raspberry Pi's 2/3/4 with Jessie, Stretch and Buster
-* Tested with Home Assistant v0.111.0 -> 2021.11.5
-* Tested with Mosquitto broker v5.1 - v6.0.1
-* Data is published via MQTT
-* MQTT discovery messages are sent so RPi's are automatically registered with Home Assistant (if MQTT discovery is enabled in your HA installation)
-* MQTT authentication support
-* No special/root privileges are required by this mechanism
-* Linux daemon / systemd service, sd\_notify messages generated
+- Tested on Raspberry Pi's 2/3/4 with Jessie, Stretch and Buster
+- Tested with Home Assistant v0.111.0 -> 2021.11.5
+- Tested with Mosquitto broker v5.1 - v6.0.1
+- Data is published via MQTT
+- MQTT discovery messages are sent so RPi's are automatically registered with Home Assistant (if MQTT discovery is enabled in your HA installation)
+- MQTT authentication support
+- No special/root privileges are required by this mechanism
+- Linux daemon / systemd service, sd_notify messages generated
 
 ### RPi Device
 
 Each RPi device is reported as:
 
-| Name            | Description |
-|-----------------|-------------|
-| `Manufacturer`   | Raspberry Pi (Trading) Ltd. |
-| `Model`         | RPi 4 Model B v1.1  |
-| `Name`      | (fqdn) pimon1.home |
+| Name           | Description                                  |
+| -------------- | -------------------------------------------- |
+| `Manufacturer` | Raspberry Pi (Trading) Ltd.                  |
+| `Model`        | RPi 4 Model B v1.1                           |
+| `Name`         | (fqdn) pimon1.home                           |
 | `sofware ver`  | OS Name, Version (e.g., Buster v4.19.75v7l+) |
 
 ### RPi MQTT Topics
 
 Each RPi device is reported as four topics:
 
-| Name            | Device Class | Units | Description
-|-----------------|-------------|-------------|-------------|
-| `~/monitor`   | 'timestamp' | n/a | Is a timestamp which shows when the RPi last sent information, carries a template payload conveying all monitored values (**attach the lovelace custom card to this sensor!**)
-| `~/temperature`   | 'temperature' | degrees C | Shows the latest system temperature
-| `~/disk_used`   | none | percent (%) | Shows the amount of root file system used
-| `~/cpu_load`   | none | percent (%) | Shows CPU load % over the last 5 minutes
+| Name            | Device Class  | Units       | Description                                                                                                                                                                    |
+| --------------- | ------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `~/monitor`     | 'timestamp'   | n/a         | Is a timestamp which shows when the RPi last sent information, carries a template payload conveying all monitored values (**attach the lovelace custom card to this sensor!**) |
+| `~/temperature` | 'temperature' | degrees C   | Shows the latest system temperature                                                                                                                                            |
+| `~/disk_used`   | none          | percent (%) | Shows the amount of root file system used                                                                                                                                      |
+| `~/cpu_load`    | none          | percent (%) | Shows CPU load % over the last 5 minutes                                                                                                                                       |
 
 ### RPi Monitor Topic
 
 The monitored topic reports the following information:
 
-| Name            | Sub-name | Description
-|-----------------|-------------|-------------
-| `rpi_model` | | tinyfied hardware version string |
-| `ifaces`        | |  comma sep list of interfaces on board [w,e,b]
-| `temperature_c`   | |  System temperature, in [°C] (0.1°C resolution) Note: this is GPU temp. if available, else CPU temp. |
-| `temp_gpu_c`   | |  GPU temperature, in [°C] (0.1°C resolution) |
-| `temp_cpu_c`   | |  CPU temperature, in [°C] (0.1°C resolution) |
-| `up_time`      | |  duration since last booted, as [days] |
-| `last_update`  | |  updates last applied, as [date] |
-| `fs_total_gb`       | |  / total space in [GBytes] |
-| `fs_free_prcnt`       | |  / free space [%] |
-| `host_name`       | |  hostname |
-| `fqdn`       | |  hostname.domain |
-| `ux_release`       | |  os release name (e.g., buster) |
-| `ux_version`       | |  os version (e.g., 4.19.66-v7+) |
-| `reporter`  | |  script name, version running on RPi |
-| `networking`       |  | lists for each interface: interface name, mac address (and IP if the interface is connected) |
-| `drives`       | |  lists for each drive mounted: size in GB, % used, device and mount point |
-| `cpu`       |  | lists the model of cpu, number of cores, etc. |
-|       | `hardware` | typically the Broadcom chip ID (e.g. BCM2835) |
-|        | `model` | model description string (e.g., ARMv7 Processor rev 4 (v7l)) |
-|        | `number_cores` | number of cpu cores [1,4] |
-|        | `bogo_mips` | reported performance of this RPi |
-|        | `serial` | serial number of this RPi |
-|        | `load_1min_prcnt` | average % cpu load during prior minute (avg per core) |
-|        | `load_5min_prcnt` | average % cpu load during prior 5 minutes (avg per core) |
-|        | `load_15min_prcnt` | average % cpu load during prior 15 minutes (avg per core) |
-| `memory`       |  | shows the total amount of RAM in MB and the available ram in MB |
-| `reporter`    |  | name and version of the script reporting these values |
-| `report_interval`    |  | interval in minutes between reports from this script |
-| `throttle`    |  | reports the throttle status value plus interpretation thereof |
-| `timestamp`    |  | date, time when this report was generated |
+| Name                | Sub-name           | Description                                                                                         |
+| ------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `rpi_model`         |                    | tinyfied hardware version string                                                                    |
+| `ifaces`            |                    | comma sep list of interfaces on board [w,e,b]                                                       |
+| `temperature_c`     |                    | System temperature, in [°C] (0.1°C resolution) Note: this is GPU temp. if available, else CPU temp. |
+| `temp_gpu_c`        |                    | GPU temperature, in [°C] (0.1°C resolution)                                                         |
+| `temp_cpu_c`        |                    | CPU temperature, in [°C] (0.1°C resolution)                                                         |
+| `up_time`           |                    | duration since last booted, as [days]                                                               |
+| `last_update`       |                    | updates last applied, as [date]                                                                     |
+| `fs_total_gb`       |                    | / total space in [GBytes]                                                                           |
+| `fs_free_prcnt`     |                    | / free space [%]                                                                                    |
+| `host_name`         |                    | hostname                                                                                            |
+| `fqdn`              |                    | hostname.domain                                                                                     |
+| `ux_release`        |                    | os release name (e.g., buster)                                                                      |
+| `ux_version`        |                    | os version (e.g., 4.19.66-v7+)                                                                      |
+| `reporter`          |                    | script name, version running on RPi                                                                 |
+| `networking`        |                    | lists for each interface: interface name, mac address (and IP if the interface is connected)        |
+| `drives`            |                    | lists for each drive mounted: size in GB, % used, device and mount point                            |
+| `cpu`               |                    | lists the model of cpu, number of cores, etc.                                                       |
+|                     | `hardware`         | typically the Broadcom chip ID (e.g. BCM2835)                                                       |
+|                     | `model`            | model description string (e.g., ARMv7 Processor rev 4 (v7l))                                        |
+|                     | `number_cores`     | number of cpu cores [1,4]                                                                           |
+|                     | `bogo_mips`        | reported performance of this RPi                                                                    |
+|                     | `serial`           | serial number of this RPi                                                                           |
+|                     | `load_1min_prcnt`  | average % cpu load during prior minute (avg per core)                                               |
+|                     | `load_5min_prcnt`  | average % cpu load during prior 5 minutes (avg per core)                                            |
+|                     | `load_15min_prcnt` | average % cpu load during prior 15 minutes (avg per core)                                           |
+| `memory`            |                    | shows the total amount of RAM in MB and the available ram in MB                                     |
+| `reporter`          |                    | name and version of the script reporting these values                                               |
+| `reporter_releases` |                    | list of latest reporter formal versions                                                             |
+| `report_interval`   |                    | interval in minutes between reports from this script                                                |
+| `throttle`          |                    | reports the throttle status value plus interpretation thereof                                       |
+| `timestamp`         |                    | date, time when this report was generated                                                           |
 
-*NOTE: cpu load averages are divided by the number of cores*
+_NOTE: cpu load averages are divided by the number of cores_
 
 ## Prerequisites
 
@@ -116,17 +117,16 @@ First install extra packages the script needs (select one of the two following c
 ### Packages for Ubuntu, Raspberry pi OS, and the like
 
 ```shell
-sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-paho-mqtt 
+sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-paho-mqtt
 ```
 
 ### Packages for pure Ubuntu
 
-**NOTE** if you are running a **pure Ubuntu** not Raspberry pi OS then you may need to install additional packages to get the binary we use to get the core temperatures and tools to inspec the network interfaces. (*If you are NOT seeing temperatures in your Lovelace RPI Monitor Card this is likely the cause.  Or if some of your RPis don't show up in Home Assistant*)  Do the following in this case:
+**NOTE** if you are running a **pure Ubuntu** not Raspberry pi OS then you may need to install additional packages to get the binary we use to get the core temperatures and tools to inspec the network interfaces. (_If you are NOT seeing temperatures in your Lovelace RPI Monitor Card this is likely the cause. Or if some of your RPis don't show up in Home Assistant_) Do the following in this case:
 
 ```shell
-sudo apt-get install libraspberrypi-bin net-tools 
+sudo apt-get install libraspberrypi-bin net-tools
 ```
-
 
 ### Packages for Arch Linux
 
@@ -155,7 +155,7 @@ sudo pip3 install -r requirements.txt
 ## Configuration
 
 To match personal needs, all operational details can be configured by modifying entries within the file [`config.ini`](config.ini.dist).
-The file needs to be created first: (*in the following: if you don't have vim installed you might try nano*)
+The file needs to be created first: (_in the following: if you don't have vim installed you might try nano_)
 
 ```shell
 sudo cp /opt/RPi-Reporter-MQTT2HA-Daemon/config.{ini.dist,ini}
@@ -191,14 +191,13 @@ A first test run is as easy as:
 python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py
 ```
 
-**NOTE:** *it is a good idea to execute this script by hand this way each time you modify the config.ini.  By running after each modification the script can tell you through error messages if it had any problems with any values in the config.ini file, or any missing values. etc.*``
+**NOTE:** _it is a good idea to execute this script by hand this way each time you modify the config.ini. By running after each modification the script can tell you through error messages if it had any problems with any values in the config.ini file, or any missing values. etc._``
 
 Using the command line argument `--config`, a directory where to read the config.ini file from can be specified, e.g.
 
 ```shell
 python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py --config /opt/RPi-Reporter-MQTT2HA-Daemon
 ```
-
 
 ### Preparing to run full time
 
@@ -210,21 +209,21 @@ But first, we need to grant access to some hardware for the user account under w
 
 ### Set up daemon account to allow access to temperature values
 
-By default this script is run as user:group  **daemon:daemon**.  As this script requires access to the GPU you'll want to add access to it for the daemon user as follows:
+By default this script is run as user:group **daemon:daemon**. As this script requires access to the GPU you'll want to add access to it for the daemon user as follows:
 
-   ```shell
-   # list current groups
-   groups daemon
-   $ daemon : daemon
+```shell
+# list current groups
+groups daemon
+$ daemon : daemon
 
-   # add video if not present
-   sudo usermod daemon -a -G video
+# add video if not present
+sudo usermod daemon -a -G video
 
-   # list current groups
-   groups daemon
-   $ daemon : daemon video
-   #                 ^^^^^ now it is present
-   ```
+# list current groups
+groups daemon
+$ daemon : daemon video
+#                 ^^^^^ now it is present
+```
 
 ### Choose Run Style
 
@@ -232,48 +231,48 @@ You can choose to run this script as a `systemd service` or as a `Sys V init scr
 
 Let's look at how to set up each of these forms:
 
-#### Run as Systemd Daemon / Service (*for Raspian/Raspberry pi OS newer than 'jessie'*)
+#### Run as Systemd Daemon / Service (_for Raspian/Raspberry pi OS newer than 'jessie'_)
 
-(**Heads Up** *We've learned the hard way that RPi's running `jessie` won't restart the script on reboot if setup this way, Please set up these RPi's using the init script form shown in the next section.*)
+(**Heads Up** _We've learned the hard way that RPi's running `jessie` won't restart the script on reboot if setup this way, Please set up these RPi's using the init script form shown in the next section._)
 
 Set up the script to be run as a system service as follows:
 
-   ```shell
-   sudo ln -s /opt/RPi-Reporter-MQTT2HA-Daemon/isp-rpi-reporter.service /etc/systemd/system/isp-rpi-reporter.service
+```shell
+sudo ln -s /opt/RPi-Reporter-MQTT2HA-Daemon/isp-rpi-reporter.service /etc/systemd/system/isp-rpi-reporter.service
 
-   sudo systemctl daemon-reload
+sudo systemctl daemon-reload
 
-   # tell system that it can start our script at system startup during boot
-   sudo systemctl enable isp-rpi-reporter.service
-   
-   # start the script running
-   sudo systemctl start isp-rpi-reporter.service
-   
-   # check to make sure all is ok with the start up
-   sudo systemctl status isp-rpi-reporter.service
-   ```
-   
-**NOTE:** *Please remember to run the 'systemctl enable ...' once at first install, if you want your script to start up every time your RPi reboots!*
+# tell system that it can start our script at system startup during boot
+sudo systemctl enable isp-rpi-reporter.service
 
-#### Run as Sys V init script (*your RPi is running 'jessie' or you just like this form*)
+# start the script running
+sudo systemctl start isp-rpi-reporter.service
+
+# check to make sure all is ok with the start up
+sudo systemctl status isp-rpi-reporter.service
+```
+
+**NOTE:** _Please remember to run the 'systemctl enable ...' once at first install, if you want your script to start up every time your RPi reboots!_
+
+#### Run as Sys V init script (_your RPi is running 'jessie' or you just like this form_)
 
 In this form our wrapper script located in the /etc/init.d directory and is run according to symbolic links in the `/etc/rc.x` directories.
 
 Set up the script to be run as a Sys V init script as follows:
 
-   ```shell
-   sudo ln -s /opt/RPi-Reporter-MQTT2HA-Daemon/rpi-reporter /etc/init.d/rpi-reporter
+```shell
+sudo ln -s /opt/RPi-Reporter-MQTT2HA-Daemon/rpi-reporter /etc/init.d/rpi-reporter
 
-	# configure system to start this script at boot time
-   sudo update-rc.d rpi-reporter defaults
+# configure system to start this script at boot time
+sudo update-rc.d rpi-reporter defaults
 
-   # let's start the script now, too so we don't have to reboot
-   sudo /etc/init.d/rpi-reporter start
-  
-   # check to make sure all is ok with the start up
-   sudo /etc/init.d/rpi-reporter status
-   ```
-   
+# let's start the script now, too so we don't have to reboot
+sudo /etc/init.d/rpi-reporter start
+
+# check to make sure all is ok with the start up
+sudo /etc/init.d/rpi-reporter status
+```
+
 ### Update to latest
 
 Like most active developers, we periodically upgrade our script. Use one of the following list of update steps based upon how you are set up.
@@ -282,48 +281,48 @@ Like most active developers, we periodically upgrade our script. Use one of the 
 
 If you are setup in the systemd form, you can update to the latest we've published by following these steps:
 
-   ```shell
-   # go to local repo
-   cd /opt/RPi-Reporter-MQTT2HA-Daemon
+```shell
+# go to local repo
+cd /opt/RPi-Reporter-MQTT2HA-Daemon
 
-   # stop the service
-   sudo systemctl stop isp-rpi-reporter.service
+# stop the service
+sudo systemctl stop isp-rpi-reporter.service
 
-   # get the latest version
-   sudo git pull
+# get the latest version
+sudo git pull
 
-   # reload the systemd configuration (in case it changed)
-   sudo systemctl daemon-reload
+# reload the systemd configuration (in case it changed)
+sudo systemctl daemon-reload
 
-   # restart the service with your new version
-   sudo systemctl start isp-rpi-reporter.service
+# restart the service with your new version
+sudo systemctl start isp-rpi-reporter.service
 
-   # if you want, check status of the running script
-   systemctl status isp-rpi-reporter.service
+# if you want, check status of the running script
+systemctl status isp-rpi-reporter.service
 
-   ```
-   
+```
+
 #### SysV init script commands to perform update
 
 If you are setup in the Sys V init script form, you can update to the latest we've published by following these steps:
 
-   ```shell
-   # go to local repo
-   cd /opt/RPi-Reporter-MQTT2HA-Daemon
+```shell
+# go to local repo
+cd /opt/RPi-Reporter-MQTT2HA-Daemon
 
-   # stop the service
-   sudo /etc/init.d/rpi-reporter stop
+# stop the service
+sudo /etc/init.d/rpi-reporter stop
 
-   # get the latest version
-   sudo git pull
+# get the latest version
+sudo git pull
 
-   # restart the service with your new version
-   sudo /etc/init.d/rpi-reporter start
+# restart the service with your new version
+sudo /etc/init.d/rpi-reporter start
 
-   # if you want, check status of the running script
-   sudo /etc/init.d/rpi-reporter status
+# if you want, check status of the running script
+sudo /etc/init.d/rpi-reporter status
 
-   ```
+```
 
 ## Integration
 
@@ -376,10 +375,7 @@ An example:
       "load_5min_prcnt": 22.5,
       "load_15min_prcnt": 22.8
     },
-    "throttle": [
-      "throttled = 0x0",
-      "Not throttled"
-    ],
+    "throttle": ["throttled = 0x0", "Not throttled"],
     "temperature_c": 63.4,
     "temp_gpu_c": 63.4,
     "temp_cpu_c": 62.8,
@@ -391,11 +387,11 @@ An example:
 
 **NOTE:** Where there's an IP address that interface is connected.
 
-This data can be subscribed to and processed by your home assistant installation. How you build your RPi dashboard from here is up to you!  
+This data can be subscribed to and processed by your home assistant installation. How you build your RPi dashboard from here is up to you!
 
 ## Lovelace Custom Card
 
-We have a Lovelace Custom Card that makes displaying this RPi Monitor data very easy.  
+We have a Lovelace Custom Card that makes displaying this RPi Monitor data very easy.
 
 See my project: [Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card)
 
@@ -403,11 +399,11 @@ See my project: [Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelac
 
 ### Issue: Some of my RPi's don't show up in HA
 
-Most often fix: *install the missing package.*
+Most often fix: _install the missing package._
 
-We occasionaly have reports of users with more than one RPi on their network but only one shows up in Home Assistant. This is most often caused when this script generats a non-unique id for the RPi's.  This in turn is most often caused by an inability to get network interface details.  I've just updated the install to ensure that we have net-tools package installed. On Raspberry Pi OS this package is already present while on Ubuntu this is not installed by default.  If you can successfully run ifconfig(8) then you have what's needed. If not then simply run `sudo apt-get install net-tools`.
+We occasionaly have reports of users with more than one RPi on their network but only one shows up in Home Assistant. This is most often caused when this script generats a non-unique id for the RPi's. This in turn is most often caused by an inability to get network interface details. I've just updated the install to ensure that we have net-tools package installed. On Raspberry Pi OS this package is already present while on Ubuntu this is not installed by default. If you can successfully run ifconfig(8) then you have what's needed. If not then simply run `sudo apt-get install net-tools`.
 
-### General debug 
+### General debug
 
 The deamon script can be run my hand while enabling debug and verbose messaging:
 
@@ -416,7 +412,6 @@ python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py -d -v
 ```
 
 This let's you inspect many of the values the script is going to use and to see the data being sent to the MQTT broker.
-
 
 ## Contributors
 
@@ -428,34 +423,29 @@ Thank you to the following github users for taking the time to help make this pr
 - [woodmj74](https://github.com/woodmj74)
 - [Henry-Sir](https://github.com/Henry-Sir)
 
-
 ## Credits
 
 Thank you to Thomas Dietrich for providing a wonderful pattern for this project. His project, which I use and heartily recommend, is [miflora-mqtt-deamon](https://github.com/ThomDietrich/miflora-mqtt-daemon)
 
 Thanks to [synoniem](https://github.com/synoniem) for working through the issues with startup as a SystemV init script and for providing 'rpi-reporter' script itself and for identifying the need for support of other boot device forms.
 
-----
+---
 
 ## Disclaimer and Legal
 
-> *Raspberry Pi* is registered trademark of *Raspberry Pi (Trading) Ltd.*
+> _Raspberry Pi_ is registered trademark of _Raspberry Pi (Trading) Ltd._
 >
 > This project is a community project not for commercial use.
 > The authors will not be held responsible in the event of device failure or simply errant reporting of your RPi status.
 >
-> This project is in no way affiliated with, authorized, maintained, sponsored or endorsed by *Raspberry Pi (Trading) Ltd.* or any of its affiliates or subsidiaries.
+> This project is in no way affiliated with, authorized, maintained, sponsored or endorsed by _Raspberry Pi (Trading) Ltd._ or any of its affiliates or subsidiaries.
 
-----
+---
 
 ### [Copyright](copyright) | [License](LICENSE)
 
 [commits-shield]: https://img.shields.io/github/commit-activity/y/ironsheep/RPi-Reporter-MQTT2HA-Daemon.svg?style=for-the-badge
 [commits]: https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/commits/master
-
-[license-shield]: https://img.shields.io/github/license/ironsheep/RPi-Reporter-MQTT2HA-Daemon.svg?style=for-the-badge
-
 [maintenance-shield]: https://img.shields.io/badge/maintainer-stephen%40ironsheep.biz-blue.svg?style=for-the-badge
-
 [releases-shield]: https://img.shields.io/github/release/ironsheep/RPi-Reporter-MQTT2HA-Daemon.svg?style=for-the-badge
 [releases]: https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/releases
