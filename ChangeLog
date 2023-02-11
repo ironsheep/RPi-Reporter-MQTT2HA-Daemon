@@ -1,5 +1,9 @@
 # ChangeLog
 
+Sat, 11 Feb 2023 14:28:59 -0700 v1.7.2
+
+- Repair fetch of versions, now every 12 hours
+
 Fri, 10 Feb 2023 17:27:06 -0700 v1.7.1
 
 - Fix internal release number

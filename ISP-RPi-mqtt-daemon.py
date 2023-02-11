@@ -24,9 +24,10 @@ import paho.mqtt.client as mqtt
 import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
-import urllib3
+import requests
+from urllib3.exceptions import InsecureRequestWarning
 
-script_version = "1.7.1"
+script_version = "1.7.2"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -34,6 +35,10 @@ project_url = 'https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon'
 
 # we'll use this throughout
 local_tz = get_localzone()
+
+# turn off insecure connection warnings (our KZ0Q site has bad certs)
+# REF: https://www.geeksforgeeks.org/how-to-disable-security-certificate-checks-for-requests-in-python/
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 # TODO:
 #  - add announcement of free-space and temperatore endpoints
@@ -222,18 +227,22 @@ print_line('Configuration accepted', console=False, sd_notify=True)
 # -----------------------------------------------------------------------------
 
 daemon_version_list = [ 'NOT-LOADED' ]
+daemon_last_fetch_time = 0.0
 
 def getDaemonReleases():
 # retrieve latest formal release versions list from repo
     global daemon_version_list
+    global daemon_last_fetch_time
+
     newVersionList = []
     latestVersion = ''
-    http = urllib3.PoolManager()
-    result = http.request('GET', 'https://raw.githubusercontent.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/master/Release')
-    if result.status != 200:
-        print_line('- getDaemonReleases() RQST status=({})'.format(result.status), error=True)
+
+    response = requests.request('GET', 'http://kz0q.com/daemon-releases', verify=False)
+    if response.status_code != 200:
+        print_line('- getDaemonReleases() RQST status=({})'.format(response.status_code), error=True)
+        daemon_version_list = [ 'NOT-LOADED' ]  # mark as NOT fetched
     else:
-        content = result.data.decode('utf-8')
+        content = response.text
         lines = content.split('\n')
         for line in lines:
             if len(line) > 0:
@@ -257,8 +266,10 @@ def getDaemonReleases():
 
         daemon_version_list = newVersionList
         print_line('- RQST daemon_version_list=({})'.format(daemon_version_list), debug=True)
+        daemon_last_fetch_time = time()    # record when we last fetched the versions
 
 getDaemonReleases() # and load them!
+print_line('* daemon_last_fetch_time=({})'.format(daemon_last_fetch_time), debug=True)
 
 
 
@@ -1561,11 +1572,19 @@ def afterMQTTConnect():
 
 afterMQTTConnect()  # now instead of after?
 
+# check every 12 hours (twice a day) = 12 hours * 60 minutes * 60 seconds
+kVersionCheckIntervalInSeconds = (12 * 60 * 60)
+
 # now just hang in forever loop until script is stopped externally
 try:
     while True:
         #  our INTERVAL timer does the work
         sleep(10000)
+
+        timeNow = time()
+        if timeNow > daemon_last_fetch_time + kVersionCheckIntervalInSeconds:
+            getDaemonReleases() # and load them!
+
 
 finally:
     # cleanup used pins... just because we like cleaning up after us
