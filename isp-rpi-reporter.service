@@ -11,9 +11,7 @@ User=daemon
 Group=daemon
 WorkingDirectory=/opt/RPi-Reporter-MQTT2HA-Daemon/
 ExecStart=/usr/bin/python3 -u /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py
-#StandardOutput=null
-#StandardOutput=syslog
-#SyslogIdentifier=ISPliDet
+StandardOutput=null
 StandardError=journal
 Environment=PYTHONUNBUFFERED=1
 Restart=always

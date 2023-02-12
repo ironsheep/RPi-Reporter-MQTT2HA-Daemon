@@ -24,8 +24,10 @@ import paho.mqtt.client as mqtt
 import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
+import requests
+from urllib3.exceptions import InsecureRequestWarning
 
-script_version = "1.7.0"
+script_version = "1.7.2"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -33,6 +35,10 @@ project_url = 'https://github.com/hobbypunk90/RPi-Reporter-MQTT2HA-Daemon'
 
 # we'll use this throughout
 local_tz = get_localzone()
+
+# turn off insecure connection warnings (our KZ0Q site has bad certs)
+# REF: https://www.geeksforgeeks.org/how-to-disable-security-certificate-checks-for-requests-in-python/
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 # TODO:
 #  - add announcement of free-space and temperatore endpoints
@@ -55,6 +61,8 @@ sd_notifier = sdnotify.SystemdNotifier()
 
 def print_line(text, error=False, warning=False, info=False, verbose=False, debug=False, console=True, sd_notify=False):
     timestamp = strftime('%Y-%m-%d %H:%M:%S', localtime())
+    if(sd_notify):
+        text = '* NOTIFY: {}'.format(text)
     if console:
         if error:
             print(Fore.RED + Style.BRIGHT + '[{}] '.format(
@@ -140,7 +148,7 @@ def on_connect(client, userdata, flags, rc):
         print_line('on_connect() mqtt_client_connected=[{}]'.format(
             mqtt_client_connected), debug=True)
         client.on_publish = on_publish
-        
+
         # -------------------------------------------------------------------------
         # Commands Subscription
         if (len(commands) > 0):
@@ -176,10 +184,10 @@ def on_subscribe(client, userdata, mid, granted_qos):
 
 def on_message(client, userdata, message):
     print_line('on_message(). Topic=[{}] payload=[{}]'.format(message.topic, message.payload), console=True, sd_notify=True, debug=True)
-    
+
     decoded_payload = message.payload.decode('utf-8')
     command = message.topic.split('/')[-1]
-    
+
     if command in commands:
         print_line('- Command "{}" Received - Run {} {} -'.format(command, commands[command], decoded_payload), console=True, debug=True)
         subprocess.Popen(["/usr/bin/sh", "-c", commands[command].format(decoded_payload)])
@@ -251,6 +259,57 @@ if not config['MQTT']:
     sys.exit(1)
 
 print_line('Configuration accepted', console=False, sd_notify=True)
+
+# -----------------------------------------------------------------------------
+#  Daemon variables monitored
+# -----------------------------------------------------------------------------
+
+daemon_version_list = [ 'NOT-LOADED' ]
+daemon_last_fetch_time = 0.0
+
+def getDaemonReleases():
+# retrieve latest formal release versions list from repo
+    global daemon_version_list
+    global daemon_last_fetch_time
+
+    newVersionList = []
+    latestVersion = ''
+
+    response = requests.request('GET', 'http://kz0q.com/daemon-releases', verify=False)
+    if response.status_code != 200:
+        print_line('- getDaemonReleases() RQST status=({})'.format(response.status_code), error=True)
+        daemon_version_list = [ 'NOT-LOADED' ]  # mark as NOT fetched
+    else:
+        content = response.text
+        lines = content.split('\n')
+        for line in lines:
+            if len(line) > 0:
+                #print_line('- RLS Line=[{}]'.format(line), debug=True)
+                lineParts = line.split(' ')
+                #print_line('- RLS lineParts=[{}]'.format(lineParts), debug=True)
+                if len(lineParts) >= 2:
+                    currVersion = lineParts[0]
+                    rlsType = lineParts[1]
+                    if not currVersion in newVersionList:
+                        if not 'latest' in rlsType.lower():
+                            newVersionList.append(currVersion)  # append to list
+                        else:
+                            latestVersion = currVersion
+
+        if len(newVersionList) > 1:
+            newVersionList.sort()
+        if len(latestVersion) > 0:
+            if not latestVersion in newVersionList:
+                newVersionList.insert(0, latestVersion)  # append to list
+
+        daemon_version_list = newVersionList
+        print_line('- RQST daemon_version_list=({})'.format(daemon_version_list), debug=True)
+        daemon_last_fetch_time = time()    # record when we last fetched the versions
+
+getDaemonReleases() # and load them!
+print_line('* daemon_last_fetch_time=({})'.format(daemon_last_fetch_time), debug=True)
+
+
 
 # -----------------------------------------------------------------------------
 #  RPi variables monitored
@@ -398,6 +457,24 @@ def getDeviceMemory():
     rpi_memory_tuple = (mem_total, mem_free, mem_avail)
     print_line('rpi_memory_tuple=[{}]'.format(rpi_memory_tuple), debug=True)
 
+def refreshPackageInfo():
+    out = subprocess.Popen("/usr/bin/sudo /usr/bin/apt-get update",
+                           shell=True,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+    stdout, _ = out.communicate()
+    update_rslts = stdout.decode('utf-8')
+    print_line('update_rslts=[{}]'.format(update_rslts), warning=True, sd_notify=True)
+
+def getUpdateCounts():
+    # /usr/bin/sudo
+    out = subprocess.Popen("/usr/bin/sudo /usr/bin/apt-get --assume-no dist-upgrade",
+                           shell=True,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+    stdout, _ = out.communicate()
+    package_rslts = stdout.decode('utf-8')
+    print_line('package_rslts=[{}]'.format(package_rslts), warning=True, sd_notify=True)
 
 def getDeviceModel():
     global rpi_model
@@ -435,7 +512,7 @@ def getDeviceModel():
 
 def getLinuxRelease():
     global rpi_linux_release
-    out = subprocess.Popen("/bin/cat /etc/apt/sources.list | /bin/egrep -v '#' | /usr/bin/awk '{ print $3 }' | /bin/grep . | /usr/bin/sort -u",
+    out = subprocess.Popen("/bin/cat /etc/apt/sources.list | /bin/egrep -v '#' | /usr/bin/awk '{ print $3 }' | /bin/sed -e 's/-/ /g' | /usr/bin/cut -f1 -d' ' | /bin/grep . | /usr/bin/sort -u",
                            shell=True,
                            stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT)
@@ -689,8 +766,17 @@ def getFileSystemDrives():
     # /dev/mmcblk0p1 253 55 198 22% /boot
     # tmpfs 340 0 340 0% /run/user/1000
 
+    # FAILING Case v1.6.x (issue #61)
+    # [[/bin/df: /mnt/sabrent: No such device or address',
+    #   '/dev/root         119756  19503     95346  17% /',
+    #   '/dev/sda1         953868 882178     71690  93% /media/usb0',
+    #   '/dev/sdb1         976761  93684    883078  10% /media/pi/SSD']]
+
     tmpDrives = []
     for currLine in trimmedLines:
+        if 'no such device' in currLine.lower():
+            print_line('BAD LINE FORMAT, Skipped=[{}]'.format(currLine), debug=True, warning=True)
+            continue
         lineParts = currLine.split()
         print_line('lineParts({})=[{}]'.format(
             len(lineParts), lineParts), debug=True)
@@ -879,7 +965,6 @@ def getSystemThermalStatus():
     print_line('rpi_throttle_status=[{}]'.format(
         rpi_throttle_status), debug=True)
 
-
 def interpretThrottleValue(throttleValue):
     """
     01110000000000000010
@@ -981,7 +1066,6 @@ def getLastInstallDate():
 
     print_line('rpi_last_update_date=[{}]'.format(
         rpi_last_update_date), debug=True)
-
 
 # get our hostnames so we can setup MQTT
 getHostnames()
@@ -1097,6 +1181,13 @@ else:
 
 sd_notifier.notify('READY=1')
 
+# -----------------------------------------------------------------------------
+#  Perform our MQTT Discovery Announcement...
+# -----------------------------------------------------------------------------
+
+#  findings: both sudo and not sudo fail (suders doesn't contain daemon and shouldn't)
+#refreshPackageInfo()
+#getUpdateCounts()
 
 # -----------------------------------------------------------------------------
 #  Perform our MQTT Discovery Announcement...
@@ -1172,7 +1263,7 @@ detectorValues = OrderedDict([
     (LD_CPU_USE, dict(
         title="RPi CPU Use {}".format(rpi_hostname),
         topic_category="sensor",
-        no_title_prefix="yes", 
+        no_title_prefix="yes",
         unit="%",
         icon=LD_CPU_USE_ICON,
         json_value=LD_CPU_USE_JSON,
@@ -1226,16 +1317,16 @@ for [sensor, params] in detectorValues.items():
         payload['~'] = sensor_base_topic
         payload['avty_t'] = activity_topic_rel
         payload['pl_avail'] = lwt_online_val
-        payload['pl_not_avail'] = lwt_offline_val        
+        payload['pl_not_avail'] = lwt_offline_val
     if 'trigger_type' in params:
         payload['type'] = params['trigger_type']
     if 'trigger_subtype' in params:
         payload['subtype'] = params['trigger_subtype']
     if 'icon' in params:
-        payload['ic'] = params['icon']    
+        payload['ic'] = params['icon']
     if 'json_attr' in params:
         payload['json_attr_t'] = values_topic_rel
-        payload['json_attr_tpl'] = '{{{{ value_json.{} | tojson }}}}'.format(LDS_PAYLOAD_NAME)    
+        payload['json_attr_tpl'] = '{{{{ value_json.{} | tojson }}}}'.format(LDS_PAYLOAD_NAME)
     if 'device_ident' in params:
         payload['dev'] = {
             'identifiers': ["{}".format(uniqID)],
@@ -1316,6 +1407,7 @@ RPI_SYSTEM_TEMP = "temperature_c"
 RPI_GPU_TEMP = "temp_gpu_c"
 RPI_CPU_TEMP = "temp_cpu_c"
 RPI_SCRIPT = "reporter"
+RPI_SCRIPT_VERSIONS = "reporter_releases"
 RPI_NETWORK = "networking"
 RPI_INTERFACE = "interface"
 SCRIPT_REPORT_INTERVAL = "report_interval"
@@ -1398,6 +1490,7 @@ def send_status(timestamp, nothing):
     rpiData[RPI_CPU_TEMP] = forceSingleDigit(rpi_cpu_temp)
 
     rpiData[RPI_SCRIPT] = rpi_mqtt_script.replace('.py', '')
+    rpiData[RPI_SCRIPT_VERSIONS] = ','.join(daemon_version_list)
     rpiData[SCRIPT_REPORT_INTERVAL] = interval_in_minutes
 
     rpiTopDict = OrderedDict()
@@ -1560,14 +1653,21 @@ def afterMQTTConnect():
 # stopAliveTimer()
 # exit(0)
 
-
 afterMQTTConnect()  # now instead of after?
+
+# check every 12 hours (twice a day) = 12 hours * 60 minutes * 60 seconds
+kVersionCheckIntervalInSeconds = (12 * 60 * 60)
 
 # now just hang in forever loop until script is stopped externally
 try:
     while True:
         #  our INTERVAL timer does the work
         sleep(10000)
+
+        timeNow = time()
+        if timeNow > daemon_last_fetch_time + kVersionCheckIntervalInSeconds:
+            getDaemonReleases() # and load them!
+
 
 finally:
     # cleanup used pins... just because we like cleaning up after us
