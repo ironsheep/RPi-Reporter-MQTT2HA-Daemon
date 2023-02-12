@@ -31,7 +31,7 @@ script_version = "1.7.2"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
-project_url = 'https://github.com/hobbypunk90/RPi-Reporter-MQTT2HA-Daemon'
+project_url = 'https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon'
 
 # we'll use this throughout
 local_tz = get_localzone()
