@@ -136,7 +136,7 @@ sudo apt-get install libraspberrypi-bin net-tools
 ### Packages for Arch Linux
 
 ```shell
-sudo pacman -S python python-pip python-tzlocal python-notify2 python-colorama python-unidecode python-paho-mqtt inetutils
+sudo pacman -S python python-pip python-tzlocal python-notify2 python-colorama python-unidecode python-paho-mqtt python-requests inetutils 
 ```
 
 ### Now finish with the script install

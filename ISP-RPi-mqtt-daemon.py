@@ -27,7 +27,7 @@ signal(SIGPIPE, SIG_DFL)
 import requests
 from urllib3.exceptions import InsecureRequestWarning
 
-script_version = "1.7.3"
+script_version = "1.7.4"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
