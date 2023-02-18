@@ -52,52 +52,57 @@ Each RPi device is reported as:
 
 ### RPi MQTT Topics
 
-Each RPi device is reported as four topics:
+Each RPi device is reported as five topics:
 
 | Name            | Device Class  | Units       | Description                                                                                                                                                                    |
 | --------------- | ------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `~/monitor`     | 'timestamp'   | n/a         | Is a timestamp which shows when the RPi last sent information, carries a template payload conveying all monitored values (**attach the lovelace custom card to this sensor!**) |
 | `~/temperature` | 'temperature' | degrees C   | Shows the latest system temperature                                                                                                                                            |
-| `~/disk_used`   | none          | percent (%) | Shows the amount of root file system used                                                                                                                                      |
+| `~/disk_used`   | none          | percent (%) | Shows the percent of root file system used                                                                                                                                     |
 | `~/cpu_load`    | none          | percent (%) | Shows CPU load % over the last 5 minutes                                                                                                                                       |
+| `~/mem_used`    | none          | percent (%) | Shows the percent of RAM used                                                                                                                                                  |
 
 ### RPi Monitor Topic
 
 The monitored topic reports the following information:
 
-| Name                | Sub-name           | Description                                                                                         |
-| ------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
-| `rpi_model`         |                    | tinyfied hardware version string                                                                    |
-| `ifaces`            |                    | comma sep list of interfaces on board [w,e,b]                                                       |
-| `temperature_c`     |                    | System temperature, in [°C] (0.1°C resolution) Note: this is GPU temp. if available, else CPU temp. |
-| `temp_gpu_c`        |                    | GPU temperature, in [°C] (0.1°C resolution)                                                         |
-| `temp_cpu_c`        |                    | CPU temperature, in [°C] (0.1°C resolution)                                                         |
-| `up_time`           |                    | duration since last booted, as [days]                                                               |
-| `last_update`       |                    | updates last applied, as [date]                                                                     |
-| `fs_total_gb`       |                    | / total space in [GBytes]                                                                           |
-| `fs_free_prcnt`     |                    | / free space [%]                                                                                    |
-| `host_name`         |                    | hostname                                                                                            |
-| `fqdn`              |                    | hostname.domain                                                                                     |
-| `ux_release`        |                    | os release name (e.g., buster)                                                                      |
-| `ux_version`        |                    | os version (e.g., 4.19.66-v7+)                                                                      |
-| `reporter`          |                    | script name, version running on RPi                                                                 |
-| `networking`        |                    | lists for each interface: interface name, mac address (and IP if the interface is connected)        |
-| `drives`            |                    | lists for each drive mounted: size in GB, % used, device and mount point                            |
-| `cpu`               |                    | lists the model of cpu, number of cores, etc.                                                       |
-|                     | `hardware`         | typically the Broadcom chip ID (e.g. BCM2835)                                                       |
-|                     | `model`            | model description string (e.g., ARMv7 Processor rev 4 (v7l))                                        |
-|                     | `number_cores`     | number of cpu cores [1,4]                                                                           |
-|                     | `bogo_mips`        | reported performance of this RPi                                                                    |
-|                     | `serial`           | serial number of this RPi                                                                           |
-|                     | `load_1min_prcnt`  | average % cpu load during prior minute (avg per core)                                               |
-|                     | `load_5min_prcnt`  | average % cpu load during prior 5 minutes (avg per core)                                            |
-|                     | `load_15min_prcnt` | average % cpu load during prior 15 minutes (avg per core)                                           |
-| `memory`            |                    | shows the total amount of RAM in MB and the available ram in MB                                     |
-| `reporter`          |                    | name and version of the script reporting these values                                               |
-| `reporter_releases` |                    | list of latest reporter formal versions                                                             |
-| `report_interval`   |                    | interval in minutes between reports from this script                                                |
-| `throttle`          |                    | reports the throttle status value plus interpretation thereof                                       |
-| `timestamp`         |                    | date, time when this report was generated                                                           |
+| Name                | Sub-name           | Description                                                                                                             |
+| ------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `rpi_model`         |                    | tinyfied hardware version string                                                                                        |
+| `ifaces`            |                    | comma sep list of interfaces on board [w,e,b]                                                                           |
+| `temperature_c`     |                    | System temperature, in [°C] (0.1°C resolution) Note: this is GPU temp. if available, else CPU temp. (used by HA sensor) |
+| `temp_gpu_c`        |                    | GPU temperature, in [°C] (0.1°C resolution)                                                                             |
+| `temp_cpu_c`        |                    | CPU temperature, in [°C] (0.1°C resolution)                                                                             |
+| `up_time`           |                    | duration since last booted, as [days]                                                                                   |
+| `last_update`       |                    | updates last applied, as [date]                                                                                         |
+| `fs_total_gb`       |                    | / (root) total space in [GBytes]                                                                                        |
+| `fs_free_prcnt`     |                    | / (root) available space [%]                                                                                            |
+| `fs_used_prcnt`     |                    | / (root) used space [%] (used by HA sensor)                                                                             |
+| `host_name`         |                    | hostname                                                                                                                |
+| `fqdn`              |                    | hostname.domain                                                                                                         |
+| `ux_release`        |                    | os release name (e.g., buster)                                                                                          |
+| `ux_version`        |                    | os version (e.g., 4.19.66-v7+)                                                                                          |
+| `reporter`          |                    | script name, version running on RPi                                                                                     |
+| `networking`        |                    | lists for each interface: interface name, mac address (and IP if the interface is connected)                            |
+| `drives`            |                    | lists for each drive mounted: size in GB, % used, device and mount point                                                |
+| `cpu`               |                    | lists the model of cpu, number of cores, etc.                                                                           |
+|                     | `hardware`         | - typically the Broadcom chip ID (e.g. BCM2835)                                                                         |
+|                     | `model`            | - model description string (e.g., ARMv7 Processor rev 4 (v7l))                                                          |
+|                     | `number_cores`     | - number of cpu cores [1,4]                                                                                             |
+|                     | `bogo_mips`        | - reported performance of this RPi                                                                                      |
+|                     | `serial`           | - serial number of this RPi                                                                                             |
+|                     | `load_1min_prcnt`  | - average % cpu load during prior minute (avg per core)                                                                 |
+|                     | `load_5min_prcnt`  | - average % cpu load during prior 5 minutes (avg per core)                                                              |
+|                     | `load_15min_prcnt` | - average % cpu load during prior 15 minutes (avg per core)                                                             |
+| `memory`            |                    | shows the RAM configuration in MB for this RPi                                                                          |
+|                     | `size_mb`          | - total memory Size in MBytes                                                                                           |
+|                     | `free_mb`          | - available memory in MBytes                                                                                            |
+| `mem_used_prcnt`    |                    | shows the amount of RAM currently in use (used by HA sensor)                                                            |
+| `reporter`          |                    | name and version of the script reporting these values                                                                   |
+| `reporter_releases` |                    | list of latest reporter formal versions                                                                                 |
+| `report_interval`   |                    | interval in minutes between reports from this script                                                                    |
+| `throttle`          |                    | reports the throttle status value plus interpretation thereof                                                           |
+| `timestamp`         |                    | date, time when this report was generated                                                                               |
 
 _NOTE: cpu load averages are divided by the number of cores_
 

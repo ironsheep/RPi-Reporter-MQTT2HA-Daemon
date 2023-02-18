@@ -27,7 +27,7 @@ signal(SIGPIPE, SIG_DFL)
 import requests
 from urllib3.exceptions import InsecureRequestWarning
 
-script_version = "1.7.2"
+script_version = "1.7.3"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -416,7 +416,7 @@ def getDeviceMemory():
         if 'MemAvail' in currLine:
             mem_avail = float(lineParts[1]) / 1024
     # Tuple (Total, Free, Avail.)
-    rpi_memory_tuple = (mem_total, mem_free, mem_avail)
+    rpi_memory_tuple = (mem_total, mem_free, mem_avail) # [0]=total, [1]=free, [2]=avail.
     print_line('rpi_memory_tuple=[{}]'.format(rpi_memory_tuple), debug=True)
 
 def refreshPackageInfo():
@@ -1174,6 +1174,7 @@ LD_SYS_TEMP = "temperature"
 LD_FS_USED = "disk_used"
 LDS_PAYLOAD_NAME = "info"
 LD_CPU_USE = "cpu_load"
+LD_MEM_USED = "mem_used"
 
 if interval_in_minutes < 5:
     LD_CPU_USE_JSON = "cpu.load_1min_prcnt"
@@ -1200,10 +1201,12 @@ detectorValues = OrderedDict([
      json_value="timestamp", json_attr="yes", icon='mdi:raspberry-pi', device_ident="RPi-{}".format(rpi_fqdn))),
     (LD_SYS_TEMP, dict(title="RPi Temp {}".format(rpi_hostname), device_class="temperature",
      no_title_prefix="yes", unit="°C", json_value="temperature_c", icon='mdi:thermometer')),
-    (LD_FS_USED, dict(title="RPi Used {}".format(rpi_hostname),
-     no_title_prefix="yes", json_value="fs_free_prcnt", unit="%", icon='mdi:sd')),
+    (LD_FS_USED, dict(title="RPi Disk Used {}".format(rpi_hostname),
+     no_title_prefix="yes", json_value="fs_used_prcnt", unit="%", icon='mdi:sd')),
     (LD_CPU_USE, dict(title="RPi CPU Use {}".format(rpi_hostname),
      no_title_prefix="yes", json_value=LD_CPU_USE_JSON, unit="%", icon=LD_CPU_USE_ICON)),
+    (LD_MEM_USED, dict(title="RPi Mem Used {}".format(rpi_hostname),
+     no_title_prefix="yes", json_value="mem_used_prcnt", unit="%", icon='mdi:memory')),
 ])
 
 print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
@@ -1320,6 +1323,8 @@ RPI_UPTIME = "up_time"
 RPI_DATE_LAST_UPDATE = "last_update"
 RPI_FS_SPACE = 'fs_total_gb'  # "fs_space_gbytes"
 RPI_FS_AVAIL = 'fs_free_prcnt'  # "fs_available_prcnt"
+RPI_FS_USED = 'fs_used_prcnt'  # "fs_used_prcnt"
+RPI_RAM_USED = 'mem_used_prcnt'  # "mem_used_prcnt"
 RPI_SYSTEM_TEMP = "temperature_c"
 RPI_GPU_TEMP = "temp_gpu_c"
 RPI_CPU_TEMP = "temp_cpu_c"
@@ -1383,7 +1388,9 @@ def send_status(timestamp, nothing):
     else:
         rpiData[RPI_DATE_LAST_UPDATE] = ''
     rpiData[RPI_FS_SPACE] = int(rpi_filesystem_space.replace('GB', ''), 10)
-    rpiData[RPI_FS_AVAIL] = int(rpi_filesystem_percent, 10)
+    # TODO: consider eliminating RPI_FS_AVAIL/fs_free_prcnt as used is needed but free is not... (can be calculated)
+    rpiData[RPI_FS_AVAIL] = 100 - int(rpi_filesystem_percent, 10)
+    rpiData[RPI_FS_USED] = int(rpi_filesystem_percent, 10)
 
     rpiData[RPI_NETWORK] = getNetworkDictionary()
 
@@ -1394,6 +1401,11 @@ def send_status(timestamp, nothing):
     rpiRam = getMemoryDictionary()
     if len(rpiRam) > 0:
         rpiData[RPI_MEMORY] = rpiRam
+        ramSizeMB = int('{:.0f}'.format(rpi_memory_tuple[0], 10))  # "mem_space_mbytes"
+        # used is total - free
+        ramUsedMB = int('{:.0f}'.format(rpi_memory_tuple[0] - rpi_memory_tuple[2]), 10)
+        ramUsedPercent = int((ramUsedMB / ramSizeMB) * 100)
+        rpiData[RPI_RAM_USED] = ramUsedPercent  # "mem_used_prcnt"
 
     rpiCpu = getCPUDictionary()
     if len(rpiCpu) > 0:
@@ -1488,8 +1500,9 @@ def getMemoryDictionary():
     #   Tuple (Total, Free, Avail.)
     memoryData = OrderedDict()
     if rpi_memory_tuple != '':
-        memoryData[RPI_MEM_TOTAL] = '{:.3f}'.format(rpi_memory_tuple[0])
-        memoryData[RPI_MEM_FREE] = '{:.3f}'.format(rpi_memory_tuple[2])
+        # TODO: remove free fr
+        memoryData[RPI_MEM_TOTAL] = int(rpi_memory_tuple[0])
+        memoryData[RPI_MEM_FREE] = int(rpi_memory_tuple[2])
     #print_line('memoryData:{}"'.format(memoryData), debug=True)
     return memoryData
 
