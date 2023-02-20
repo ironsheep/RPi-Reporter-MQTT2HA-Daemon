@@ -10,7 +10,7 @@
 
 A simple Linux python script to query the Raspberry Pi on which it is running for various configuration and status values which it then reports via via [MQTT](https://projects.eclipse.org/projects/iot.mosquitto) to your [Home Assistant](https://www.home-assistant.io/) installation. This allows you to install and run this on each of your RPi's so you can track them all via your own Home Assistant Dashboard.
 
-![Discovery image](./Docs/images/DiscoveryV3.png)
+![Discovery image](./Docs/images/DiscoveryV4.png)
 
 This script should be configured to be run in **daemon mode** continously in the background as a systemd service (or optionally as a SysV init script). Instructions are provided below.
 
