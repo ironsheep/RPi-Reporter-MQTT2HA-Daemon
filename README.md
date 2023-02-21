@@ -139,6 +139,45 @@ sudo apt-get install libraspberrypi-bin net-tools
 sudo pacman -S python python-pip python-tzlocal python-notify2 python-colorama python-unidecode python-paho-mqtt python-requests inetutils 
 ```
 
+### With these extra packages installed, verify access to network information
+
+The Daemon script needs access to information about how your RPi connects to the network. It uses `ifconfig(8)` to look up connection names and get the RPi IP address, etc.
+
+Let's run `ifconfig` to insure you have it installed.
+
+```shell
+# run ifconfig(8) to see your RPi networking info
+ifconfig
+eth0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
+        ether xx:xx:xx:xx:xx:xx  txqueuelen 1000  (Ethernet)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        inet6 ::1  prefixlen 128  scopeid 0x10<host>
+        loop  txqueuelen 1000  (Local Loopback)
+        RX packets 41342  bytes 2175319 (2.0 MiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 41342  bytes 2175319 (2.0 MiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+wlan0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet xxx.xxx.xxx.xxx  netmask 255.255.255.0  broadcast xxx.xxx.xxx.xxx
+        inet6 ... {omitted} ...
+        inet6 ... {omitted} ...
+        ether xx:xx:xx:xx:xx:xx  txqueuelen 1000  (Ethernet)
+        RX packets 1458134  bytes 344599963 (328.6 MiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 299694  bytes 51281531 (48.9 MiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+```
+
+If you are seeing output from the `ifconfig` tool then continue on with the following steps.  If you don't you may have missed installing `net-utils` in an earlier step.
+
 ### Now finish with the script install
 
 Now that the extra packages are installed let's install our script and any remaining supporting python modules.
