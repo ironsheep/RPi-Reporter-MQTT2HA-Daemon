@@ -1,3 +1,34 @@
+# ChangeLog
+
+Sat, 18 Feb 2023 15:36:08 -0700 v1.7.4
+
+- Update README.md and requirements.txt to reflect use of Python `requests` library (#78)
+
+Sat, 18 Feb 2023 14:22:52 -0700 v1.7.3
+
+- Add `fs_disk_used` value
+- Correct Disk Used % sensor to use "used" vs. "free" value
+- Convert memory values from floting point string to integer (precision not necessary)
+- Add new Mem Used % sensor (#42)
+
+Sat, 11 Feb 2023 14:28:59 -0700 v1.7.2
+
+- Repair fetch of versions, now every 12 hours
+
+Fri, 10 Feb 2023 17:27:06 -0700 v1.7.1
+
+- Fix internal release number
+- Forward formal releases via MQTT
+
+Tue, 17 Aug 2022 18:37:21 -0600 v1.6.2
+
+- (#63) Fix path to cut(1) command
+- (#61) add filter to prevent df reporting "No such device or address" from breaking the script
+
+Tue, 02 Aug 2022 18:37:21 -0600 v1.6.1
+
+- Fix 'bullseye' name determination - remove extra sources output
+
 Thu, 02 Dec 2021 16:36:15 -0600 v1.6.0
 
 - Merged 4 pull requests:
@@ -44,12 +75,12 @@ Mon Aug 17 01:26:21 2020 -0600 v1.5.0
 Sat Aug 15 03:25:26 2020 -0600 v1.4.4
 
 - Fix log file grep (for some systems)
-     Add option for grep to treat  dpkg log files a text (#8)
-     README: show new drives entry in MQTT payload
+  Add option for grep to treat dpkg log files a text (#8)
+  README: show new drives entry in MQTT payload
 
 Tue Aug 11 18:42:34 2020 -0600 v1.4.3
 
-- Add alternate locn for vcgen* cmd, use alternate drive space parser
+- Add alternate locn for vcgen\* cmd, use alternate drive space parser
 
 Sun Aug 9 18:25:57 2020 -0600 v1.4.2
 
@@ -85,8 +116,8 @@ Sat Aug 1 20:44:30 2020 -0600 v1.3.3
 Sat Aug 1 19:10:26 2020 -0600 v1.3.2
 
 - Fix uniqueID code, last upd date code
-     Last update date was being affected by log-rotate... move to another technique
-     Damaged unique ID generation with v1.3.0... fixed it now
+  Last update date was being affected by log-rotate... move to another technique
+  Damaged unique ID generation with v1.3.0... fixed it now
 
 Sat Aug 1 16:02:38 2020 -0600 v1.3.1
 
@@ -95,11 +126,11 @@ Sat Aug 1 16:02:38 2020 -0600 v1.3.1
 Sat Aug 1 15:14:06 2020 -0600 v1.3.0
 
 - Add new Config Variables
-     Add fallback_domain and discovery_prefix to config file reader
-     Adjust discovery advert to use new prefix
-     Adjust hostname fetch to use new fallback
-     Add temp fallback to cpu when gpu not avail
-     Ship both cpu and gpu temps in status dict
+  Add fallback_domain and discovery_prefix to config file reader
+  Adjust discovery advert to use new prefix
+  Adjust hostname fetch to use new fallback
+  Add temp fallback to cpu when gpu not avail
+  Ship both cpu and gpu temps in status dict
 - Add bug report info script and instru. in bug report template
 - Add Jessie notes
 
@@ -116,10 +147,10 @@ Thu Jul 23 13:55:00 2020 -0600 v1.2.1
 Wed Jul 22 21:34:06 2020 -0600 v1.2.0
 
 - Update ISP-RPi-mqtt-daemon.py
-     Add two new endponts discovered per RPi (degr C and % space used)
-     Add test mode for failed to report in
-     Forward interval set to card
-     New option for testing stall
+  Add two new endponts discovered per RPi (degr C and % space used)
+  Add test mode for failed to report in
+  Forward interval set to card
+  New option for testing stall
 
 Wed Jul 22 13:47:18 2020 -0600 v1.1.2
 

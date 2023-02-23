@@ -22,9 +22,11 @@ import paho.mqtt.client as mqtt
 import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
-import time
+import requests
+from urllib3.exceptions import InsecureRequestWarning
 
-script_version = "1.6.0"
+
+script_version = "1.7.4"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -32,6 +34,10 @@ project_url = 'https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon'
 
 # we'll use this throughout
 local_tz = get_localzone()
+
+# turn off insecure connection warnings (our KZ0Q site has bad certs)
+# REF: https://www.geeksforgeeks.org/how-to-disable-security-certificate-checks-for-requests-in-python/
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 # TODO:
 #  - add announcement of free-space and temperatore endpoints
@@ -54,6 +60,8 @@ sd_notifier = sdnotify.SystemdNotifier()
 
 def print_line(text, error=False, warning=False, info=False, verbose=False, debug=False, console=True, sd_notify=False):
     timestamp = strftime('%Y-%m-%d %H:%M:%S', localtime())
+    if(sd_notify):
+        text = '* NOTIFY: {}'.format(text)
     if console:
         if error:
             print(Fore.RED + Style.BRIGHT + '[{}] '.format(
@@ -214,6 +222,57 @@ if not config['MQTT']:
 print_line('Configuration accepted', console=False, sd_notify=True)
 
 # -----------------------------------------------------------------------------
+#  Daemon variables monitored
+# -----------------------------------------------------------------------------
+
+daemon_version_list = [ 'NOT-LOADED' ]
+daemon_last_fetch_time = 0.0
+
+def getDaemonReleases():
+# retrieve latest formal release versions list from repo
+    global daemon_version_list
+    global daemon_last_fetch_time
+
+    newVersionList = []
+    latestVersion = ''
+
+    response = requests.request('GET', 'http://kz0q.com/daemon-releases', verify=False)
+    if response.status_code != 200:
+        print_line('- getDaemonReleases() RQST status=({})'.format(response.status_code), error=True)
+        daemon_version_list = [ 'NOT-LOADED' ]  # mark as NOT fetched
+    else:
+        content = response.text
+        lines = content.split('\n')
+        for line in lines:
+            if len(line) > 0:
+                #print_line('- RLS Line=[{}]'.format(line), debug=True)
+                lineParts = line.split(' ')
+                #print_line('- RLS lineParts=[{}]'.format(lineParts), debug=True)
+                if len(lineParts) >= 2:
+                    currVersion = lineParts[0]
+                    rlsType = lineParts[1]
+                    if not currVersion in newVersionList:
+                        if not 'latest' in rlsType.lower():
+                            newVersionList.append(currVersion)  # append to list
+                        else:
+                            latestVersion = currVersion
+
+        if len(newVersionList) > 1:
+            newVersionList.sort()
+        if len(latestVersion) > 0:
+            if not latestVersion in newVersionList:
+                newVersionList.insert(0, latestVersion)  # append to list
+
+        daemon_version_list = newVersionList
+        print_line('- RQST daemon_version_list=({})'.format(daemon_version_list), debug=True)
+        daemon_last_fetch_time = time()    # record when we last fetched the versions
+
+getDaemonReleases() # and load them!
+print_line('* daemon_last_fetch_time=({})'.format(daemon_last_fetch_time), debug=True)
+
+
+
+# -----------------------------------------------------------------------------
 #  RPi variables monitored
 # -----------------------------------------------------------------------------
 
@@ -359,9 +418,27 @@ def getDeviceMemory():
         if 'MemAvail' in currLine:
             mem_avail = float(lineParts[1]) / 1024
     # Tuple (Total, Free, Avail.)
-    rpi_memory_tuple = (mem_total, mem_free, mem_avail)
+    rpi_memory_tuple = (mem_total, mem_free, mem_avail) # [0]=total, [1]=free, [2]=avail.
     print_line('rpi_memory_tuple=[{}]'.format(rpi_memory_tuple), debug=True)
 
+def refreshPackageInfo():
+    out = subprocess.Popen("/usr/bin/sudo /usr/bin/apt-get update",
+                           shell=True,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+    stdout, _ = out.communicate()
+    update_rslts = stdout.decode('utf-8')
+    print_line('update_rslts=[{}]'.format(update_rslts), warning=True, sd_notify=True)
+
+def getUpdateCounts():
+    # /usr/bin/sudo
+    out = subprocess.Popen("/usr/bin/sudo /usr/bin/apt-get --assume-no dist-upgrade",
+                           shell=True,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+    stdout, _ = out.communicate()
+    package_rslts = stdout.decode('utf-8')
+    print_line('package_rslts=[{}]'.format(package_rslts), warning=True, sd_notify=True)
 
 def getDeviceModel():
     global rpi_model
@@ -399,7 +476,7 @@ def getDeviceModel():
 
 def getLinuxRelease():
     global rpi_linux_release
-    out = subprocess.Popen("/bin/cat /etc/apt/sources.list | /bin/egrep -v '#' | /usr/bin/awk '{ print $3 }' | /bin/grep . | /usr/bin/sort -u",
+    out = subprocess.Popen("/bin/cat /etc/apt/sources.list | /bin/egrep -v '#' | /usr/bin/awk '{ print $3 }' | /bin/sed -e 's/-/ /g' | /usr/bin/cut -f1 -d' ' | /bin/grep . | /usr/bin/sort -u",
                            shell=True,
                            stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT)
@@ -683,8 +760,17 @@ def getFileSystemDrives():
     # /dev/mmcblk0p1 253 55 198 22% /boot
     # tmpfs 340 0 340 0% /run/user/1000
 
+    # FAILING Case v1.6.x (issue #61)
+    # [[/bin/df: /mnt/sabrent: No such device or address',
+    #   '/dev/root         119756  19503     95346  17% /',
+    #   '/dev/sda1         953868 882178     71690  93% /media/usb0',
+    #   '/dev/sdb1         976761  93684    883078  10% /media/pi/SSD']]
+
     tmpDrives = []
     for currLine in trimmedLines:
+        if 'no such device' in currLine.lower():
+            print_line('BAD LINE FORMAT, Skipped=[{}]'.format(currLine), debug=True, warning=True)
+            continue
         lineParts = currLine.split()
         print_line('lineParts({})=[{}]'.format(
             len(lineParts), lineParts), debug=True)
@@ -783,7 +869,9 @@ def getSystemTemperature():
     if cmd_fspec == '':
         rpi_system_temp = float('-1.0')
         rpi_gpu_temp = float('-1.0')
-        rpi_cpu_temp = float('-1.0')
+        rpi_cpu_temp = getSystemCPUTemperature()
+        if rpi_cpu_temp != -1.0:
+            rpi_system_temp = rpi_cpu_temp
     else:
         retry_count = 3
         while retry_count > 0 and 'failed' in rpi_gpu_temp_raw:
@@ -807,19 +895,29 @@ def getSystemTemperature():
         rpi_gpu_temp = interpretedTemp
         print_line('rpi_gpu_temp=[{}]'.format(rpi_gpu_temp), debug=True)
 
-        out = subprocess.Popen("/bin/cat /sys/class/thermal/thermal_zone0/temp",
-                               shell=True,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT)
-        stdout, _ = out.communicate()
-        rpi_cpu_temp_raw = stdout.decode('utf-8').rstrip()
-        rpi_cpu_temp = float(rpi_cpu_temp_raw) / 1000.0
-        print_line('rpi_cpu_temp=[{}]'.format(rpi_cpu_temp), debug=True)
+        rpi_cpu_temp = getSystemCPUTemperature()
 
         # fallback to CPU temp is GPU not available
         rpi_system_temp = rpi_gpu_temp
         if rpi_gpu_temp == -1.0:
             rpi_system_temp = rpi_cpu_temp
+
+
+def getSystemCPUTemperature():
+    cmd_locn1 = '/sys/class/thermal/thermal_zone0/temp'
+    cmdString = '/bin/cat {}'.format(
+        cmd_locn1)
+    if os.path.exists(cmd_locn1) == False:
+        return float('-1.0')
+    out = subprocess.Popen(cmdString,
+                           shell=True,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+    stdout, _ = out.communicate()
+    rpi_cpu_temp_raw = stdout.decode('utf-8').rstrip()
+    rpi_cpu_temp = float(rpi_cpu_temp_raw) / 1000.0
+    print_line('rpi_cpu_temp=[{}]'.format(rpi_cpu_temp), debug=True)
+    return rpi_cpu_temp
 
 
 def getSystemThermalStatus():
@@ -872,7 +970,6 @@ def getSystemThermalStatus():
 
     print_line('rpi_throttle_status=[{}]'.format(
         rpi_throttle_status), debug=True)
-
 
 def interpretThrottleValue(throttleValue):
     """
@@ -975,7 +1072,6 @@ def getLastInstallDate():
 
     print_line('rpi_last_update_date=[{}]'.format(
         rpi_last_update_date), debug=True)
-
 
 # get our hostnames so we can setup MQTT
 getHostnames()
@@ -1092,6 +1188,13 @@ else:
 
 sd_notifier.notify('READY=1')
 
+# -----------------------------------------------------------------------------
+#  Perform our MQTT Discovery Announcement...
+# -----------------------------------------------------------------------------
+
+#  findings: both sudo and not sudo fail (suders doesn't contain daemon and shouldn't)
+#refreshPackageInfo()
+#getUpdateCounts()
 
 # -----------------------------------------------------------------------------
 #  Perform our MQTT Discovery Announcement...
@@ -1115,6 +1218,7 @@ LD_SYS_TEMP = "temperature"
 LD_FS_USED = "disk_used"
 LDS_PAYLOAD_NAME = "info"
 LD_CPU_USE = "cpu_load"
+LD_MEM_USED = "mem_used"
 
 if interval_in_minutes < 5:
     LD_CPU_USE_JSON = "cpu.load_1min_prcnt"
@@ -1141,10 +1245,12 @@ detectorValues = OrderedDict([
      json_value="timestamp", json_attr="yes", icon='mdi:raspberry-pi', device_ident="RPi-{}".format(rpi_fqdn))),
     (LD_SYS_TEMP, dict(title="RPi Temp {}".format(rpi_hostname), device_class="temperature",
      no_title_prefix="yes", unit="°C", json_value="temperature_c", icon='mdi:thermometer')),
-    (LD_FS_USED, dict(title="RPi Used {}".format(rpi_hostname),
-     no_title_prefix="yes", json_value="fs_free_prcnt", unit="%", icon='mdi:sd')),
+    (LD_FS_USED, dict(title="RPi Disk Used {}".format(rpi_hostname),
+     no_title_prefix="yes", json_value="fs_used_prcnt", unit="%", icon='mdi:sd')),
     (LD_CPU_USE, dict(title="RPi CPU Use {}".format(rpi_hostname),
      no_title_prefix="yes", json_value=LD_CPU_USE_JSON, unit="%", icon=LD_CPU_USE_ICON)),
+    (LD_MEM_USED, dict(title="RPi Mem Used {}".format(rpi_hostname),
+     no_title_prefix="yes", json_value="mem_used_prcnt", unit="%", icon='mdi:memory')),
 ])
 
 print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
@@ -1261,10 +1367,13 @@ RPI_UPTIME = "up_time"
 RPI_DATE_LAST_UPDATE = "last_update"
 RPI_FS_SPACE = 'fs_total_gb'  # "fs_space_gbytes"
 RPI_FS_AVAIL = 'fs_free_prcnt'  # "fs_available_prcnt"
+RPI_FS_USED = 'fs_used_prcnt'  # "fs_used_prcnt"
+RPI_RAM_USED = 'mem_used_prcnt'  # "mem_used_prcnt"
 RPI_SYSTEM_TEMP = "temperature_c"
 RPI_GPU_TEMP = "temp_gpu_c"
 RPI_CPU_TEMP = "temp_cpu_c"
 RPI_SCRIPT = "reporter"
+RPI_SCRIPT_VERSIONS = "reporter_releases"
 RPI_NETWORK = "networking"
 RPI_INTERFACE = "interface"
 SCRIPT_REPORT_INTERVAL = "report_interval"
@@ -1323,7 +1432,9 @@ def send_status(timestamp, nothing):
     else:
         rpiData[RPI_DATE_LAST_UPDATE] = ''
     rpiData[RPI_FS_SPACE] = int(rpi_filesystem_space.replace('GB', ''), 10)
-    rpiData[RPI_FS_AVAIL] = int(rpi_filesystem_percent, 10)
+    # TODO: consider eliminating RPI_FS_AVAIL/fs_free_prcnt as used is needed but free is not... (can be calculated)
+    rpiData[RPI_FS_AVAIL] = 100 - int(rpi_filesystem_percent, 10)
+    rpiData[RPI_FS_USED] = int(rpi_filesystem_percent, 10)
 
     rpiData[RPI_NETWORK] = getNetworkDictionary()
 
@@ -1334,6 +1445,11 @@ def send_status(timestamp, nothing):
     rpiRam = getMemoryDictionary()
     if len(rpiRam) > 0:
         rpiData[RPI_MEMORY] = rpiRam
+        ramSizeMB = int('{:.0f}'.format(rpi_memory_tuple[0], 10))  # "mem_space_mbytes"
+        # used is total - free
+        ramUsedMB = int('{:.0f}'.format(rpi_memory_tuple[0] - rpi_memory_tuple[2]), 10)
+        ramUsedPercent = int((ramUsedMB / ramSizeMB) * 100)
+        rpiData[RPI_RAM_USED] = ramUsedPercent  # "mem_used_prcnt"
 
     rpiCpu = getCPUDictionary()
     if len(rpiCpu) > 0:
@@ -1347,6 +1463,7 @@ def send_status(timestamp, nothing):
     rpiData[RPI_CPU_TEMP] = forceSingleDigit(rpi_cpu_temp)
 
     rpiData[RPI_SCRIPT] = rpi_mqtt_script.replace('.py', '')
+    rpiData[RPI_SCRIPT_VERSIONS] = ','.join(daemon_version_list)
     rpiData[SCRIPT_REPORT_INTERVAL] = interval_in_minutes
 
     rpiTopDict = OrderedDict()
@@ -1427,8 +1544,9 @@ def getMemoryDictionary():
     #   Tuple (Total, Free, Avail.)
     memoryData = OrderedDict()
     if rpi_memory_tuple != '':
-        memoryData[RPI_MEM_TOTAL] = '{:.3f}'.format(rpi_memory_tuple[0])
-        memoryData[RPI_MEM_FREE] = '{:.3f}'.format(rpi_memory_tuple[2])
+        # TODO: remove free fr
+        memoryData[RPI_MEM_TOTAL] = int(rpi_memory_tuple[0])
+        memoryData[RPI_MEM_FREE] = int(rpi_memory_tuple[2])
     #print_line('memoryData:{}"'.format(memoryData), debug=True)
     return memoryData
 
@@ -1510,14 +1628,21 @@ def afterMQTTConnect():
 # stopAliveTimer()
 # exit(0)
 
-
 afterMQTTConnect()  # now instead of after?
+
+# check every 12 hours (twice a day) = 12 hours * 60 minutes * 60 seconds
+kVersionCheckIntervalInSeconds = (12 * 60 * 60)
 
 # now just hang in forever loop until script is stopped externally
 try:
     while True:
         #  our INTERVAL timer does the work
         sleep(10000)
+
+        timeNow = time()
+        if timeNow > daemon_last_fetch_time + kVersionCheckIntervalInSeconds:
+            getDaemonReleases() # and load them!
+
 
 finally:
     # cleanup used pins... just because we like cleaning up after us
