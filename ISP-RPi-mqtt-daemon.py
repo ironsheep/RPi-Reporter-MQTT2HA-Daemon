@@ -672,14 +672,14 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
                 elif 'RX' in currLine: # NEWER ONLY
                     previous_value = getPreviousNetworkData(imterfc, 'rx_data')
                     current_value = int(lineParts[4])
-                    rx_data = (current_value - previous_value) / (current_time - previous_time) * 8 / 1024
+                    rx_data = round((current_value - previous_value) / (current_time - previous_time) * 8 / 1024)
                     newTuple = (imterfc, 'rx_data', rx_data)
                     tmpInterfaces.append(newTuple)
                     print_line('newTuple=[{}]'.format(newTuple), debug=True)
                 elif 'TX' in currLine: # NEWER ONLY
                     previous_value = getPreviousNetworkData(imterfc, 'tx_data')
                     current_value = int(lineParts[4])
-                    tx_data = (current_value - previous_value) / (current_time - previous_time) * 8 / 1024
+                    tx_data = round((current_value - previous_value) / (current_time - previous_time) * 8 / 1024)
                     newTuple = (imterfc, 'tx_data', tx_data)
                     tmpInterfaces.append(newTuple)
                     print_line('newTuple=[{}]'.format(newTuple), debug=True)
