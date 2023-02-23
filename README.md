@@ -377,59 +377,69 @@ An example:
 ```json
 {
   "info": {
-    "timestamp": "2021-12-02T17:45:48-07:00",
-    "rpi_model": "RPi 3 Model B r1.2",
+    "timestamp": "2023-02-23T15:38:43-07:00",
+    "rpi_model": "RPi 4 Model B r1.5",
     "ifaces": "e,w,b",
-    "host_name": "pibtle",
-    "fqdn": "pibtle.home",
-    "ux_release": "stretch",
-    "ux_version": "4.19.66-v7+",
-    "up_time": "46 days,  23:14",
-    "last_update": "2021-11-30T18:29:45-07:00",
+    "host_name": "pip2iotgw",
+    "fqdn": "pip2iotgw.home",
+    "ux_release": "bullseye",
+    "ux_version": "5.15.84-v8+",
+    "up_time": "10 days,  35 min",
+    "last_update": "2023-02-23T15:04:15-07:00",
     "fs_total_gb": 32,
-    "fs_free_prcnt": 41,
+    "fs_free_prcnt": 81,
+    "fs_used_prcnt": 19,
     "networking": {
       "eth0": {
-        "IP": "192.168.100.81",
-        "mac": "b8:27:eb:d1:16:42"
+        "mac": "e4:5f:01:f8:18:01",
+        "rx_data": 0,
+        "tx_data": 0
       },
       "wlan0": {
-        "mac": "b8:27:eb:84:43:17"
+        "IP": "192.168.100.196",
+        "mac": "e4:5f:01:f8:18:02",
+        "rx_data": 6948,
+        "tx_data": 977
       }
     },
     "drives": {
       "root": {
         "size_gb": 32,
-        "used_prcnt": 41,
+        "used_prcnt": 19,
         "device": "/dev/root",
         "mount_pt": "/"
       }
     },
     "memory": {
-      "size_mb": "926.078",
-      "free_mb": "215.750"
+      "size_mb": 1849,
+      "free_mb": 806
     },
+    "mem_used_prcnt": 56,
     "cpu": {
       "hardware": "BCM2835",
-      "model": "ARMv7 Processor rev 4 (v7l)",
+      "model": "",
       "number_cores": 4,
-      "bogo_mips": "307.20",
-      "serial": "00000000a8d11642",
-      "load_1min_prcnt": 23.2,
-      "load_5min_prcnt": 22.5,
-      "load_15min_prcnt": 22.8
+      "bogo_mips": "432.00",
+      "serial": "1000000081ae88c7",``
+      "load_1min_prcnt": 0.5,
+      "load_5min_prcnt": 0.8,
+      "load_15min_prcnt": 3.8
     },
-    "throttle": ["throttled = 0x0", "Not throttled"],
-    "temperature_c": 63.4,
-    "temp_gpu_c": 63.4,
-    "temp_cpu_c": 62.8,
-    "reporter": "ISP-RPi-mqtt-daemon v1.6.0",
+    "throttle": [
+      "throttled = 0x0",
+      "Not throttled"
+    ],
+    "temperature_c": 28.2,
+    "temp_gpu_c": 28.2,
+    "temp_cpu_c": 29.2,
+    "reporter": "ISP-RPi-mqtt-daemon v1.7.5",
+    "reporter_releases": "v1.7.5,v1.7.2,v1.7.3,v1.7.4",
     "report_interval": 5
   }
 }
 ```
 
-**NOTE:** Where there's an IP address that interface is connected.
+**NOTE:** Where there's an IP address that interface is connected.  Also, there are new `tx_data` and `rx_data` values which show traffic in bytes for this reporting interval for each network interface.
 
 This data can be subscribed to and processed by your home assistant installation. How you build your RPi dashboard from here is up to you!
 
