@@ -911,14 +911,15 @@ def getSystemCPUTemperature():
     cmdString = '/bin/cat {}'.format(
         cmd_locn1)
     if os.path.exists(cmd_locn1) == False:
-        return float('-1.0')
-    out = subprocess.Popen(cmdString,
-                           shell=True,
-                           stdout=subprocess.PIPE,
-                           stderr=subprocess.STDOUT)
-    stdout, _ = out.communicate()
-    rpi_cpu_temp_raw = stdout.decode('utf-8').rstrip()
-    rpi_cpu_temp = float(rpi_cpu_temp_raw) / 1000.0
+        rpi_cpu_temp = float('-1.0')
+    else:
+        out = subprocess.Popen(cmdString,
+                            shell=True,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT)
+        stdout, _ = out.communicate()
+        rpi_cpu_temp_raw = stdout.decode('utf-8').rstrip()
+        rpi_cpu_temp = float(rpi_cpu_temp_raw) / 1000.0
     print_line('rpi_cpu_temp=[{}]'.format(rpi_cpu_temp), debug=True)
     return rpi_cpu_temp
 
