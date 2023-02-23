@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import _thread
 from datetime import datetime, timedelta
 from tzlocal import get_localzone
@@ -26,6 +24,7 @@ from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
 import requests
 from urllib3.exceptions import InsecureRequestWarning
+
 
 script_version = "1.7.4"
 script_name = 'ISP-RPi-mqtt-daemon.py'
@@ -309,6 +308,9 @@ rpi_cpuload1 = ''
 rpi_cpuload5 = ''
 rpi_cpuload15 = ''
 
+# Time for network transfer calculation
+previous_time = time.time()
+
 # -----------------------------------------------------------------------------
 #  monitor variable fetch routines
 #
@@ -579,7 +581,7 @@ def getNetworkIFsUsingIP(ip_cmd):
 
 
 def getSingleInterfaceDetails(interfaceName):
-    cmdString = '/sbin/ifconfig {} | /bin/egrep "Link|flags|inet |ether " | /bin/egrep -v -i "lo:|loopback|inet6|\:\:1|127\.0\.0\.1"'.format(
+    cmdString = '/sbin/ifconfig {} | /bin/egrep "Link|flags|inet |ether |TX packets |RX packets "'.format(
         interfaceName)
     out = subprocess.Popen(cmdString,
                            shell=True,
@@ -600,6 +602,7 @@ def getSingleInterfaceDetails(interfaceName):
 def loadNetworkIFDetailsFromLines(ifConfigLines):
     global rpi_interfaces
     global rpi_mac
+    global previous_time
     #
     # OLDER SYSTEMS
     #  eth0      Link encap:Ethernet  HWaddr b8:27:eb:c8:81:f2
@@ -609,14 +612,22 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
     #  The following means eth0 (wired is NOT connected, and WiFi is connected)
     #  eth0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
     #    ether b8:27:eb:1a:f3:bc  txqueuelen 1000  (Ethernet)
+    #    RX packets 0  bytes 0 (0.0 B)
+    #    TX packets 0  bytes 0 (0.0 B)
     #  wlan0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
     #    inet 192.168.100.189  netmask 255.255.255.0  broadcast 192.168.100.255
     #    ether b8:27:eb:4f:a6:e9  txqueuelen 1000  (Ethernet)
+    #    RX packets 1358790  bytes 1197368205 (1.1 GiB)
+    #    TX packets 916361  bytes 150440804 (143.4 MiB) 
     #
     tmpInterfaces = []
     haveIF = False
     imterfc = ''
     rpi_mac = ''
+    current_time = time.time()
+    if current_time == previous_time:
+        current_time += 1
+
     for currLine in ifConfigLines:
         lineParts = currLine.split()
         #print_line('- currLine=[{}]'.format(currLine), debug=True)
@@ -655,12 +666,33 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
                         rpi_mac = lineParts[1]
                         print_line('rpi_mac=[{}]'.format(rpi_mac), debug=True)
                     print_line('newTuple=[{}]'.format(newTuple), debug=True)
+                elif 'RX' in currLine: # NEWER ONLY
+                    previous_value = getPreviousNetworkData(imterfc, 'rx_data')
+                    current_value = int(lineParts[4])
+                    rx_data = (current_value - previous_value) / (current_time - previous_time) * 8 / 1024
+                    newTuple = (imterfc, 'rx_data', rx_data)
+                    tmpInterfaces.append(newTuple)
+                    print_line('newTuple=[{}]'.format(newTuple), debug=True)
+                elif 'TX' in currLine: # NEWER ONLY
+                    previous_value = getPreviousNetworkData(imterfc, 'tx_data')
+                    current_value = int(lineParts[4])
+                    tx_data = (current_value - previous_value) / (current_time - previous_time) * 8 / 1024
+                    newTuple = (imterfc, 'tx_data', tx_data)
+                    tmpInterfaces.append(newTuple)
+                    print_line('newTuple=[{}]'.format(newTuple), debug=True)
                     haveIF = False
 
     rpi_interfaces = tmpInterfaces
     print_line('rpi_interfaces=[{}]'.format(rpi_interfaces), debug=True)
     print_line('rpi_mac=[{}]'.format(rpi_mac), debug=True)
 
+def getPreviousNetworkData(interface, field):
+    global rpi_interfaces
+    value = [item for item in rpi_interfaces if item[0] == interface and item[1] == field]
+    if len(value) > 0:
+        return value[0][2]
+    else:
+        return 0
 
 def getNetworkIFs():
     ip_cmd = getIPCmd()
@@ -1554,6 +1586,7 @@ def update_values():
     getSystemThermalStatus()
     getLastUpdateDate()
     getDeviceMemory()
+    getNetworkIFs()
 
 # -----------------------------------------------------------------------------
 
