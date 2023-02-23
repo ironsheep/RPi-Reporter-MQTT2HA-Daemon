@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import _thread
 from datetime import datetime, timedelta
 from tzlocal import get_localzone
@@ -22,6 +24,7 @@ import paho.mqtt.client as mqtt
 import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
+import time
 import requests
 from urllib3.exceptions import InsecureRequestWarning
 
@@ -265,7 +268,7 @@ def getDaemonReleases():
 
         daemon_version_list = newVersionList
         print_line('- RQST daemon_version_list=({})'.format(daemon_version_list), debug=True)
-        daemon_last_fetch_time = time()    # record when we last fetched the versions
+        daemon_last_fetch_time = time.time()    # record when we last fetched the versions
 
 getDaemonReleases() # and load them!
 print_line('* daemon_last_fetch_time=({})'.format(daemon_last_fetch_time), debug=True)
@@ -618,7 +621,7 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
     #    inet 192.168.100.189  netmask 255.255.255.0  broadcast 192.168.100.255
     #    ether b8:27:eb:4f:a6:e9  txqueuelen 1000  (Ethernet)
     #    RX packets 1358790  bytes 1197368205 (1.1 GiB)
-    #    TX packets 916361  bytes 150440804 (143.4 MiB) 
+    #    TX packets 916361  bytes 150440804 (143.4 MiB)
     #
     tmpInterfaces = []
     haveIF = False
@@ -1639,7 +1642,7 @@ try:
         #  our INTERVAL timer does the work
         sleep(10000)
 
-        timeNow = time()
+        timeNow = time.time()
         if timeNow > daemon_last_fetch_time + kVersionCheckIntervalInSeconds:
             getDaemonReleases() # and load them!
 
