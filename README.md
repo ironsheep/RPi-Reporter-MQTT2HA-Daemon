@@ -32,14 +32,17 @@ If you like my work and/or this has helped you in some way then feel free to hel
 
 On this Page:
 
-- [Features](#features)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#installation)
-- [Execution](#execution)
-- [Integration](#integration)
-- [Troubleshooting](#troubleshooting) - having start up issues?  Check here
-- [Controlling your RPi from Home Assistant](#troubleshooting) - (Optional) Controlling your RPi from Home Assistant
+- [Features](#features)- key features of this reporter
+- [Prerequisites](#prerequisites) 
+- [Installation](#installation) - install prerequisites and the daemon project
+- [Configuration](#configuration) - configuring the script to talk with your MQTT broker
+- [Execution](#execution) - initial run by hand, then setup to run from boot
+- [Integration](#integration) - a quick look at what's reported to MQTT about this RPi
+- [Troubleshooting](#troubleshooting) - having start up issues?  Check here for common problems
+
+Coming Soon:
+
+- [Controlling your RPi from Home Assistant](#optional-controlling-your-rpi-from-home-assistant) - (Optional) Set up to allow remote control from HA
 
 Additional pages:
 
@@ -480,6 +483,8 @@ python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py -d -v
 This let's you inspect many of the values the script is going to use and to see the data being sent to the MQTT broker.
 
 ## (Optional) Controlling your RPi from Home Assistant
+
+**--- NOT YET OPERATIONAL, READYING FEATURE FOR RELEASE! Should be in v1.7.5 and later ---**
 
 This is a fork of the great RPi Reporter MQTT2HA Daemon.
 I have added as a new feature the possibility to add and execute commands in the monitored Raspberry Pis using MQTT.
