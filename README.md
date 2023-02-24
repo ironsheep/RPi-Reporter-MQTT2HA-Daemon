@@ -1,52 +1,3 @@
-## Fork of the RPi Reporter MQTT2HA Daemon
-
-This is a fork of the great RPi Reporter MQTT2HA Daemon.
-I have added as a new feature the possibility to add and execute commands in the monitored Raspberry Pis using MQTT.
-Examples are in `config.ini.dist` in the `Commands` section
-
-Please refer to the original project for installation instructions.
-
-### New configuration options
-
-Added the new `Commands` section to `config.ini`.
-An example to reboot or shutdown the Pi:
-
-  ```shell
-  [Commands]
-  shutdown = /usr/bin/sudo /sbin/shutdown -h now
-  reboot = /usr/bin/sudo /sbin/reboot
-  ```
-
-### Extended permissions for daemon for command execution
-
-The "daemon" user proposed to start the daemon in the installation instructions doesn't have enough privileges to reboot or 
-power down the computer. A possible workaround is to give permissions to daemon to the commands we want to execute using
-the sudoers configuration file:
-
-  ```shell
-  # edit sudoers file
-  sudo vim /etc/sudoers
-  
-  # add the following lines at the bottom.
-  # note that every service that we want to allow to restart must be specified here
-  daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl restart isp-rpi-reporter,/sbin/reboot,/sbin/shutdown
-  ```
-
-NOTE: In some systems the path for systemctl / reboot / shutdown can be different.
-
-Additionally, the daemon user needs permission to execute the shell script referenced in the run-script command (and
-any command referenced there/access to the directories specified). If the script has been created by the standard pi 
-user, a simple workaround could be:
-
-  ```shell
-  chown daemon RPi-mqtt-daemon-script.sh
-
-  groups
-  ```
-
-
-[Original README.MD file follows]
-
 # RPi Reporter MQTT2HA Daemon
 
 ![Project Maintenance][maintenance-shield]
@@ -77,6 +28,23 @@ If you like my work and/or this has helped you in some way then feel free to hel
 
 ---
 
+## Table of Contents
+
+On this Page:
+
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#installation)
+- [Execution](#execution)
+- [Integration](#integration)
+- [Troubleshooting](#troubleshooting) - having start up issues?  Check here
+- [Controlling your RPi from Home Assistant](#troubleshooting) - (Optional) Controlling your RPi from Home Assistant
+
+Additional pages:
+
+- [The Associated Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card) - We have a Lovelace Custom Card that makes displaying this RPi Monitor data very easy.
+
 ## Features
 
 - Tested on Raspberry Pi's 2/3/4 with Jessie, Stretch and Buster
@@ -85,7 +53,7 @@ If you like my work and/or this has helped you in some way then feel free to hel
 - Data is published via MQTT
 - MQTT discovery messages are sent so RPi's are automatically registered with Home Assistant (if MQTT discovery is enabled in your HA installation)
 - MQTT authentication support
-- No special/root privileges are required by this mechanism
+- No special/root privileges are required by this mechanism (unless you activate remote commanding from HA)
 - Linux daemon / systemd service, sd_notify messages generated
 
 ### RPi Device
@@ -492,11 +460,6 @@ An example:
 
 This data can be subscribed to and processed by your home assistant installation. How you build your RPi dashboard from here is up to you!
 
-## Lovelace Custom Card
-
-We have a Lovelace Custom Card that makes displaying this RPi Monitor data very easy.
-
-See my project: [Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card)
 
 ## Troubleshooting
 
@@ -515,6 +478,53 @@ python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py -d -v
 ```
 
 This let's you inspect many of the values the script is going to use and to see the data being sent to the MQTT broker.
+
+## (Optional) Controlling your RPi from Home Assistant
+
+This is a fork of the great RPi Reporter MQTT2HA Daemon.
+I have added as a new feature the possibility to add and execute commands in the monitored Raspberry Pis using MQTT.
+Examples are in `config.ini.dist` in the `Commands` section
+
+Please refer to the original project for installation instructions.
+
+### New configuration options
+
+Added the new `Commands` section to `config.ini`.
+An example to reboot or shutdown the Pi:
+
+  ```shell
+  [Commands]
+  shutdown = /usr/bin/sudo /sbin/shutdown -h now
+  reboot = /usr/bin/sudo /sbin/reboot
+  ```
+
+### Extended permissions for daemon for command execution
+
+The "daemon" user proposed to start the daemon in the installation instructions doesn't have enough privileges to reboot or 
+power down the computer. A possible workaround is to give permissions to daemon to the commands we want to execute using
+the sudoers configuration file:
+
+  ```shell
+  # edit sudoers file
+  sudo vim /etc/sudoers
+  
+  # add the following lines at the bottom.
+  # note that every service that we want to allow to restart must be specified here
+  daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl restart isp-rpi-reporter,/sbin/reboot,/sbin/shutdown
+  ```
+
+NOTE: In some systems the path for systemctl / reboot / shutdown can be different.
+
+Additionally, the daemon user needs permission to execute the shell script referenced in the run-script command (and
+any command referenced there/access to the directories specified). If the script has been created by the standard pi 
+user, a simple workaround could be:
+
+  ```shell
+  chown daemon RPi-mqtt-daemon-script.sh
+
+  groups
+  ```
+
 
 ## Contributors
 
