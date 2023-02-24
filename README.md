@@ -486,11 +486,12 @@ This let's you inspect many of the values the script is going to use and to see 
 
 **--- NOT YET OPERATIONAL, READYING FEATURE FOR RELEASE! Should be in v1.7.5 and later ---**
 
-This is a fork of the great RPi Reporter MQTT2HA Daemon.
-I have added as a new feature the possibility to add and execute commands in the monitored Raspberry Pis using MQTT.
-Examples are in `config.ini.dist` in the `Commands` section
+By adding more information to your configuration you will now be able to add and execute commands in the monitored Raspberry Pis using MQTT, meaning yes, from buttons in your Home Assistant interface!
 
-Please refer to the original project for installation instructions.
+
+------ //  WORK IN PROGRESS.  \\\\ ------
+
+Examples are in `config.ini.dist` in the `Commands` section
 
 ### New configuration options
 
@@ -530,6 +531,7 @@ user, a simple workaround could be:
   groups
   ```
 
+------ \\\\  WORK IN PROGRESS   // ------
 
 ## Contributors
 
