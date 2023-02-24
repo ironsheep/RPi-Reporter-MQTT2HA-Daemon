@@ -16,6 +16,11 @@
 # default domain to use when hostname -f doesn't return a proper fqdn
 #fallback_domain = home
 
+[Commands]
+#shutdown = /usr/bin/sudo /sbin/shutdown -h now
+#reboot = /usr/bin/sudo /sbin/reboot
+#restart_service = /usr/bin/sudo systemctl restart {}
+
 [MQTT]
 
 # The hostname or IP address of the MQTT broker to connect to (Default: localhost)

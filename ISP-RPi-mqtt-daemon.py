@@ -118,6 +118,7 @@ opt_debug = parse_args.debug
 opt_verbose = parse_args.verbose
 opt_stall = parse_args.stall
 
+print_line('--------------------------------------------------------------------', debug=True)
 print_line(script_info, info=True)
 if opt_verbose:
     print_line('Verbose enabled', info=True)
@@ -148,6 +149,17 @@ def on_connect(client, userdata, flags, rc):
         mqtt_client_connected = True
         print_line('on_connect() mqtt_client_connected=[{}]'.format(
             mqtt_client_connected), debug=True)
+        client.on_publish = on_publish
+
+        # -------------------------------------------------------------------------
+        # Commands Subscription
+        if (len(commands) > 0):
+            print_line('MQTT subscription to {}/+ enabled'.format(base_command_topic), console=True, sd_notify=True)
+            client.on_message = on_message
+            client.subscribe('{}/+'.format(base_command_topic))
+        else:
+            print_line('MQTT subscripton to {}/+ disabled'.format(base_command_topic), console=True, sd_notify=True)
+        # -------------------------------------------------------------------------
     else:
         print_line('! Connection error with result code {} - {}'.format(str(rc),
                    mqtt.connack_string(rc)), error=True)
@@ -165,7 +177,26 @@ def on_publish(client, userdata, mid):
     #print_line('* Data successfully published.')
     pass
 
+# -----------------------------------------------------------------------------
+# Commands - MQTT Subscription Callback
+# -----------------------------------------------------------------------------
+# Command catalog
+def on_subscribe(client, userdata, mid, granted_qos):
+    print_line('on_subscribe() - {} - {}'.format(str(mid),str(granted_qos)), debug=True, sd_notify=True)
 
+def on_message(client, userdata, message):
+    print_line('on_message(). Topic=[{}] payload=[{}]'.format(message.topic, message.payload), console=True, sd_notify=True, debug=True)
+
+    decoded_payload = message.payload.decode('utf-8')
+    command = message.topic.split('/')[-1]
+
+    if command in commands:
+        print_line('- Command "{}" Received - Run {} {} -'.format(command, commands[command], decoded_payload), console=True, debug=True)
+        subprocess.Popen(["/usr/bin/sh", "-c", commands[command].format(decoded_payload)])
+    else:
+        print_line('* Invalid Command received.', error=True)
+
+# -----------------------------------------------------------------------------
 # Load configuration file
 config = ConfigParser(delimiters=(
     '=', ), inline_comment_prefixes=('#'), interpolation=None)
@@ -208,6 +239,13 @@ default_domain = ''
 fallback_domain = config['Daemon'].get(
     'fallback_domain', default_domain).lower()
 
+# -----------------------------------------------------------------------------
+#  Commands Subscription
+base_command_topic = '{}/command/{}'.format(base_topic, sensor_name.lower())
+# -----------------------------------------------------------------------------
+commands = OrderedDict([])
+if config.has_section('Commands'):
+    commands.update(dict(config['Commands'].items()))
 
 # Check configuration
 #
@@ -1148,7 +1186,6 @@ lwt_offline_val = 'offline'
 print_line('Connecting to MQTT broker ...', verbose=True)
 mqtt_client = mqtt.Client()
 mqtt_client.on_connect = on_connect
-mqtt_client.on_publish = on_publish
 
 
 mqtt_client.will_set(lwt_topic, payload=lwt_offline_val, retain=True)
@@ -1245,31 +1282,68 @@ else:
 # Publish our MQTT auto discovery
 #  table of key items to publish:
 detectorValues = OrderedDict([
-    (LD_MONITOR, dict(title="RPi Monitor {}".format(rpi_hostname), device_class="timestamp", no_title_prefix="yes",
-     json_value="timestamp", json_attr="yes", icon='mdi:raspberry-pi', device_ident="RPi-{}".format(rpi_fqdn))),
-    (LD_SYS_TEMP, dict(title="RPi Temp {}".format(rpi_hostname), device_class="temperature",
-     no_title_prefix="yes", unit="°C", json_value="temperature_c", icon='mdi:thermometer')),
-    (LD_FS_USED, dict(title="RPi Disk Used {}".format(rpi_hostname),
-     no_title_prefix="yes", json_value="fs_used_prcnt", unit="%", icon='mdi:sd')),
-    (LD_CPU_USE, dict(title="RPi CPU Use {}".format(rpi_hostname),
-     no_title_prefix="yes", json_value=LD_CPU_USE_JSON, unit="%", icon=LD_CPU_USE_ICON)),
-    (LD_MEM_USED, dict(title="RPi Mem Used {}".format(rpi_hostname),
-     no_title_prefix="yes", json_value="mem_used_prcnt", unit="%", icon='mdi:memory')),
+    (LD_MONITOR, dict(
+        title="RPi Monitor {}".format(rpi_hostname),
+        topic_category="sensor",
+        device_class="timestamp",
+        device_ident="RPi-{}".format(rpi_fqdn),
+        no_title_prefix="yes",
+        icon='mdi:raspberry-pi',
+        json_attr="yes",
+        json_value="timestamp",
+    )),
+    (LD_SYS_TEMP, dict(
+        title="RPi Temp {}".format(rpi_hostname),
+        topic_category="sensor",
+        device_class="temperature",
+        no_title_prefix="yes",
+        unit="C",
+        icon='mdi:thermometer',
+        json_value="temperature_c",
+    )),
+    (LD_FS_USED, dict(
+        title="RPi Used {}".format(rpi_hostname),
+        topic_category="sensor",
+        no_title_prefix="yes",
+        unit="%",
+        icon='mdi:sd',
+        json_value="fs_free_prcnt",
+    )),
+    (LD_CPU_USE, dict(
+        title="RPi CPU Use {}".format(rpi_hostname),
+        topic_category="sensor",
+        no_title_prefix="yes",
+        unit="%",
+        icon=LD_CPU_USE_ICON,
+        json_value=LD_CPU_USE_JSON,
+    ))
 ])
+
+for [command, _] in commands.items():
+    detectorValues.update({
+        command: dict(
+            title='RPi Command {} {}'.format(rpi_hostname, command),
+            topic_category='button',
+            no_title_prefix='yes',
+            icon='mdi:gesture-tap',
+            command = command,
+            command_topic = '{}/{}'.format(base_command_topic, command)
+        )
+    })
 
 print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
 
-base_topic = '{}/sensor/{}'.format(base_topic, sensor_name.lower())
+sensor_base_topic = '{}/sensor/{}'.format(base_topic, sensor_name.lower())
 values_topic_rel = '{}/{}'.format('~', LD_MONITOR)
-values_topic = '{}/{}'.format(base_topic, LD_MONITOR)
+values_topic = '{}/{}'.format(sensor_base_topic, LD_MONITOR)
 activity_topic_rel = '{}/status'.format('~')     # vs. LWT
-activity_topic = '{}/status'.format(base_topic)    # vs. LWT
+activity_topic = '{}/status'.format(sensor_base_topic)    # vs. LWT
 
 command_topic_rel = '~/set'
 
+# discovery_topic = '{}/sensor/{}/{}/config'.format(discovery_prefix, sensor_name.lower(), sensor)
 for [sensor, params] in detectorValues.items():
-    discovery_topic = '{}/sensor/{}/{}/config'.format(
-        discovery_prefix, sensor_name.lower(), sensor)
+    discovery_topic = '{}/{}/{}/{}/config'.format(discovery_prefix, params['topic_category'], sensor_name.lower(), sensor)
     payload = OrderedDict()
     if 'no_title_prefix' in params:
         payload['name'] = "{}".format(params['title'].title())
@@ -1283,18 +1357,25 @@ for [sensor, params] in detectorValues.items():
         payload['unit_of_measurement'] = params['unit']
     if 'json_value' in params:
         payload['stat_t'] = values_topic_rel
-        payload['val_tpl'] = "{{{{ value_json.{}.{} }}}}".format(
-            LDS_PAYLOAD_NAME, params['json_value'])
-    payload['~'] = base_topic
-    payload['pl_avail'] = lwt_online_val
-    payload['pl_not_avail'] = lwt_offline_val
+        payload['val_tpl'] = "{{{{ value_json.{}.{} }}}}".format(LDS_PAYLOAD_NAME, params['json_value'])
+    if 'command' in params:
+        payload['~'] = base_command_topic
+        payload['cmd_t'] = '~/{}'.format(params['command'])
+        payload['json_attr_t'] = '~/{}/attributes'.format(params['command'])
+    else:
+        payload['~'] = sensor_base_topic
+        payload['avty_t'] = activity_topic_rel
+        payload['pl_avail'] = lwt_online_val
+        payload['pl_not_avail'] = lwt_offline_val
+    if 'trigger_type' in params:
+        payload['type'] = params['trigger_type']
+    if 'trigger_subtype' in params:
+        payload['subtype'] = params['trigger_subtype']
     if 'icon' in params:
         payload['ic'] = params['icon']
-    payload['avty_t'] = activity_topic_rel
     if 'json_attr' in params:
         payload['json_attr_t'] = values_topic_rel
-        payload['json_attr_tpl'] = '{{{{ value_json.{} | tojson }}}}'.format(
-            LDS_PAYLOAD_NAME)
+        payload['json_attr_tpl'] = '{{{{ value_json.{} | tojson }}}}'.format(LDS_PAYLOAD_NAME)
     if 'device_ident' in params:
         payload['dev'] = {
             'identifiers': ["{}".format(uniqID)],
