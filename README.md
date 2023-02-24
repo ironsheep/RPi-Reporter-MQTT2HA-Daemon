@@ -40,9 +40,9 @@ On this Page:
 - [Integration](#integration) - a quick look at what's reported to MQTT about this RPi
 - [Troubleshooting](#troubleshooting) - having start up issues?  Check here for common problems
 
-Coming Soon:
+*Coming Soon*:
 
-- [Controlling your RPi from Home Assistant](#optional-controlling-your-rpi-from-home-assistant) - (Optional) Set up to allow remote control from HA
+- *Controlling your RPi from Home Assistant* - (Optional) Set up to allow remote control from HA
 
 Additional pages:
 
@@ -535,13 +535,16 @@ user, a simple workaround could be:
 
 ## Contributors
 
-This project is enjoyed by users in many countries. A number of these users have taken the time so submit pull requests which contribute changes/fixes to this project.
+This project is enjoyed by users in many countries. A number of these users have taken the time so submit **pull requests** which contribute changes/fixes to this project.
 
 Thank you to the following github users for taking the time to help make this project function better for all of us!:
 
 - [dflvunoooooo](https://github.com/dflvunoooooo)
 - [woodmj74](https://github.com/woodmj74)
 - [Henry-Sir](https://github.com/Henry-Sir)
+- [OasisOfChaos](https://github.com/OasisOfChaos)
+- [mcarlosro](https://github.com/mcarlosro)
+- [hobbypunk90](https://github.com/hobbypunk90)
 
 ## Credits
 
