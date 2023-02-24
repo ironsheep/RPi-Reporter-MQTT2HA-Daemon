@@ -24,10 +24,12 @@ import paho.mqtt.client as mqtt
 import sdnotify
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
+import time
 import requests
 from urllib3.exceptions import InsecureRequestWarning
 
-script_version = "1.7.2"
+
+script_version = "1.7.4"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -304,7 +306,7 @@ def getDaemonReleases():
 
         daemon_version_list = newVersionList
         print_line('- RQST daemon_version_list=({})'.format(daemon_version_list), debug=True)
-        daemon_last_fetch_time = time()    # record when we last fetched the versions
+        daemon_last_fetch_time = time.time()    # record when we last fetched the versions
 
 getDaemonReleases() # and load them!
 print_line('* daemon_last_fetch_time=({})'.format(daemon_last_fetch_time), debug=True)
@@ -346,6 +348,9 @@ rpi_throttle_status = []
 rpi_cpuload1 = ''
 rpi_cpuload5 = ''
 rpi_cpuload15 = ''
+
+# Time for network transfer calculation
+previous_time = time.time()
 
 # -----------------------------------------------------------------------------
 #  monitor variable fetch routines
@@ -454,7 +459,7 @@ def getDeviceMemory():
         if 'MemAvail' in currLine:
             mem_avail = float(lineParts[1]) / 1024
     # Tuple (Total, Free, Avail.)
-    rpi_memory_tuple = (mem_total, mem_free, mem_avail)
+    rpi_memory_tuple = (mem_total, mem_free, mem_avail) # [0]=total, [1]=free, [2]=avail.
     print_line('rpi_memory_tuple=[{}]'.format(rpi_memory_tuple), debug=True)
 
 def refreshPackageInfo():
@@ -617,7 +622,7 @@ def getNetworkIFsUsingIP(ip_cmd):
 
 
 def getSingleInterfaceDetails(interfaceName):
-    cmdString = '/sbin/ifconfig {} | /bin/egrep "Link|flags|inet |ether " | /bin/egrep -v -i "lo:|loopback|inet6|\:\:1|127\.0\.0\.1"'.format(
+    cmdString = '/sbin/ifconfig {} | /bin/egrep "Link|flags|inet |ether |TX packets |RX packets "'.format(
         interfaceName)
     out = subprocess.Popen(cmdString,
                            shell=True,
@@ -638,6 +643,7 @@ def getSingleInterfaceDetails(interfaceName):
 def loadNetworkIFDetailsFromLines(ifConfigLines):
     global rpi_interfaces
     global rpi_mac
+    global previous_time
     #
     # OLDER SYSTEMS
     #  eth0      Link encap:Ethernet  HWaddr b8:27:eb:c8:81:f2
@@ -647,14 +653,22 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
     #  The following means eth0 (wired is NOT connected, and WiFi is connected)
     #  eth0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
     #    ether b8:27:eb:1a:f3:bc  txqueuelen 1000  (Ethernet)
+    #    RX packets 0  bytes 0 (0.0 B)
+    #    TX packets 0  bytes 0 (0.0 B)
     #  wlan0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
     #    inet 192.168.100.189  netmask 255.255.255.0  broadcast 192.168.100.255
     #    ether b8:27:eb:4f:a6:e9  txqueuelen 1000  (Ethernet)
+    #    RX packets 1358790  bytes 1197368205 (1.1 GiB)
+    #    TX packets 916361  bytes 150440804 (143.4 MiB)
     #
     tmpInterfaces = []
     haveIF = False
     imterfc = ''
     rpi_mac = ''
+    current_time = time.time()
+    if current_time == previous_time:
+        current_time += 1
+
     for currLine in ifConfigLines:
         lineParts = currLine.split()
         #print_line('- currLine=[{}]'.format(currLine), debug=True)
@@ -693,12 +707,33 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
                         rpi_mac = lineParts[1]
                         print_line('rpi_mac=[{}]'.format(rpi_mac), debug=True)
                     print_line('newTuple=[{}]'.format(newTuple), debug=True)
+                elif 'RX' in currLine: # NEWER ONLY
+                    previous_value = getPreviousNetworkData(imterfc, 'rx_data')
+                    current_value = int(lineParts[4])
+                    rx_data = round((current_value - previous_value) / (current_time - previous_time) * 8 / 1024)
+                    newTuple = (imterfc, 'rx_data', rx_data)
+                    tmpInterfaces.append(newTuple)
+                    print_line('newTuple=[{}]'.format(newTuple), debug=True)
+                elif 'TX' in currLine: # NEWER ONLY
+                    previous_value = getPreviousNetworkData(imterfc, 'tx_data')
+                    current_value = int(lineParts[4])
+                    tx_data = round((current_value - previous_value) / (current_time - previous_time) * 8 / 1024)
+                    newTuple = (imterfc, 'tx_data', tx_data)
+                    tmpInterfaces.append(newTuple)
+                    print_line('newTuple=[{}]'.format(newTuple), debug=True)
                     haveIF = False
 
     rpi_interfaces = tmpInterfaces
     print_line('rpi_interfaces=[{}]'.format(rpi_interfaces), debug=True)
     print_line('rpi_mac=[{}]'.format(rpi_mac), debug=True)
 
+def getPreviousNetworkData(interface, field):
+    global rpi_interfaces
+    value = [item for item in rpi_interfaces if item[0] == interface and item[1] == field]
+    if len(value) > 0:
+        return value[0][2]
+    else:
+        return 0
 
 def getNetworkIFs():
     ip_cmd = getIPCmd()
@@ -875,7 +910,9 @@ def getSystemTemperature():
     if cmd_fspec == '':
         rpi_system_temp = float('-1.0')
         rpi_gpu_temp = float('-1.0')
-        rpi_cpu_temp = float('-1.0')
+        rpi_cpu_temp = getSystemCPUTemperature()
+        if rpi_cpu_temp != -1.0:
+            rpi_system_temp = rpi_cpu_temp
     else:
         retry_count = 3
         while retry_count > 0 and 'failed' in rpi_gpu_temp_raw:
@@ -899,19 +936,30 @@ def getSystemTemperature():
         rpi_gpu_temp = interpretedTemp
         print_line('rpi_gpu_temp=[{}]'.format(rpi_gpu_temp), debug=True)
 
-        out = subprocess.Popen("/bin/cat /sys/class/thermal/thermal_zone0/temp",
-                               shell=True,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT)
-        stdout, _ = out.communicate()
-        rpi_cpu_temp_raw = stdout.decode('utf-8').rstrip()
-        rpi_cpu_temp = float(rpi_cpu_temp_raw) / 1000.0
-        print_line('rpi_cpu_temp=[{}]'.format(rpi_cpu_temp), debug=True)
+        rpi_cpu_temp = getSystemCPUTemperature()
 
         # fallback to CPU temp is GPU not available
         rpi_system_temp = rpi_gpu_temp
         if rpi_gpu_temp == -1.0:
             rpi_system_temp = rpi_cpu_temp
+
+
+def getSystemCPUTemperature():
+    cmd_locn1 = '/sys/class/thermal/thermal_zone0/temp'
+    cmdString = '/bin/cat {}'.format(
+        cmd_locn1)
+    if os.path.exists(cmd_locn1) == False:
+        rpi_cpu_temp = float('-1.0')
+    else:
+        out = subprocess.Popen(cmdString,
+                            shell=True,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT)
+        stdout, _ = out.communicate()
+        rpi_cpu_temp_raw = stdout.decode('utf-8').rstrip()
+        rpi_cpu_temp = float(rpi_cpu_temp_raw) / 1000.0
+    print_line('rpi_cpu_temp=[{}]'.format(rpi_cpu_temp), debug=True)
+    return rpi_cpu_temp
 
 
 def getSystemThermalStatus():
@@ -1211,6 +1259,7 @@ LD_SYS_TEMP = "temperature"
 LD_FS_USED = "disk_used"
 LDS_PAYLOAD_NAME = "info"
 LD_CPU_USE = "cpu_load"
+LD_MEM_USED = "mem_used"
 
 if interval_in_minutes < 5:
     LD_CPU_USE_JSON = "cpu.load_1min_prcnt"
@@ -1403,6 +1452,8 @@ RPI_UPTIME = "up_time"
 RPI_DATE_LAST_UPDATE = "last_update"
 RPI_FS_SPACE = 'fs_total_gb'  # "fs_space_gbytes"
 RPI_FS_AVAIL = 'fs_free_prcnt'  # "fs_available_prcnt"
+RPI_FS_USED = 'fs_used_prcnt'  # "fs_used_prcnt"
+RPI_RAM_USED = 'mem_used_prcnt'  # "mem_used_prcnt"
 RPI_SYSTEM_TEMP = "temperature_c"
 RPI_GPU_TEMP = "temp_gpu_c"
 RPI_CPU_TEMP = "temp_cpu_c"
@@ -1466,7 +1517,9 @@ def send_status(timestamp, nothing):
     else:
         rpiData[RPI_DATE_LAST_UPDATE] = ''
     rpiData[RPI_FS_SPACE] = int(rpi_filesystem_space.replace('GB', ''), 10)
-    rpiData[RPI_FS_AVAIL] = int(rpi_filesystem_percent, 10)
+    # TODO: consider eliminating RPI_FS_AVAIL/fs_free_prcnt as used is needed but free is not... (can be calculated)
+    rpiData[RPI_FS_AVAIL] = 100 - int(rpi_filesystem_percent, 10)
+    rpiData[RPI_FS_USED] = int(rpi_filesystem_percent, 10)
 
     rpiData[RPI_NETWORK] = getNetworkDictionary()
 
@@ -1477,6 +1530,11 @@ def send_status(timestamp, nothing):
     rpiRam = getMemoryDictionary()
     if len(rpiRam) > 0:
         rpiData[RPI_MEMORY] = rpiRam
+        ramSizeMB = int('{:.0f}'.format(rpi_memory_tuple[0], 10))  # "mem_space_mbytes"
+        # used is total - free
+        ramUsedMB = int('{:.0f}'.format(rpi_memory_tuple[0] - rpi_memory_tuple[2]), 10)
+        ramUsedPercent = int((ramUsedMB / ramSizeMB) * 100)
+        rpiData[RPI_RAM_USED] = ramUsedPercent  # "mem_used_prcnt"
 
     rpiCpu = getCPUDictionary()
     if len(rpiCpu) > 0:
@@ -1571,8 +1629,9 @@ def getMemoryDictionary():
     #   Tuple (Total, Free, Avail.)
     memoryData = OrderedDict()
     if rpi_memory_tuple != '':
-        memoryData[RPI_MEM_TOTAL] = '{:.3f}'.format(rpi_memory_tuple[0])
-        memoryData[RPI_MEM_FREE] = '{:.3f}'.format(rpi_memory_tuple[2])
+        # TODO: remove free fr
+        memoryData[RPI_MEM_TOTAL] = int(rpi_memory_tuple[0])
+        memoryData[RPI_MEM_FREE] = int(rpi_memory_tuple[2])
     #print_line('memoryData:{}"'.format(memoryData), debug=True)
     return memoryData
 
@@ -1612,6 +1671,7 @@ def update_values():
     getSystemThermalStatus()
     getLastUpdateDate()
     getDeviceMemory()
+    getNetworkIFs()
 
 # -----------------------------------------------------------------------------
 
@@ -1664,7 +1724,7 @@ try:
         #  our INTERVAL timer does the work
         sleep(10000)
 
-        timeNow = time()
+        timeNow = time.time()
         if timeNow > daemon_last_fetch_time + kVersionCheckIntervalInSeconds:
             getDaemonReleases() # and load them!
 

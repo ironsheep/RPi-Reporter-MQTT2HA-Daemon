@@ -59,7 +59,7 @@ user, a simple workaround could be:
 
 A simple Linux python script to query the Raspberry Pi on which it is running for various configuration and status values which it then reports via via [MQTT](https://projects.eclipse.org/projects/iot.mosquitto) to your [Home Assistant](https://www.home-assistant.io/) installation. This allows you to install and run this on each of your RPi's so you can track them all via your own Home Assistant Dashboard.
 
-![Discovery image](./Docs/images/DiscoveryV3.png)
+![Discovery image](./Docs/images/DiscoveryV4.png)
 
 This script should be configured to be run in **daemon mode** continously in the background as a systemd service (or optionally as a SysV init script). Instructions are provided below.
 
@@ -101,52 +101,57 @@ Each RPi device is reported as:
 
 ### RPi MQTT Topics
 
-Each RPi device is reported as four topics:
+Each RPi device is reported as five topics:
 
 | Name            | Device Class  | Units       | Description                                                                                                                                                                    |
 | --------------- | ------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `~/monitor`     | 'timestamp'   | n/a         | Is a timestamp which shows when the RPi last sent information, carries a template payload conveying all monitored values (**attach the lovelace custom card to this sensor!**) |
 | `~/temperature` | 'temperature' | degrees C   | Shows the latest system temperature                                                                                                                                            |
-| `~/disk_used`   | none          | percent (%) | Shows the amount of root file system used                                                                                                                                      |
+| `~/disk_used`   | none          | percent (%) | Shows the percent of root file system used                                                                                                                                     |
 | `~/cpu_load`    | none          | percent (%) | Shows CPU load % over the last 5 minutes                                                                                                                                       |
+| `~/mem_used`    | none          | percent (%) | Shows the percent of RAM used                                                                                                                                                  |
 
 ### RPi Monitor Topic
 
 The monitored topic reports the following information:
 
-| Name                | Sub-name           | Description                                                                                         |
-| ------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
-| `rpi_model`         |                    | tinyfied hardware version string                                                                    |
-| `ifaces`            |                    | comma sep list of interfaces on board [w,e,b]                                                       |
-| `temperature_c`     |                    | System temperature, in [°C] (0.1°C resolution) Note: this is GPU temp. if available, else CPU temp. |
-| `temp_gpu_c`        |                    | GPU temperature, in [°C] (0.1°C resolution)                                                         |
-| `temp_cpu_c`        |                    | CPU temperature, in [°C] (0.1°C resolution)                                                         |
-| `up_time`           |                    | duration since last booted, as [days]                                                               |
-| `last_update`       |                    | updates last applied, as [date]                                                                     |
-| `fs_total_gb`       |                    | / total space in [GBytes]                                                                           |
-| `fs_free_prcnt`     |                    | / free space [%]                                                                                    |
-| `host_name`         |                    | hostname                                                                                            |
-| `fqdn`              |                    | hostname.domain                                                                                     |
-| `ux_release`        |                    | os release name (e.g., buster)                                                                      |
-| `ux_version`        |                    | os version (e.g., 4.19.66-v7+)                                                                      |
-| `reporter`          |                    | script name, version running on RPi                                                                 |
-| `networking`        |                    | lists for each interface: interface name, mac address (and IP if the interface is connected)        |
-| `drives`            |                    | lists for each drive mounted: size in GB, % used, device and mount point                            |
-| `cpu`               |                    | lists the model of cpu, number of cores, etc.                                                       |
-|                     | `hardware`         | typically the Broadcom chip ID (e.g. BCM2835)                                                       |
-|                     | `model`            | model description string (e.g., ARMv7 Processor rev 4 (v7l))                                        |
-|                     | `number_cores`     | number of cpu cores [1,4]                                                                           |
-|                     | `bogo_mips`        | reported performance of this RPi                                                                    |
-|                     | `serial`           | serial number of this RPi                                                                           |
-|                     | `load_1min_prcnt`  | average % cpu load during prior minute (avg per core)                                               |
-|                     | `load_5min_prcnt`  | average % cpu load during prior 5 minutes (avg per core)                                            |
-|                     | `load_15min_prcnt` | average % cpu load during prior 15 minutes (avg per core)                                           |
-| `memory`            |                    | shows the total amount of RAM in MB and the available ram in MB                                     |
-| `reporter`          |                    | name and version of the script reporting these values                                               |
-| `reporter_releases` |                    | list of latest reporter formal versions                                                             |
-| `report_interval`   |                    | interval in minutes between reports from this script                                                |
-| `throttle`          |                    | reports the throttle status value plus interpretation thereof                                       |
-| `timestamp`         |                    | date, time when this report was generated                                                           |
+| Name                | Sub-name           | Description                                                                                                             |
+| ------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `rpi_model`         |                    | tinyfied hardware version string                                                                                        |
+| `ifaces`            |                    | comma sep list of interfaces on board [w,e,b]                                                                           |
+| `temperature_c`     |                    | System temperature, in [°C] (0.1°C resolution) Note: this is GPU temp. if available, else CPU temp. (used by HA sensor) |
+| `temp_gpu_c`        |                    | GPU temperature, in [°C] (0.1°C resolution)                                                                             |
+| `temp_cpu_c`        |                    | CPU temperature, in [°C] (0.1°C resolution)                                                                             |
+| `up_time`           |                    | duration since last booted, as [days]                                                                                   |
+| `last_update`       |                    | updates last applied, as [date]                                                                                         |
+| `fs_total_gb`       |                    | / (root) total space in [GBytes]                                                                                        |
+| `fs_free_prcnt`     |                    | / (root) available space [%]                                                                                            |
+| `fs_used_prcnt`     |                    | / (root) used space [%] (used by HA sensor)                                                                             |
+| `host_name`         |                    | hostname                                                                                                                |
+| `fqdn`              |                    | hostname.domain                                                                                                         |
+| `ux_release`        |                    | os release name (e.g., buster)                                                                                          |
+| `ux_version`        |                    | os version (e.g., 4.19.66-v7+)                                                                                          |
+| `reporter`          |                    | script name, version running on RPi                                                                                     |
+| `networking`        |                    | lists for each interface: interface name, mac address (and IP if the interface is connected)                            |
+| `drives`            |                    | lists for each drive mounted: size in GB, % used, device and mount point                                                |
+| `cpu`               |                    | lists the model of cpu, number of cores, etc.                                                                           |
+|                     | `hardware`         | - typically the Broadcom chip ID (e.g. BCM2835)                                                                         |
+|                     | `model`            | - model description string (e.g., ARMv7 Processor rev 4 (v7l))                                                          |
+|                     | `number_cores`     | - number of cpu cores [1,4]                                                                                             |
+|                     | `bogo_mips`        | - reported performance of this RPi                                                                                      |
+|                     | `serial`           | - serial number of this RPi                                                                                             |
+|                     | `load_1min_prcnt`  | - average % cpu load during prior minute (avg per core)                                                                 |
+|                     | `load_5min_prcnt`  | - average % cpu load during prior 5 minutes (avg per core)                                                              |
+|                     | `load_15min_prcnt` | - average % cpu load during prior 15 minutes (avg per core)                                                             |
+| `memory`            |                    | shows the RAM configuration in MB for this RPi                                                                          |
+|                     | `size_mb`          | - total memory Size in MBytes                                                                                           |
+|                     | `free_mb`          | - available memory in MBytes                                                                                            |
+| `mem_used_prcnt`    |                    | shows the amount of RAM currently in use (used by HA sensor)                                                            |
+| `reporter`          |                    | name and version of the script reporting these values                                                                   |
+| `reporter_releases` |                    | list of latest reporter formal versions                                                                                 |
+| `report_interval`   |                    | interval in minutes between reports from this script                                                                    |
+| `throttle`          |                    | reports the throttle status value plus interpretation thereof                                                           |
+| `timestamp`         |                    | date, time when this report was generated                                                                               |
 
 _NOTE: cpu load averages are divided by the number of cores_
 
@@ -180,8 +185,47 @@ sudo apt-get install libraspberrypi-bin net-tools
 ### Packages for Arch Linux
 
 ```shell
-sudo pacman -S python python-pip python-tzlocal python-notify2 python-colorama python-unidecode python-paho-mqtt inetutils
+sudo pacman -S python python-pip python-tzlocal python-notify2 python-colorama python-unidecode python-paho-mqtt python-requests inetutils 
 ```
+
+### With these extra packages installed, verify access to network information
+
+The Daemon script needs access to information about how your RPi connects to the network. It uses `ifconfig(8)` to look up connection names and get the RPi IP address, etc.
+
+Let's run `ifconfig` to insure you have it installed.
+
+```shell
+# run ifconfig(8) to see your RPi networking info
+ifconfig
+eth0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
+        ether xx:xx:xx:xx:xx:xx  txqueuelen 1000  (Ethernet)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        inet6 ::1  prefixlen 128  scopeid 0x10<host>
+        loop  txqueuelen 1000  (Local Loopback)
+        RX packets 41342  bytes 2175319 (2.0 MiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 41342  bytes 2175319 (2.0 MiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+wlan0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet xxx.xxx.xxx.xxx  netmask 255.255.255.0  broadcast xxx.xxx.xxx.xxx
+        inet6 ... {omitted} ...
+        inet6 ... {omitted} ...
+        ether xx:xx:xx:xx:xx:xx  txqueuelen 1000  (Ethernet)
+        RX packets 1458134  bytes 344599963 (328.6 MiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 299694  bytes 51281531 (48.9 MiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+```
+
+If you are seeing output from the `ifconfig` tool then continue on with the following steps.  If you don't you may have missed installing `net-utils` in an earlier step.
 
 ### Now finish with the script install
 
@@ -382,59 +426,69 @@ An example:
 ```json
 {
   "info": {
-    "timestamp": "2021-12-02T17:45:48-07:00",
-    "rpi_model": "RPi 3 Model B r1.2",
+    "timestamp": "2023-02-23T15:38:43-07:00",
+    "rpi_model": "RPi 4 Model B r1.5",
     "ifaces": "e,w,b",
-    "host_name": "pibtle",
-    "fqdn": "pibtle.home",
-    "ux_release": "stretch",
-    "ux_version": "4.19.66-v7+",
-    "up_time": "46 days,  23:14",
-    "last_update": "2021-11-30T18:29:45-07:00",
+    "host_name": "pip2iotgw",
+    "fqdn": "pip2iotgw.home",
+    "ux_release": "bullseye",
+    "ux_version": "5.15.84-v8+",
+    "up_time": "10 days,  35 min",
+    "last_update": "2023-02-23T15:04:15-07:00",
     "fs_total_gb": 32,
-    "fs_free_prcnt": 41,
+    "fs_free_prcnt": 81,
+    "fs_used_prcnt": 19,
     "networking": {
       "eth0": {
-        "IP": "192.168.100.81",
-        "mac": "b8:27:eb:d1:16:42"
+        "mac": "e4:5f:01:f8:18:01",
+        "rx_data": 0,
+        "tx_data": 0
       },
       "wlan0": {
-        "mac": "b8:27:eb:84:43:17"
+        "IP": "192.168.100.196",
+        "mac": "e4:5f:01:f8:18:02",
+        "rx_data": 6948,
+        "tx_data": 977
       }
     },
     "drives": {
       "root": {
         "size_gb": 32,
-        "used_prcnt": 41,
+        "used_prcnt": 19,
         "device": "/dev/root",
         "mount_pt": "/"
       }
     },
     "memory": {
-      "size_mb": "926.078",
-      "free_mb": "215.750"
+      "size_mb": 1849,
+      "free_mb": 806
     },
+    "mem_used_prcnt": 56,
     "cpu": {
       "hardware": "BCM2835",
-      "model": "ARMv7 Processor rev 4 (v7l)",
+      "model": "",
       "number_cores": 4,
-      "bogo_mips": "307.20",
-      "serial": "00000000a8d11642",
-      "load_1min_prcnt": 23.2,
-      "load_5min_prcnt": 22.5,
-      "load_15min_prcnt": 22.8
+      "bogo_mips": "432.00",
+      "serial": "1000000081ae88c7",``
+      "load_1min_prcnt": 0.5,
+      "load_5min_prcnt": 0.8,
+      "load_15min_prcnt": 3.8
     },
-    "throttle": ["throttled = 0x0", "Not throttled"],
-    "temperature_c": 63.4,
-    "temp_gpu_c": 63.4,
-    "temp_cpu_c": 62.8,
-    "reporter": "ISP-RPi-mqtt-daemon v1.6.0",
+    "throttle": [
+      "throttled = 0x0",
+      "Not throttled"
+    ],
+    "temperature_c": 28.2,
+    "temp_gpu_c": 28.2,
+    "temp_cpu_c": 29.2,
+    "reporter": "ISP-RPi-mqtt-daemon v1.7.5",
+    "reporter_releases": "v1.7.5,v1.7.2,v1.7.3,v1.7.4",
     "report_interval": 5
   }
 }
 ```
 
-**NOTE:** Where there's an IP address that interface is connected.
+**NOTE:** Where there's an IP address that interface is connected.  Also, there are new `tx_data` and `rx_data` values which show traffic in bytes for this reporting interval for each network interface.
 
 This data can be subscribed to and processed by your home assistant installation. How you build your RPi dashboard from here is up to you!
 

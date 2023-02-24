@@ -1,5 +1,16 @@
 # ChangeLog
 
+Sat, 18 Feb 2023 15:36:08 -0700 v1.7.4
+
+- Update README.md and requirements.txt to reflect use of Python `requests` library (#78)
+
+Sat, 18 Feb 2023 14:22:52 -0700 v1.7.3
+
+- Add `fs_disk_used` value
+- Correct Disk Used % sensor to use "used" vs. "free" value
+- Convert memory values from floting point string to integer (precision not necessary)
+- Add new Mem Used % sensor (#42)
+
 Sat, 11 Feb 2023 14:28:59 -0700 v1.7.2
 
 - Repair fetch of versions, now every 12 hours
