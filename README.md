@@ -138,7 +138,7 @@ First install extra packages the script needs (select one of the two following c
 ### Packages for Ubuntu, Raspberry pi OS, and the like
 
 ```shell
-sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-paho-mqtt
+sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-apt python3-paho-mqtt
 ```
 
 ### Packages for pure Ubuntu
@@ -154,6 +154,8 @@ sudo apt-get install libraspberrypi-bin net-tools
 ```shell
 sudo pacman -S python python-pip python-tzlocal python-notify2 python-colorama python-unidecode python-paho-mqtt python-requests inetutils 
 ```
+
+**NOTE**: *for users of Arch Linux the number of updates available will NOT be reported (will always show as '-1'.) This is due to Arch Linux not using the apt package manager.*
 
 ### With these extra packages installed, verify access to network information
 
@@ -535,12 +537,13 @@ This project is enjoyed by users in many countries. A number of these users have
 
 Thank you to the following github users for taking the time to help make this project function better for all of us!:
 
-- [dflvunoooooo](https://github.com/dflvunoooooo)
-- [woodmj74](https://github.com/woodmj74)
-- [Henry-Sir](https://github.com/Henry-Sir)
-- [OasisOfChaos](https://github.com/OasisOfChaos)
-- [mcarlosro](https://github.com/mcarlosro)
-- [hobbypunk90](https://github.com/hobbypunk90)
+- [hobbypunk90](https://github.com/hobbypunk90) - add commanding of RPi from HA
+- [OasisOfChaos](https://github.com/OasisOfChaos) - adjust temp. reporting so can work on non-RPi devices like Orange Pi
+- [nabeelmoeen](https://github.com/nabeelmoeen) - add memory usage as addiitonal sensor
+- [mcarlosro](https://github.com/mcarlosro) - add ip traffic rate for network interfaces
+- [Henry-Sir](https://github.com/Henry-Sir) - add cpu usage as addiitonal sensor
+- [woodmj74](https://github.com/woodmj74) - changes to reporting correct temperature units
+- [dflvunoooooo](https://github.com/dflvunoooooo) - changes to getting last update date
 
 ## Credits
 

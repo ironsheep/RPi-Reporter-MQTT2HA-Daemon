@@ -13,6 +13,9 @@
 # This script reports RPi values at a fixed interval in minutes [2-30], [Default: 5]
 #interval_in_minutes = 5
 
+# This script checks for pending os updates at a fixed internal in hours [2-24], [Default: 4]
+#check_updates_in_hours = 4
+
 # default domain to use when hostname -f doesn't return a proper fqdn
 #fallback_domain = home
 
@@ -35,7 +38,7 @@
 #keepalive = 60
 
 # by default Home Assistant listens to the /homeassistant but it can be changed for a given installation
-#  likewise, by default this script advertises on the same default topic. If you use a different 
+#  likewise, by default this script advertises on the same default topic. If you use a different
 #  discovery prefix then specify yours here.  [default: homeassistant]
 #discovery_prefix = homeassistant
 
