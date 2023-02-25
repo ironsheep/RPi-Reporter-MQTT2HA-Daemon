@@ -20,8 +20,8 @@
 #fallback_domain = home
 
 [Commands]
-#shutdown = /usr/bin/sudo /sbin/shutdown -h now
-#reboot = /usr/bin/sudo /sbin/reboot
+#shutdown = /usr/bin/sudo /sbin/shutdown -h now 'shutdown rqst via MQTT'
+#reboot = /usr/bin/sudo /sbin/shutdown -r now 'reboot rqst via MQTT'
 #restart_service = /usr/bin/sudo systemctl restart {}
 
 [MQTT]

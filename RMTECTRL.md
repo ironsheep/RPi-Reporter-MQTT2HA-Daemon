@@ -26,10 +26,10 @@ This page will walk you through each of these steps.
 
 On this Page:
 
-- [Script Configuration](#configuration) - configuring the Daemon to offer the commanding interface
-- [Permissions Configuration](#execution) - allow the Daemon to run the new commands
+- [Updates to MQTT Interface](#mqtt-interface-when-commanding-is-enabled) - shows what changes when the commanding interface is exposed
+- [Script Configuration](#configuring-the-daemon) - configuring the Daemon to offer the commanding interface
+- [Permissions Configuration](#enabling-the-daemon-to-run-external-commands) - allow the Daemon to run the new commands
 - [Add initial card to HA]() - create your first button in Home Assistant allowing you to reboot your RPi
-
 
 Additional pages:
 
@@ -83,11 +83,14 @@ We've provided examples in `config.ini.dist` in the `[Commands]` section
 Added the new `[Commands]` section to `config.ini`.
 An example to reboot or shutdown the Pi:
 
-  ```shell
-  [Commands]
-  shutdown = /usr/bin/sudo /sbin/shutdown -h now
-  reboot = /usr/bin/sudo /sbin/reboot
-  ```
+```shell
+[Commands]
+shutdown = /usr/bin/sudo /sbin/shutdown -h now 'shutdown rqst via MQTT'
+reboot = /usr/bin/sudo /sbin/shutdown -r now 'reboot rqst via MQTT'
+restart_service = /usr/bin/sudo systemctl restart {}
+```
+
+*NOTE* the message in the `{action} rqst via MQTT` message is logged in `/var/log/auth.log` so one can keep track of when commands are executed via MQTT.
   
 *If you wish, you can simply add all three that we provide in the examples.*
 
@@ -106,7 +109,7 @@ the sudoers configuration file:
   
   # add the following lines at the bottom.
   # note that every service that we want to allow to restart must be specified here
-  daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl restart isp-rpi-reporter,/sbin/reboot,/sbin/shutdown
+  daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl restart isp-rpi-reporter,/sbin/shutdown
   ```
 
 NOTE: In some systems the path for `systemctl` / `reboot` / `shutdown` can be different.  Make sure the path you specify is correct for your system.
@@ -125,23 +128,15 @@ chown daemon RPi-mqtt-daemon-script.sh
 ```
 
 
-## Execution
+## Verifying your configuration
 
-### Initial Test
+- Restart the daemon
+- Use a tool like [MQTT Explorer](http://mqtt-explorer.com/) to verifiy that the new MQTT command interface appeared
+- Build a quick card to test a command from HA
+- Ensure the action occurred, if you were logged in did you see a 'wall message'?
+- Verify the message appeared in the logs
 
-A first test run is as easy as:
 
-```shell
-python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py
-```
-
-**NOTE:** _it is a good idea to execute this script by hand this way each time you modify the config.ini. By running after each modification the script can tell you through error messages if it had any problems with any values in the config.ini file, or any missing values. etc._``
-
-Using the command line argument `--config`, a directory where to read the config.ini file from can be specified, e.g.
-
-```shell
-python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py --config /opt/RPi-Reporter-MQTT2HA-Daemon
-```
 
 ---
 
