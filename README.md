@@ -501,7 +501,30 @@ Then remember to restart the daemon when you are done:
 sudo systemctl start isp-rpi-reporter.service
 ```
 
-Also, I find [MQTT Explorer](http://mqtt-explorer.com/) to be and excellent tool to use when trying to see what's going on the MQTT messaging any MQTT enabled device.
+#### Exploring MQTT state
+
+I find [MQTT Explorer](http://mqtt-explorer.com/) to be an excellent tool to use when trying to see what's going on the MQTT messaging any MQTT enabled device.
+
+Alternatively I also use **MQTTBox** when I want to send messages by hand to interact via MQTT. it is affered as a web extension or a native application.
+
+
+#### Viewing the Daemon logs
+
+When your script is being run as a Daemon it is logging. You can view the log output since last reboot with:
+
+```bash
+$ journalctl -b --no-pager -u isp-rpi-reporter.service
+```
+
+Alternatively you can create a simple script which you can run any time you want to see the log. Here's my show Daemon log script `showRpiLog`:
+
+```bash
+#!/bin/bash
+
+(set -x;journalctl -b --no-pager -u isp-rpi-reporter.service)
+```
+
+**NOTE**: *the -b says 'since last boot' the --no-pager says just show it all without breaking it up into pages and requiring the enter key press for each page.*
 
 ---
 
