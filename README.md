@@ -15,14 +15,6 @@ A simple Linux python script to query the Raspberry Pi on which it is running fo
 This script should be configured to be run in **daemon mode** continously in the background as a systemd service (or optionally as a SysV init script). Instructions are provided below.
 
 
----
-
-> If you like my work and/or this has helped you in some way then feel free to help me out for a couple of :coffee:'s or :pizza: slices!
->
-> [![coffee](https://www.buymeacoffee.com/assets/img/custom_images/black_img.png)](https://www.buymeacoffee.com/ironsheep) &nbsp;&nbsp; -OR- &nbsp;&nbsp; [![Patreon](./Docs/images/patreon.png)](https://www.patreon.com/IronSheep?fan_landing=true)[Patreon.com/IronSheep](https://www.patreon.com/IronSheep?fan_landing=true)
-
----
-
 ## Table of Contents
 
 On this Page:
@@ -510,6 +502,14 @@ sudo systemctl start isp-rpi-reporter.service
 ```
 
 Also, I find [MQTT Explorer](http://mqtt-explorer.com/) to be and excellent tool to use when trying to see what's going on the MQTT messaging any MQTT enabled device.
+
+---
+
+> If you like my work and/or this has helped you in some way then feel free to help me out for a couple of :coffee:'s or :pizza: slices!
+>
+> [![coffee](https://www.buymeacoffee.com/assets/img/custom_images/black_img.png)](https://www.buymeacoffee.com/ironsheep) &nbsp;&nbsp; -OR- &nbsp;&nbsp; [![Patreon](./Docs/images/patreon.png)](https://www.patreon.com/IronSheep?fan_landing=true)[Patreon.com/IronSheep](https://www.patreon.com/IronSheep?fan_landing=true)
+
+---
 
 ## Contributors
 
