@@ -26,23 +26,22 @@ This page will walk you through each of these steps.
 
 On this Page:
 
-- [Script Configuration](#configuration) - configuring the script to offer commands
+- [Script Configuration](#configuration) - configuring the Daemon to offer the commanding interface
 - [Permissions Configuration](#execution) - allow the Daemon to run the new commands
-- [Add initial card to HA]() - create your first button allowing you to reboot your RPi
+- [Add initial card to HA]() - create your first button in Home Assistant allowing you to reboot your RPi
 
 
 Additional pages:
 
-- [Overall Daemon Instructions](/README.md)
+- [Overall Daemon Instructions](/README.md) - This project top level README
 - [The Associated Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card) - This is our companion Custom Lovelace Card that makes displaying this RPi Monitor data very easy.
 - [ChangeLog](./ChangeLog) - We've been repairing or adding features to this script as users report issues or wishes. This is our list of changes.
 
-## (Optional) Controlling your RPi from Home Assistant
-
+## MQTT Interface when commanding is enabled
 
 ### RPi Device
 
-Each RPi device is reported as:
+The Daemon already reports each RPi device as:
 
 | Name           | Description                                  |
 | -------------- | -------------------------------------------- |
@@ -53,7 +52,7 @@ Each RPi device is reported as:
 
 ### RPi MQTT Topics
 
-Each RPi device is reported as five topics:
+The Daemon also reports five topics for each RPi device:
 
 | Name            | Device Class  | Units       | Description                                                                                                                                                                    |
 | --------------- | ------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -63,35 +62,68 @@ Each RPi device is reported as five topics:
 | `~/cpu_load`    | none          | percent (%) | Shows CPU load % over the last 5 minutes                                                                                                                                       |
 | `~/mem_used`    | none          | percent (%) | Shows the percent of RAM used                                                                                                                                                  |
 
+### RPi MQTT Command Topics
 
-## Configuration
+Once the commanding is enable then the Daemon also reports the commanding interface for the RPi. By default we've provided examples for enabling three commands (See `config.ini.dist`.) This is what the commanding interface looks like when all threee are enabled:
 
-To match personal needs, all operational details can be configured by modifying entries within the file [`config.ini`](config.ini.dist).
-The file needs to be created first: (_in the following: if you don't have vim installed you might try nano_)
+| Name            | Device Class  |  Description                                                                                                                                                                    |
+| --------------- |  ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `~/shutdown` | button |  Send request to this endpoint to shut the RPi down                                                                                                                                          |
+| `~/reboot`   | button          | Send request to this endpoint to reboot the RPi                                                                                                                                    |
+| `~/restart_service`    | button          |  Send request to this endpoint to restart the Daemon service                                                     
 
-```shell
-sudo cp /opt/RPi-Reporter-MQTT2HA-Daemon/config.{ini.dist,ini}
-sudo vim /opt/RPi-Reporter-MQTT2HA-Daemon/config.ini
+## Configuring the Daemon
+
+By adding more information to your configuration `config.ini` you will now be able to add and execute commands in the monitored Raspberry Pis using MQTT, meaning yes, from buttons in your Home Assistant interface!
+
+We've provided examples in `config.ini.dist` in the `[Commands]` section
+
+### New configuration options
+
+Added the new `[Commands]` section to `config.ini`.
+An example to reboot or shutdown the Pi:
+
+  ```shell
+  [Commands]
+  shutdown = /usr/bin/sudo /sbin/shutdown -h now
+  reboot = /usr/bin/sudo /sbin/reboot
+  ```
+  
+*If you wish, you can simply add all three that we provide in the examples.*
+
+
+## Enabling the Daemon to run external commands
+
+By default we want to keep our RPi security very tight. To that end we actually specify each command that we want the Daemon to be able to execute.  We do this my making changes to the sudo(8) control file `/etc/sudoers`
+
+The "daemon" user proposed to start the daemon in the installation instructions doesn't have enough privileges to reboot or 
+power down the computer. A possible workaround is to give permissions to daemon to the commands we want to execute using
+the sudoers configuration file:
+
+  ```shell
+  # edit sudoers file
+  sudo vim /etc/sudoers
+  
+  # add the following lines at the bottom.
+  # note that every service that we want to allow to restart must be specified here
+  daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl restart isp-rpi-reporter,/sbin/reboot,/sbin/shutdown
+  ```
+
+NOTE: In some systems the path for `systemctl` / `reboot` / `shutdown` can be different.  Make sure the path you specify is correct for your system.
+
+You can do a quick check of what the actual path is by using the `type` command:
+
+```bash
+$ type shutdown
+shutdown is /sbin/shutdown
 ```
 
-You will likely want to locate and configure the following (at a minimum) in your config.ini:
+Additionally, the daemon user needs permission to execute the shell script referenced in the run-script command (and any command referenced there/access to the directories specified). If the script has been created by the standard pi user, a simple workaround could be:
 
 ```shell
-fallback_domain = {if you have older RPis that dont report their fqdn correctly}
-# ...
-hostname = {your-mqtt-broker}
-# ...
-discovery_prefix = {if you use something other than 'homeassistant'}
-# ...
-base_topic = {your home-assistant base topic}
-
-# ...
-username = {your mqtt username if your setup requires one}
-password = {your mqtt password if your setup requires one}
-
+chown daemon RPi-mqtt-daemon-script.sh
 ```
 
-Now that your config.ini is setup let's test!
 
 ## Execution
 
@@ -110,52 +142,6 @@ Using the command line argument `--config`, a directory where to read the config
 ```shell
 python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py --config /opt/RPi-Reporter-MQTT2HA-Daemon
 ```
-
-
-## (Optional) Controlling your RPi from Home Assistant
-
-By adding more information to your configuration you will now be able to add and execute commands in the monitored Raspberry Pis using MQTT, meaning yes, from buttons in your Home Assistant interface!
-
-
-Examples are in `config.ini.dist` in the `Commands` section
-
-### New configuration options
-
-Added the new `Commands` section to `config.ini`.
-An example to reboot or shutdown the Pi:
-
-  ```shell
-  [Commands]
-  shutdown = /usr/bin/sudo /sbin/shutdown -h now
-  reboot = /usr/bin/sudo /sbin/reboot
-  ```
-
-### Extended permissions for daemon for command execution
-
-The "daemon" user proposed to start the daemon in the installation instructions doesn't have enough privileges to reboot or 
-power down the computer. A possible workaround is to give permissions to daemon to the commands we want to execute using
-the sudoers configuration file:
-
-  ```shell
-  # edit sudoers file
-  sudo vim /etc/sudoers
-  
-  # add the following lines at the bottom.
-  # note that every service that we want to allow to restart must be specified here
-  daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl restart isp-rpi-reporter,/sbin/reboot,/sbin/shutdown
-  ```
-
-NOTE: In some systems the path for systemctl / reboot / shutdown can be different.
-
-Additionally, the daemon user needs permission to execute the shell script referenced in the run-script command (and
-any command referenced there/access to the directories specified). If the script has been created by the standard pi 
-user, a simple workaround could be:
-
-  ```shell
-  chown daemon RPi-mqtt-daemon-script.sh
-
-  groups
-  ```
 
 ---
 
