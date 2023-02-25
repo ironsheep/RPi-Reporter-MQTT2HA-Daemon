@@ -35,14 +35,12 @@ On this Page:
 - [Integration](#integration) - a quick look at what's reported to MQTT about this RPi
 - [Troubleshooting](#troubleshooting) - having start up issues?  Check here for common problems
 
-*Coming Soon*:
-
-- *Controlling your RPi from Home Assistant* - (Optional) Set up to allow remote control from HA
-
 Additional pages:
 
+- [Controlling your RPi from Home Assistant](./RMTECTRL.md) - (Optional) Set up to allow remote control from HA
 - [The Associated Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card) - This is our companion Custom Lovelace Card that makes displaying this RPi Monitor data very easy.
 - [ChangeLog](./ChangeLog) - We've been repairing or adding features to this script as users report issues or wishes. This is our list of changes.
+
 
 ## Features
 
@@ -470,66 +468,48 @@ Most often fix: _install the missing package._
 
 We occasionaly have reports of users with more than one RPi on their network but only one shows up in Home Assistant. This is most often caused when this script generats a non-unique id for the RPi's. This in turn is most often caused by an inability to get network interface details. I've just updated the install to ensure that we have net-tools package installed. On Raspberry Pi OS this package is already present while on Ubuntu this is not installed by default. If you can successfully run ifconfig(8) then you have what's needed. If not then simply run `sudo apt-get install net-tools`.
 
+### Issue: I removed the RPi sensor from HA now the RPi won't come back
+
+Most often fix: _reboot the missing RPi._
+
+When you remove a sensor from Home Assistant it tells the MQTT broker to 'forget' everything it knows about the RPi.  Some of the information is actually `stored by the MQTT broker` so it is available while the RPi is offline.  Our Daemon script only broadcasts this `stored` information when it is first started.  As a result the RPi will not re-appear after delete from Home Assistant until you reboot the RPi in question. (or, alternatively, stop then restart the script.). You may find reboot easier to do.
+
+To reboot:
+
+```bash
+sudo shutdown -r now
+```
+
+To, instead, restart the Daemon:
+
+```bash
+sudo systemctl stop isp-rpi-reporter.service
+sudo systemctl start isp-rpi-reporter.service
+
+```
+
 ### General debug
 
 The deamon script can be run my hand while enabling debug and verbose messaging:
 
 ```shell
+# first stop the running daemon
+sudo systemctl stop isp-rpi-reporter.service
+
+# now run the daemon with Debug and Verbose options enabled
 python3 /opt/RPi-Reporter-MQTT2HA-Daemon/ISP-RPi-mqtt-daemon.py -d -v
 ```
 
 This let's you inspect many of the values the script is going to use and to see the data being sent to the MQTT broker.
 
-## (Optional) Controlling your RPi from Home Assistant
+Then remember to restart the daemon when you are done:
 
-**--- NOT YET OPERATIONAL, READYING FEATURE FOR RELEASE! Should be in v1.7.5 and later ---**
+```shell
+# now restart the daemon
+sudo systemctl start isp-rpi-reporter.service
+```
 
-By adding more information to your configuration you will now be able to add and execute commands in the monitored Raspberry Pis using MQTT, meaning yes, from buttons in your Home Assistant interface!
-
-
------- //  WORK IN PROGRESS.  \\\\ ------
-
-Examples are in `config.ini.dist` in the `Commands` section
-
-### New configuration options
-
-Added the new `Commands` section to `config.ini`.
-An example to reboot or shutdown the Pi:
-
-  ```shell
-  [Commands]
-  shutdown = /usr/bin/sudo /sbin/shutdown -h now
-  reboot = /usr/bin/sudo /sbin/reboot
-  ```
-
-### Extended permissions for daemon for command execution
-
-The "daemon" user proposed to start the daemon in the installation instructions doesn't have enough privileges to reboot or 
-power down the computer. A possible workaround is to give permissions to daemon to the commands we want to execute using
-the sudoers configuration file:
-
-  ```shell
-  # edit sudoers file
-  sudo vim /etc/sudoers
-  
-  # add the following lines at the bottom.
-  # note that every service that we want to allow to restart must be specified here
-  daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl restart isp-rpi-reporter,/sbin/reboot,/sbin/shutdown
-  ```
-
-NOTE: In some systems the path for systemctl / reboot / shutdown can be different.
-
-Additionally, the daemon user needs permission to execute the shell script referenced in the run-script command (and
-any command referenced there/access to the directories specified). If the script has been created by the standard pi 
-user, a simple workaround could be:
-
-  ```shell
-  chown daemon RPi-mqtt-daemon-script.sh
-
-  groups
-  ```
-
------- \\\\  WORK IN PROGRESS   // ------
+Also, I find [MQTT Explorer](http://mqtt-explorer.com/) to be and excellent tool to use when trying to see what's going on the MQTT messaging any MQTT enabled device.
 
 ## Contributors
 
