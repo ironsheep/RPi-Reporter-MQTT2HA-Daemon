@@ -130,12 +130,37 @@ chown daemon RPi-mqtt-daemon-script.sh
 
 ## Verifying your configuration
 
+After getting this configured you'll want to verify that everying is configured correctly.  I recommend the following steps (it's what I do...):
+
 - Restart the daemon
 - Use a tool like [MQTT Explorer](http://mqtt-explorer.com/) to verifiy that the new MQTT command interface appeared
 - Build a quick card to test a command from HA
 - Ensure the action occurred, if you were logged in did you see a 'wall message'?
 - Verify the message appeared in the logs
 
+Let's go into a bit more detail for some of these steps.
+
+### Restart the daemon
+
+You'll need to restart the Daemon or reboot the RPi to get your changes to take effect.
+Then you'll want to see if the new control interface is exposed.  I check out what's appearing in MQTT by using a tool like [MQTT Explorer](http://mqtt-explorer.com/).
+
+### Build a quick card to test a command from HA
+
+Refer to the [Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card) page for details but there is a [specific example button card](https://github.com/ironsheep/lovelace-rpi-monitor-card#example-control-of-your-rpi-avail-in-daemon-v180-and-later)
+
+This was originally built by copying the card suggested by looking at the RPi Device as discovered by home assistant.  In that display it shows an example interface card and allows you to copy the suggestion to your clipboard.  I then pasted this card into the page yaml where I wanted the card to be shown. I then overrode the names with simple more direct names than the default button names.  That's it. It just worked.
+
+### Ensure the action occurred
+
+Next I pressed the reboot button on the new interface. I was logged into the RPi at the time so when the reboot occurred it kicked me off which told me it was working well.
+
+### Verify the message appeared in the logs
+
+Lastly I wanted to ensure the action was logged so I did a simple grep for "via" in the `/var/log/augh.log` file and sure enough there was the entry.
+
+With this finding i've verified that this is all working for me!
+(*now you can do the same!*)
 
 
 ---
