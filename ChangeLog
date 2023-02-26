@@ -8,7 +8,6 @@ Sat, 25 Feb 2023 19:36:42 -0700 v1.8.0
 - Add reporting uptime in seconds (#53) See `up_time_secs`
 - Incorporate network usage from @mcarlosro (#47) See `tx_data` and `rx_data` for each network IF
 - Incorporate remote restart from @hobbypunk90 (#77, #80). Docs in README
-- Filter @suffix from network interface names (happens when run from container) (#46)
 - Add new RMTECTRL.md advising on how to set up control over your RPi
 
 Sat, 18 Feb 2023 15:36:08 -0700 v1.7.4
