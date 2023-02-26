@@ -27,10 +27,14 @@ signal(SIGPIPE, SIG_DFL)
 import time
 import requests
 from urllib3.exceptions import InsecureRequestWarning
-import apt
 
+apt_available = True
+try:
+    import apt
+except ImportError:
+    apt_available = False
 
-script_version = "1.7.5"
+script_version = "1.8.0"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -367,6 +371,9 @@ rpi_cpuload5 = ''
 rpi_cpuload15 = ''
 rpi_update_count = 0
 
+if apt_available == False:
+    rpi_update_count = -1   # if packaging system not avail. report -1
+
 # Time for network transfer calculation
 previous_time = time.time()
 
@@ -636,10 +643,7 @@ def getNetworkIFsUsingIP(ip_cmd):
         if len(trimmedLine) > 0:
             lineParts = trimmedLine.split()
             interfaceName = lineParts[1].replace(':', '')
-            # if interface is within a docker container then we have
-            #  something like: eth0@if77 let's strip the @if77 part (comment in issue #46)
-            if '@' in interfaceName:
-                interfaceName = interfaceName.split('@')[0]
+            # if interface is within a  container then we have eth0@if77
             interfaceNames.append(interfaceName)
 
     print_line('interfaceNames=[{}]'.format(interfaceNames), debug=True)
@@ -1152,15 +1156,16 @@ update_last_fetch_time = 0.0
 def getNumberOfAvailableUpdates():
     global rpi_update_count
     global update_last_fetch_time
-    cache = apt.Cache()
-    cache.open(None)
-    cache.upgrade()
-    changes = cache.get_changes()
-    print_line('APT changes=[{}]'.format(changes), debug=True)
-    print_line('APT Avail Updates: ({})'.format(len(changes)), info=True)
-    # return str(cache.get_changes().len())
-    rpi_update_count = len(changes)
-    update_last_fetch_time = time.time()
+    if apt_available:
+        cache = apt.Cache()
+        cache.open(None)
+        cache.upgrade()
+        changes = cache.get_changes()
+        print_line('APT changes=[{}]'.format(changes), debug=True)
+        print_line('APT Avail Updates: ({})'.format(len(changes)), info=True)
+        # return str(cache.get_changes().len())
+        rpi_update_count = len(changes)
+        update_last_fetch_time = time.time()
 
 # get our hostnames so we can setup MQTT
 getHostnames()
@@ -1172,7 +1177,8 @@ getDeviceCpuInfo()
 getLinuxRelease()
 getLinuxVersion()
 getFileSystemDrives()
-getNumberOfAvailableUpdates()
+if apt_available:
+    getNumberOfAvailableUpdates()
 
 # -----------------------------------------------------------------------------
 #  timer and timer funcs for ALIVE MQTT Notices handling
@@ -1369,12 +1375,19 @@ detectorValues = OrderedDict([
 
 for [command, _] in commands.items():
     #print_line('- REGISTER command: [{}]'.format(command), debug=True)
+    iconName = 'mdi:gesture-tap'
+    if 'reboot' in command:
+        iconName = 'mdi:restart'
+    elif 'shutdown' in command:
+        iconName = 'mdi:power-sleep'
+    elif 'service' in command:
+        iconName = 'mdi:cog-counterclockwise'
     detectorValues.update({
         command: dict(
             title='RPi Command {} {}'.format(rpi_hostname, command),
             topic_category='button',
             no_title_prefix='yes',
-            icon='mdi:gesture-tap',
+            icon=iconName,
             command = command,
             command_topic = '{}/{}'.format(base_command_topic, command)
         )
@@ -1785,8 +1798,9 @@ try:
         if timeNow > daemon_last_fetch_time + kVersionCheckIntervalInSeconds:
             getDaemonReleases() # and load them!
 
-        if timeNow > update_last_fetch_time + kUpdateCheckIntervalInSeconds:
-            getNumberOfAvailableUpdates()() # and count them!
+        if apt_available:
+            if timeNow > update_last_fetch_time + kUpdateCheckIntervalInSeconds:
+                getNumberOfAvailableUpdates()() # and count them!
 
 finally:
     # cleanup used pins... just because we like cleaning up after us
