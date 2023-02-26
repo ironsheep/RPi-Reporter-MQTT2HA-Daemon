@@ -34,7 +34,7 @@ try:
 except ImportError:
     apt_available = False
 
-script_version = "1.8.0"
+script_version = "1.8.1"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -159,11 +159,11 @@ def on_connect(client, userdata, flags, rc):
         # -------------------------------------------------------------------------
         # Commands Subscription
         if (len(commands) > 0):
-            print_line('MQTT subscription to {}/+ enabled'.format(base_command_topic), console=True, sd_notify=True)
+            print_line('MQTT subscription to {}/+ enabled'.format(command_base_topic), console=True, sd_notify=True)
             client.on_message = on_message
-            client.subscribe('{}/+'.format(base_command_topic))
+            client.subscribe('{}/+'.format(command_base_topic))
         else:
-            print_line('MQTT subscripton to {}/+ disabled'.format(base_command_topic), console=True, sd_notify=True)
+            print_line('MQTT subscripton to {}/+ disabled'.format(command_base_topic), console=True, sd_notify=True)
         # -------------------------------------------------------------------------
     else:
         print_line('! Connection error with result code {} - {}'.format(str(rc),
@@ -259,7 +259,6 @@ if config.has_section('Commands'):
 
 # -----------------------------------------------------------------------------
 #  Commands Subscription
-base_command_topic = '{}/command/{}'.format(base_topic, sensor_name.lower())
 # -----------------------------------------------------------------------------
 
 # Check configuration
@@ -1325,6 +1324,8 @@ if cpu_model.find("ARMv7") >= 0 or cpu_model.find("ARMv6") >= 0:
 else:
     cpu_use_icon = "mdi:cpu-64-bit"
 
+print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
+
 # Publish our MQTT auto discovery
 #  table of key items to publish:
 detectorValues = OrderedDict([
@@ -1343,7 +1344,7 @@ detectorValues = OrderedDict([
         topic_category="sensor",
         device_class="temperature",
         no_title_prefix="yes",
-        unit="C",
+        unit="°C",
         icon='mdi:thermometer',
         json_value="temperature_c",
     )),
@@ -1353,7 +1354,7 @@ detectorValues = OrderedDict([
         no_title_prefix="yes",
         unit="%",
         icon='mdi:sd',
-        json_value="fs_free_prcnt",
+        json_value="fs_used_prcnt",
     )),
     (K_LD_CPU_USE, dict(
         title="RPi CPU Use {}".format(rpi_hostname),
@@ -1373,6 +1374,9 @@ detectorValues = OrderedDict([
     ))
 ])
 
+
+command_base_topic = '{}/command/{}'.format(base_topic, sensor_name.lower())
+
 for [command, _] in commands.items():
     #print_line('- REGISTER command: [{}]'.format(command), debug=True)
     iconName = 'mdi:gesture-tap'
@@ -1389,13 +1393,11 @@ for [command, _] in commands.items():
             no_title_prefix='yes',
             icon=iconName,
             command = command,
-            command_topic = '{}/{}'.format(base_command_topic, command)
+            command_topic = '{}/{}'.format(command_base_topic, command)
         )
     })
 
 #print_line('- detectorValues=[{}]'.format(detectorValues), debug=True)
-
-print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
 
 sensor_base_topic = '{}/sensor/{}'.format(base_topic, sensor_name.lower())
 values_topic_rel = '{}/{}'.format('~', K_LD_MONITOR)
@@ -1423,14 +1425,14 @@ for [sensor, params] in detectorValues.items():
         payload['stat_t'] = values_topic_rel
         payload['val_tpl'] = "{{{{ value_json.{}.{} }}}}".format(K_LD_PAYLOAD_NAME, params['json_value'])
     if 'command' in params:
-        payload['~'] = base_command_topic
+        payload['~'] = command_base_topic
         payload['cmd_t'] = '~/{}'.format(params['command'])
         payload['json_attr_t'] = '~/{}/attributes'.format(params['command'])
     else:
         payload['~'] = sensor_base_topic
         payload['avty_t'] = activity_topic_rel
-        payload['pl_avail'] = lwt_online_val
-        payload['pl_not_avail'] = lwt_offline_val
+    payload['pl_avail'] = lwt_online_val
+    payload['pl_not_avail'] = lwt_offline_val
     if 'trigger_type' in params:
         payload['type'] = params['trigger_type']
     if 'trigger_subtype' in params:

@@ -1,5 +1,10 @@
 # ChangeLog
 
+---- Next Rls -------- v1.8.1
+
+- Repair temperature units regression (#82)
+- Disk Used sensor repaired (was reporting free vs. used) (#83)
+
 Sat, 25 Feb 2023 19:36:42 -0700 v1.8.0
 
 - Update README.md and requirements.txt to reflect use of Python `apt` library
