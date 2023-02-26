@@ -143,6 +143,7 @@ print_line(
     '* init mqtt_client_connected=[{}]'.format(mqtt_client_connected), debug=True)
 mqtt_client_should_attempt_reconnect = True
 
+command_base_topic = '{not-set}/command/{not-set}'
 
 def on_connect(client, userdata, flags, rc):
     global mqtt_client_connected
@@ -1373,7 +1374,6 @@ detectorValues = OrderedDict([
         icon='mdi:memory'
     ))
 ])
-
 
 command_base_topic = '{}/command/{}'.format(base_topic, sensor_name.lower())
 

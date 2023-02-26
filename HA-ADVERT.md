@@ -185,9 +185,11 @@ The `~/shutdown` Command advertisement:
 {
   "name": "Rpi Command Pip2Iotgw Shutdown",
   "uniq_id": "RPi-e45f01Monf81801_shutdown",
-  "~": "home310/command/rpi-reporter",
+  "~": "home310/command/rpi-pip2iotgw",
   "cmd_t": "~/shutdown",
   "json_attr_t": "~/shutdown/attributes",
+  "pl_avail": "online",
+  "pl_not_avail": "offline",
   "ic": "mdi:power-sleep",
   "dev": {
     "identifiers": ["RPi-e45f01Monf81801"]
@@ -203,9 +205,11 @@ The `~/reboot` Command advertisement:
 {
   "name": "Rpi Command Pip2Iotgw Reboot",
   "uniq_id": "RPi-e45f01Monf81801_reboot",
-  "~": "home310/command/rpi-reporter",
+  "~": "home310/command/rpi-pip2iotgw",
   "cmd_t": "~/reboot",
   "json_attr_t": "~/reboot/attributes",
+  "pl_avail": "online",
+  "pl_not_avail": "offline",
   "ic": "mdi:restart",
   "dev": {
     "identifiers": ["RPi-e45f01Monf81801"]
@@ -221,9 +225,11 @@ The `~/restart_service` Command advertisement:
 {
   "name": "Rpi Command Pip2Iotgw Restart_Service",
   "uniq_id": "RPi-e45f01Monf81801_restart_service",
-  "~": "home310/command/rpi-reporter",
+  "~": "home310/command/rpi-pip2iotgw",
   "cmd_t": "~/restart_service",
   "json_attr_t": "~/restart_service/attributes",
+  "pl_avail": "online",
+  "pl_not_avail": "offline",
   "ic": "mdi:cog-counterclockwise",
   "dev": {
     "identifiers": ["RPi-e45f01Monf81801"]
