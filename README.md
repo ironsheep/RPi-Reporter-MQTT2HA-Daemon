@@ -385,15 +385,17 @@ An example:
 ```json
 {
   "info": {
-    "timestamp": "2023-02-23T15:38:43-07:00",
+    "timestamp": "2023-02-25T22:42:03-07:00",
     "rpi_model": "RPi 4 Model B r1.5",
     "ifaces": "e,w,b",
     "host_name": "pip2iotgw",
     "fqdn": "pip2iotgw.home",
     "ux_release": "bullseye",
     "ux_version": "5.15.84-v8+",
-    "up_time": "10 days,  35 min",
-    "last_update": "2023-02-23T15:04:15-07:00",
+    "ux_updates": 0,
+    "up_time": " 4:36",
+    "up_time_secs": 16560,
+    "last_update": "2023-02-25T18:06:34-07:00",
     "fs_total_gb": 32,
     "fs_free_prcnt": 81,
     "fs_used_prcnt": 19,
@@ -406,8 +408,8 @@ An example:
       "wlan0": {
         "IP": "192.168.100.196",
         "mac": "e4:5f:01:f8:18:02",
-        "rx_data": 6948,
-        "tx_data": 977
+        "rx_data": 13,
+        "tx_data": 5
       }
     },
     "drives": {
@@ -420,28 +422,28 @@ An example:
     },
     "memory": {
       "size_mb": 1849,
-      "free_mb": 806
+      "free_mb": 1485
     },
-    "mem_used_prcnt": 56,
+    "mem_used_prcnt": 19,
     "cpu": {
       "hardware": "BCM2835",
       "model": "",
       "number_cores": 4,
       "bogo_mips": "432.00",
-      "serial": "1000000081ae88c7",``
-      "load_1min_prcnt": 0.5,
-      "load_5min_prcnt": 0.8,
-      "load_15min_prcnt": 3.8
+      "serial": "1000000081ae88c7",
+      "load_1min_prcnt": 0,
+      "load_5min_prcnt": 0,
+      "load_15min_prcnt": 0
     },
     "throttle": [
       "throttled = 0x0",
       "Not throttled"
     ],
-    "temperature_c": 28.2,
-    "temp_gpu_c": 28.2,
-    "temp_cpu_c": 29.2,
-    "reporter": "ISP-RPi-mqtt-daemon v1.7.5",
-    "reporter_releases": "v1.7.5,v1.7.2,v1.7.3,v1.7.4",
+    "temperature_c": 25.8,
+    "temp_gpu_c": 25.8,
+    "temp_cpu_c": 25.8,
+    "reporter": "ISP-RPi-mqtt-daemon v1.8.0",
+    "reporter_releases": "v1.7.4,v1.7.2,v1.7.3",
     "report_interval": 5
   }
 }
