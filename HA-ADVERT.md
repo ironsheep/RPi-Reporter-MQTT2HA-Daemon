@@ -18,12 +18,13 @@ This page describes what is being advertised to Home Assistant.
 
 On this Page:
 
-- [Status Endpoints](#mqtt-rpi-status-topics) - shows what changes when the commanding interface is exposed
-- [Control Endpoints](#mqtt-rpi-command-topics) - configuring the Daemon to offer the commanding interface
+- [Status Endpoints](#mqtt-rpi-status-topics) - shows the sensors offered by the Daemon
+- [Control Endpoints](#mqtt-rpi-command-topics) - shows the buttons offered by the Daemon (when they are configured)
 
 Additional pages:
 
 - [Overall Daemon Instructions](/README.md) - This project top level README
+- [Controlling your RPi from Home Assistant](./RMTECTRL.md) - (Optional) Set up to allow remote control from HA
 - [The Associated Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card) - This is our companion Custom Lovelace Card that makes displaying this RPi Monitor data very easy.
 - [ChangeLog](./ChangeLog) - We've been repairing or adding features to this script as users report issues or wishes. This is our list of changes.
 

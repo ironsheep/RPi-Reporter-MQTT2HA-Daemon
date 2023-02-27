@@ -30,15 +30,16 @@ On this Page:
 Additional pages:
 
 - [Controlling your RPi from Home Assistant](./RMTECTRL.md) - (Optional) Set up to allow remote control from HA
-- [The Associated Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card) - This is our companion Custom Lovelace Card that makes displaying this RPi Monitor data very easy.
-- [ChangeLog](./ChangeLog) - We've been repairing or adding features to this script as users report issues or wishes. This is our list of changes.
+- [In practice: Advertisements to HA](./HA-ADVERT.md) - Details of the actual advertisements this Daemon publishes to MQTT
+- [The Associated Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card) - This is our companion Lovelace Card that makes displaying this RPi Monitor data very easy
+- [ChangeLog](./ChangeLog) - We've been repairing or adding features to this script as users report issues or wishes. This is our list of changes
 
 
 ## Features
 
 - Tested on Raspberry Pi's 2/3/4 with Jessie, Stretch and Buster
-- Tested with Home Assistant v0.111.0 -> 2021.11.5
-- Tested with Mosquitto broker v5.1 - v6.0.1
+- Tested with Home Assistant v0.111.0 -> 2023.2.5
+- Tested with Mosquitto broker v5.1 - v6.1.3
 - Data is published via MQTT
 - MQTT discovery messages are sent so RPi's are automatically registered with Home Assistant (if MQTT discovery is enabled in your HA installation)
 - MQTT authentication support
