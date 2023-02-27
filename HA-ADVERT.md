@@ -18,8 +18,8 @@ This page describes what is being advertised to Home Assistant.
 
 On this Page:
 
-- [Status Endpoints](#mqtt-interface-when-commanding-is-enabled) - shows what changes when the commanding interface is exposed
-- [Control Endpoints](#configuring-the-daemon) - configuring the Daemon to offer the commanding interface
+- [Status Endpoints](#mqtt-rpi-status-topics) - shows what changes when the commanding interface is exposed
+- [Control Endpoints](#mqtt-rpi-command-topics) - configuring the Daemon to offer the commanding interface
 
 Additional pages:
 
@@ -52,7 +52,7 @@ For the purpose of this document we'll use the following to indicate where these
 
 - placeholders used herein: `{HOSTNAME}`, `{BASE_TOPIC}`, and `{SENSOR_NAME}`.
 
-## RPi MQTT Topics
+## MQTT RPi Status Topics
 
 The Daemon also reports five topics for each RPi device:
 
@@ -181,7 +181,7 @@ The `~/mem_used` advertisement:
 }
 ```
 
-## RPi MQTT Command Topics
+## MQTT RPi Command Topics
 
 Once the commanding is enabled then the Daemon also reports the commanding interface for the RPi. By default we've provided examples for enabling three commands (See `config.ini.dist`.) This is what the commanding interface looks like when all threee are enabled:
 
