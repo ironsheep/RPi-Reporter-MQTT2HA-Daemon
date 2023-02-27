@@ -38,6 +38,20 @@ The Daemon already reports each RPi device as:
 | `Name`         | (fqdn) pimon1.home                           |
 | `sofware ver`  | OS Name, Version (e.g., Buster v4.19.75v7l+) |
 
+## RPi Daemon config.ini settings
+
+There are a number of settings in our `config.ini` that affect the details of the advertisements to Home Assistant. They are all found in the `[MQTT]` section of the `config.ini`. The following are used for this purpose:
+
+| Name          | Default                 | Description                                      |
+| ------------- | ----------------------- | ------------------------------------------------ |
+| `hostname`    | configured hostname     | The host name of the RPi                         |
+| `base_topic`  | {no default}            | Set this as desired for your installation        |
+| `sensor_name` | default "{SENSOR_NAME}" | If you prefer to use some other form set it here |
+
+For the purpose of this document we'll use the following to indicate where these appear in the advertisements.
+
+- placeholders used herein: `{HOSTNAME}`, `{BASE_TOPIC}`, and `{SENSOR_NAME}`.
+
 ## RPi MQTT Topics
 
 The Daemon also reports five topics for each RPi device:
@@ -56,12 +70,12 @@ The `~/monitor` advertisement:
 
 ```json
 {
-  "name": "Rpi Monitor Pip2Iotgw",
+  "name": "Rpi Monitor {HOSTNAME}",
   "uniq_id": "RPi-e45f01Monf81801_monitor",
   "dev_cla": "timestamp",
   "stat_t": "~/monitor",
   "val_tpl": "{{ value_json.info.timestamp }}",
-  "~": "home310/sensor/rpi-pip2iotgw",
+  "~": "{BASE_TOPIC}/sensor/{SENSOR_NAME}",
   "avty_t": "~/status",
   "pl_avail": "online",
   "pl_not_avail": "offline",
@@ -71,7 +85,7 @@ The `~/monitor` advertisement:
   "dev": {
     "identifiers": ["RPi-e45f01Monf81801"],
     "manufacturer": "Raspberry Pi (Trading) Ltd.",
-    "name": "RPi-pip2iotgw.home",
+    "name": "RPi-{HOSTNAME}.home",
     "model": "RPi 4 Model B r1.5",
     "sw_version": "bullseye 5.15.84-v8+"
   }
@@ -84,13 +98,13 @@ The `~/temperature` advertisement:
 
 ```json
 {
-  "name": "Rpi Temp Pip2Iotgw",
+  "name": "Rpi Temp {HOSTNAME}",
   "uniq_id": "RPi-e45f01Monf81801_temperature",
   "dev_cla": "temperature",
-  "unit_of_measurement": "C",
+  "unit_of_measurement": "°C",
   "stat_t": "~/monitor",
   "val_tpl": "{{ value_json.info.temperature_c }}",
-  "~": "home310/sensor/rpi-pip2iotgw",
+  "~": "{BASE_TOPIC}/sensor/{SENSOR_NAME}",
   "avty_t": "~/status",
   "pl_avail": "online",
   "pl_not_avail": "offline",
@@ -107,12 +121,12 @@ The `~/disk_used` advertisement:
 
 ```json
 {
-  "name": "Rpi Disk Used Pip2Iotgw",
+  "name": "Rpi Disk Used {HOSTNAME}",
   "uniq_id": "RPi-e45f01Monf81801_disk_used",
   "unit_of_measurement": "%",
   "stat_t": "~/monitor",
   "val_tpl": "{{ value_json.info.fs_used_prcnt }}",
-  "~": "home310/sensor/rpi-pip2iotgw",
+  "~": "{BASE_TOPIC}/sensor/{SENSOR_NAME}",
   "avty_t": "~/status",
   "pl_avail": "online",
   "pl_not_avail": "offline",
@@ -129,12 +143,12 @@ The `~/cpu_load` advertisement:
 
 ```json
 {
-  "name": "Rpi Cpu Use Pip2Iotgw",
+  "name": "Rpi Cpu Use {HOSTNAME}",
   "uniq_id": "RPi-e45f01Monf81801_cpu_load",
   "unit_of_measurement": "%",
   "stat_t": "~/monitor",
   "val_tpl": "{{ value_json.info.cpu.load_5min_prcnt }}",
-  "~": "home310/sensor/rpi-pip2iotgw",
+  "~": "{BASE_TOPIC}/sensor/{SENSOR_NAME}",
   "avty_t": "~/status",
   "pl_avail": "online",
   "pl_not_avail": "offline",
@@ -151,12 +165,12 @@ The `~/mem_used` advertisement:
 
 ```json
 {
-  "name": "Rpi Mem Used Pip2Iotgw",
+  "name": "Rpi Mem Used {HOSTNAME}",
   "uniq_id": "RPi-e45f01Monf81801_mem_used",
   "unit_of_measurement": "%",
   "stat_t": "~/monitor",
   "val_tpl": "{{ value_json.info.mem_used_prcnt }}",
-  "~": "home310/sensor/rpi-pip2iotgw",
+  "~": "{BASE_TOPIC}/sensor/{SENSOR_NAME}",
   "avty_t": "~/status",
   "pl_avail": "online",
   "pl_not_avail": "offline",
@@ -183,9 +197,9 @@ The `~/shutdown` Command advertisement:
 
 ```json
 {
-  "name": "Rpi Command Pip2Iotgw Shutdown",
+  "name": "Rpi Command {HOSTNAME} Shutdown",
   "uniq_id": "RPi-e45f01Monf81801_shutdown",
-  "~": "home310/command/rpi-pip2iotgw",
+  "~": "{BASE_TOPIC}/command/{SENSOR_NAME}",
   "cmd_t": "~/shutdown",
   "json_attr_t": "~/shutdown/attributes",
   "pl_avail": "online",
@@ -203,9 +217,9 @@ The `~/reboot` Command advertisement:
 
 ```json
 {
-  "name": "Rpi Command Pip2Iotgw Reboot",
+  "name": "Rpi Command {HOSTNAME} Reboot",
   "uniq_id": "RPi-e45f01Monf81801_reboot",
-  "~": "home310/command/rpi-pip2iotgw",
+  "~": "{BASE_TOPIC}/command/{SENSOR_NAME}",
   "cmd_t": "~/reboot",
   "json_attr_t": "~/reboot/attributes",
   "pl_avail": "online",
@@ -223,9 +237,9 @@ The `~/restart_service` Command advertisement:
 
 ```json
 {
-  "name": "Rpi Command Pip2Iotgw Restart_Service",
+  "name": "Rpi Command {HOSTNAME} Restart_Service",
   "uniq_id": "RPi-e45f01Monf81801_restart_service",
-  "~": "home310/command/rpi-pip2iotgw",
+  "~": "{BASE_TOPIC}/command/{SENSOR_NAME}",
   "cmd_t": "~/restart_service",
   "json_attr_t": "~/restart_service/attributes",
   "pl_avail": "online",
@@ -264,9 +278,4 @@ The `~/restart_service` Command advertisement:
 [releases-shield]: https://img.shields.io/github/release/ironsheep/RPi-Reporter-MQTT2HA-Daemon.svg?style=for-the-badge
 [releases]: https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/releases
 
-````
 
-```
-
-```
-````
