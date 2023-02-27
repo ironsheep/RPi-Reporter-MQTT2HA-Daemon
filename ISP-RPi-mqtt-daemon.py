@@ -1189,7 +1189,7 @@ K_ALIVE_TIMOUT_IN_SECONDS = 60
 
 def publishAliveStatus():
     print_line('- SEND: yes, still alive -', debug=True)
-    mqtt_client.publish(lwt_topic, payload=lwt_online_val, retain=False)
+    mqtt_client.publish(lwt_sensor_topic, payload=lwt_online_val, retain=False)
 
 
 def aliveTimeoutHandler():
@@ -1233,7 +1233,8 @@ aliveTimerRunningStatus = False
 # -----------------------------------------------------------------------------
 
 # MQTT connection
-lwt_topic = '{}/sensor/{}/status'.format(base_topic, sensor_name.lower())
+lwt_sensor_topic = '{}/sensor/{}/status'.format(base_topic, sensor_name.lower())
+lwt_command_topic = '{}/command/{}/status'.format(base_topic, sensor_name.lower())
 lwt_online_val = 'online'
 lwt_offline_val = 'offline'
 
@@ -1242,7 +1243,8 @@ mqtt_client = mqtt.Client()
 mqtt_client.on_connect = on_connect
 
 
-mqtt_client.will_set(lwt_topic, payload=lwt_offline_val, retain=True)
+mqtt_client.will_set(lwt_sensor_topic, payload=lwt_offline_val, retain=True)
+mqtt_client.will_set(lwt_command_topic, payload=lwt_offline_val, retain=True)
 
 if config['MQTT'].getboolean('tls', False):
     # According to the docs, setting PROTOCOL_SSLv23 "Selects the highest protocol version
@@ -1271,7 +1273,8 @@ except:
                error=True, sd_notify=True)
     sys.exit(1)
 else:
-    mqtt_client.publish(lwt_topic, payload=lwt_online_val, retain=False)
+    mqtt_client.publish(lwt_sensor_topic, payload=lwt_online_val, retain=False)
+    mqtt_client.publish(lwt_command_topic, payload=lwt_online_val, retain=False)
     mqtt_client.loop_start()
 
     while mqtt_client_connected == False:  # wait in loop
@@ -1388,7 +1391,7 @@ for [command, _] in commands.items():
         iconName = 'mdi:cog-counterclockwise'
     detectorValues.update({
         command: dict(
-            title='RPi Command {} {}'.format(rpi_hostname, command),
+            title='RPi {} {} Command'.format(command, rpi_hostname),
             topic_category='button',
             no_title_prefix='yes',
             icon=iconName,
@@ -1430,7 +1433,7 @@ for [sensor, params] in detectorValues.items():
         payload['json_attr_t'] = '~/{}/attributes'.format(params['command'])
     else:
         payload['~'] = sensor_base_topic
-        payload['avty_t'] = activity_topic_rel
+    payload['avty_t'] = activity_topic_rel
     payload['pl_avail'] = lwt_online_val
     payload['pl_not_avail'] = lwt_offline_val
     if 'trigger_type' in params:

@@ -53,7 +53,7 @@ For the purpose of this document we'll use the following to indicate where these
 
 - placeholders used herein: `{HOSTNAME}`, `{BASE_TOPIC}`, and `{SENSOR_NAME}`.
 
-**NOTE: author's setup**:  I have a farm of 20+ RPi's spread all over my house.  They all have identical **config.ini**'s.  I ONLY set **"base\_topic"**, i do not set the other two. For the other two the default values work great.
+**NOTE: author's setup**: I have a farm of 20+ RPi's spread all over my house. They all have identical **config.ini**'s. I ONLY set **"base\_topic"**, i do not set the other two. For the other two the default values work great.
 
 ## MQTT RPi Status Topics
 
@@ -88,12 +88,14 @@ The `~/monitor` advertisement:
   "dev": {
     "identifiers": ["RPi-e45f01Monf81801"],
     "manufacturer": "Raspberry Pi (Trading) Ltd.",
-    "name": "RPi-{HOSTNAME}.home",
+    "name": "RPi-{HOSTNAME-FQDN}",
     "model": "RPi 4 Model B r1.5",
     "sw_version": "bullseye 5.15.84-v8+"
   }
 }
 ```
+
+**NOTE**: *in this case you'll see that {HOSTNAME} is not used for the "name:" value. Instead we use the fully qualified domain name {HOSTNAME-FQDN}. On the authors' network (192.168.255.\*) the internal domain is ".home" so an RPi with the name say "pip2iotgw" has an FQDN of "pip2iotgw.home"  On the author's network is it common then to say `ssh pi@pip2iotgw.home` to log into the RPi.*
 
 ### The Temperature endpoint
 
@@ -200,11 +202,12 @@ The `~/shutdown` Command advertisement:
 
 ```json
 {
-  "name": "Rpi Command {HOSTNAME} Shutdown",
+  "name": "Rpi Shutdown {HOSTNAME} Command",
   "uniq_id": "RPi-e45f01Monf81801_shutdown",
   "~": "{BASE_TOPIC}/command/{SENSOR_NAME}",
   "cmd_t": "~/shutdown",
   "json_attr_t": "~/shutdown/attributes",
+  "avty_t": "~/status",
   "pl_avail": "online",
   "pl_not_avail": "offline",
   "ic": "mdi:power-sleep",
@@ -220,11 +223,12 @@ The `~/reboot` Command advertisement:
 
 ```json
 {
-  "name": "Rpi Command {HOSTNAME} Reboot",
+  "name": "Rpi Reboot {HOSTNAME} Command",
   "uniq_id": "RPi-e45f01Monf81801_reboot",
   "~": "{BASE_TOPIC}/command/{SENSOR_NAME}",
   "cmd_t": "~/reboot",
   "json_attr_t": "~/reboot/attributes",
+  "avty_t": "~/status",
   "pl_avail": "online",
   "pl_not_avail": "offline",
   "ic": "mdi:restart",
@@ -240,11 +244,12 @@ The `~/restart_service` Command advertisement:
 
 ```json
 {
-  "name": "Rpi Command {HOSTNAME} Restart_Service",
+  "name": "Rpi Restart_Service {HOSTNAME} Command",
   "uniq_id": "RPi-e45f01Monf81801_restart_service",
   "~": "{BASE_TOPIC}/command/{SENSOR_NAME}",
   "cmd_t": "~/restart_service",
   "json_attr_t": "~/restart_service/attributes",
+  "avty_t": "~/status",
   "pl_avail": "online",
   "pl_not_avail": "offline",
   "ic": "mdi:cog-counterclockwise",
@@ -280,5 +285,3 @@ The `~/restart_service` Command advertisement:
 [maintenance-shield]: https://img.shields.io/badge/maintainer-stephen%40ironsheep.biz-blue.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/ironsheep/RPi-Reporter-MQTT2HA-Daemon.svg?style=for-the-badge
 [releases]: https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/releases
-
-
