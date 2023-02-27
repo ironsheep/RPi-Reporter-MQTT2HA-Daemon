@@ -39,7 +39,7 @@ The Daemon already reports each RPi device as:
 | `Name`         | (fqdn) pimon1.home                           |
 | `sofware ver`  | OS Name, Version (e.g., Buster v4.19.75v7l+) |
 
-## RPi Daemon config.ini settings
+## RPi Daemon config.ini settings, [MQTT] section
 
 There are a number of settings in our `config.ini` that affect the details of the advertisements to Home Assistant. They are all found in the `[MQTT]` section of the `config.ini`. The following are used for this purpose:
 
@@ -52,6 +52,8 @@ There are a number of settings in our `config.ini` that affect the details of th
 For the purpose of this document we'll use the following to indicate where these appear in the advertisements.
 
 - placeholders used herein: `{HOSTNAME}`, `{BASE_TOPIC}`, and `{SENSOR_NAME}`.
+
+**NOTE: author's setup**:  I have a farm of 20+ RPi's spread all over my house.  They all have identical **config.ini**'s.  I ONLY set **"base\_topic"**, i do not set the other two. For the other two the default values work great.
 
 ## MQTT RPi Status Topics
 
