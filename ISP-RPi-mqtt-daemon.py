@@ -359,7 +359,7 @@ rpi_cpu_temp = ''
 rpi_mqtt_script = script_info
 rpi_interfaces = []
 rpi_filesystem = []
-# Tuple (Total, Free, Avail.)
+# Tuple (Total, Free, Avail., Swap Total, Swap Free)
 rpi_memory_tuple = ''
 # Tuple (Hardware, Model Name, NbrCores, BogoMIPS, Serial)
 rpi_cpu_tuple = ''
@@ -462,7 +462,7 @@ def getDeviceMemory():
     #  MemTotal:         948304 kB
     #  MemFree:           40632 kB
     #  MemAvailable:     513332 kB
-    out = subprocess.Popen("cat /proc/meminfo | /bin/egrep -i 'mem[tfa]'",
+    out = subprocess.Popen("cat /proc/meminfo",
                            shell=True,
                            stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT)
@@ -475,6 +475,8 @@ def getDeviceMemory():
     mem_total = ''
     mem_free = ''
     mem_avail = ''
+    swap_total = ''
+    swap_free = ''
     for currLine in trimmedLines:
         lineParts = currLine.split()
         if 'MemTotal' in currLine:
@@ -483,8 +485,13 @@ def getDeviceMemory():
             mem_free = float(lineParts[1]) / 1024
         if 'MemAvail' in currLine:
             mem_avail = float(lineParts[1]) / 1024
-    # Tuple (Total, Free, Avail.)
-    rpi_memory_tuple = (mem_total, mem_free, mem_avail) # [0]=total, [1]=free, [2]=avail.
+        if 'SwapTotal' in currLine:
+            swap_total = float(lineParts[1]) / 1024
+        if 'SwapFree' in currLine:
+            swap_free = float(lineParts[1]) / 1024
+
+    # Tuple (Total, Free, Avail., Swap Total, Swap Free)
+    rpi_memory_tuple = (mem_total, mem_free, mem_avail, swap_total, swap_free) # [0]=total, [1]=free, [2]=avail., [3]=swap total, [4]=swap free
     print_line('rpi_memory_tuple=[{}]'.format(rpi_memory_tuple), debug=True)
 
 def getDeviceModel():
@@ -1546,6 +1553,8 @@ K_RPI_DVC_PATH = "dvc"
 K_RPI_MEMORY = "memory"
 K_RPI_MEM_TOTAL = "size_mb"
 K_RPI_MEM_FREE = "free_mb"
+K_RPI_SWAP_TOTAL = "size_swap"
+K_RPI_SWAP_FREE = "free_swap"
 # Tuple (Hardware, Model Name, NbrCores, BogoMIPS, Serial)
 K_RPI_CPU = "cpu"
 K_RPI_CPU_HARDWARE = "hardware"
@@ -1703,8 +1712,10 @@ def getMemoryDictionary():
     memoryData = OrderedDict()
     if rpi_memory_tuple != '':
         # TODO: remove free fr
-        memoryData[K_RPI_MEM_TOTAL] = int(rpi_memory_tuple[0])
-        memoryData[K_RPI_MEM_FREE] = int(rpi_memory_tuple[2])
+        memoryData[K_RPI_MEM_TOTAL] = round(rpi_memory_tuple[0])
+        memoryData[K_RPI_MEM_FREE] = round(rpi_memory_tuple[2])
+        memoryData[K_RPI_SWAP_TOTAL] = round(rpi_memory_tuple[3])
+        memoryData[K_RPI_SWAP_FREE] = round(rpi_memory_tuple[4])
     #print_line('memoryData:{}"'.format(memoryData), debug=True)
     return memoryData
 
