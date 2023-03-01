@@ -2,7 +2,7 @@
 
 Wed, 01 Mar 2023 15:30:03 -0700 v1.8.3
 
-- Remove package that can't be satified from `requirements.txt` (#88)
+- Remove package that can't be satisfied from `requirements.txt` (#88)
 - Add reporting of swap info. Contributed by [@brunob54](https://github.com/brunob45) (#84)
 
 Tue, 28 Feb 2023 17:24:07 -0700 v1.8.2
