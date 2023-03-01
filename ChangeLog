@@ -1,9 +1,16 @@
 # ChangeLog
 
----- Next Rls -------- v1.8.1
+Tue, 28 Feb 2023 17:24:07 -0700 v1.8.2
+
+- fix LWT online/offline status updates of Daemon
+- repair MQTT command subscription mechanism
+- repaired the remote-control setup instructions for restart-service, updated config.ini.dist
+
+Sun Feb 26 18:28:36 2023 -0700 v1.8.1
 
 - Repair temperature units regression (#82)
 - Disk Used sensor repaired (was reporting free vs. used) (#83)
+- Refine the advertisement of the command endpoints
 
 Sat, 25 Feb 2023 19:36:42 -0700 v1.8.0
 

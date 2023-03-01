@@ -87,7 +87,7 @@ An example to reboot or shutdown the Pi:
 [Commands]
 shutdown = /usr/bin/sudo /sbin/shutdown -h now 'shutdown rqst via MQTT'
 reboot = /usr/bin/sudo /sbin/shutdown -r now 'reboot rqst via MQTT'
-restart_service = /usr/bin/sudo systemctl restart {}
+restart_service = /usr/bin/sudo systemctl restart isp-rpi-reporter.service
 ```
 
 *NOTE* the message in the `{action} rqst via MQTT` message is logged in `/var/log/auth.log` so one can keep track of when commands are executed via MQTT.
@@ -109,7 +109,7 @@ the sudoers configuration file:
   
   # add the following lines at the bottom.
   # note that every service that we want to allow to restart must be specified here
-  daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl restart isp-rpi-reporter,/sbin/shutdown
+  daemon <raspberrypihostname> =NOPASSWD: /usr/bin/systemctl restart isp-rpi-reporter.service,/sbin/shutdown
   ```
 
 NOTE: In some systems the path for `systemctl` / `reboot` / `shutdown` can be different.  Make sure the path you specify is correct for your system.

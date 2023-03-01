@@ -12,20 +12,19 @@ A simple Linux python script to query the Raspberry Pi on which it is running fo
 
 ![Discovery image](./Docs/images/DiscoveryV4.png)
 
-This script should be configured to be run in **daemon mode** continously in the background as a systemd service (or optionally as a SysV init script). Instructions are provided below.
-
+This script should be configured to be run in **daemon mode** continuously in the background as a systemd service (or optionally as a SysV init script). Instructions are provided below.
 
 ## Table of Contents
 
 On this Page:
 
 - [Features](#features)- key features of this reporter
-- [Prerequisites](#prerequisites) 
+- [Prerequisites](#prerequisites)
 - [Installation](#installation) - install prerequisites and the daemon project
 - [Configuration](#configuration) - configuring the script to talk with your MQTT broker
 - [Execution](#execution) - initial run by hand, then setup to run from boot
 - [Integration](#integration) - a quick look at what's reported to MQTT about this RPi
-- [Troubleshooting](#troubleshooting) - having start up issues?  Check here for common problems
+- [Troubleshooting](#troubleshooting) - having start up issues? Check here for common problems
 
 Additional pages:
 
@@ -33,7 +32,6 @@ Additional pages:
 - [In practice: Advertisements to HA](./HA-ADVERT.md) - Details of the actual advertisements this Daemon publishes to MQTT
 - [The Associated Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card) - This is our companion Lovelace Card that makes displaying this RPi Monitor data very easy
 - [ChangeLog](./ChangeLog) - We've been repairing or adding features to this script as users report issues or wishes. This is our list of changes
-
 
 ## Features
 
@@ -111,7 +109,7 @@ The monitored topic reports the following information:
 | `throttle`          |                    | reports the throttle status value plus interpretation thereof                                                           |
 | `timestamp`         |                    | date, time when this report was generated                                                                               |
 
-_NOTE: cpu load averages are divided by the number of cores_
+NOTE: _cpu load averages are divided by the number of cores_
 
 ## Prerequisites
 
@@ -143,10 +141,10 @@ sudo apt-get install libraspberrypi-bin net-tools
 ### Packages for Arch Linux
 
 ```shell
-sudo pacman -S python python-pip python-tzlocal python-notify2 python-colorama python-unidecode python-paho-mqtt python-requests inetutils 
+sudo pacman -S python python-pip python-tzlocal python-notify2 python-colorama python-unidecode python-paho-mqtt python-requests inetutils
 ```
 
-**NOTE**: *for users of Arch Linux the number of updates available will NOT be reported (will always show as '-1'.) This is due to Arch Linux not using the apt package manager.*
+**NOTE**: _for users of Arch Linux the number of updates available will NOT be reported (will always show as '-1'.) This is due to Arch Linux not using the apt package manager._
 
 ### With these extra packages installed, verify access to network information
 
@@ -185,7 +183,7 @@ wlan0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 
 ```
 
-If you are seeing output from the `ifconfig` tool then continue on with the following steps.  If you don't you may have missed installing `net-utils` in an earlier step.
+If you are seeing output from the `ifconfig` tool then continue on with the following steps. If you don't you may have missed installing `net-utils` in an earlier step.
 
 ### Now finish with the script install
 
@@ -436,10 +434,7 @@ An example:
       "load_5min_prcnt": 0,
       "load_15min_prcnt": 0
     },
-    "throttle": [
-      "throttled = 0x0",
-      "Not throttled"
-    ],
+    "throttle": ["throttled = 0x0", "Not throttled"],
     "temperature_c": 25.8,
     "temp_gpu_c": 25.8,
     "temp_cpu_c": 25.8,
@@ -450,10 +445,9 @@ An example:
 }
 ```
 
-**NOTE:** Where there's an IP address that interface is connected.  Also, there are new `tx_data` and `rx_data` values which show traffic in bytes for this reporting interval for each network interface.
+**NOTE:** Where there's an IP address that interface is connected. Also, there are new `tx_data` and `rx_data` values which show traffic in bytes for this reporting interval for each network interface.
 
 This data can be subscribed to and processed by your home assistant installation. How you build your RPi dashboard from here is up to you!
-
 
 ## Troubleshooting
 
@@ -467,7 +461,7 @@ We occasionaly have reports of users with more than one RPi on their network but
 
 Most often fix: _reboot the missing RPi._
 
-When you remove a sensor from Home Assistant it tells the MQTT broker to 'forget' everything it knows about the RPi.  Some of the information is actually `stored by the MQTT broker` so it is available while the RPi is offline.  Our Daemon script only broadcasts this `stored` information when it is first started.  As a result the RPi will not re-appear after delete from Home Assistant until you reboot the RPi in question. (or, alternatively, stop then restart the script.). You may find reboot easier to do.
+When you remove a sensor from Home Assistant it tells the MQTT broker to 'forget' everything it knows about the RPi. Some of the information is actually `stored by the MQTT broker` so it is available while the RPi is offline. Our Daemon script only broadcasts this `stored` information when it is first started. As a result the RPi will not re-appear after delete from Home Assistant until you reboot the RPi in question. (or, alternatively, stop then restart the script.). You may find reboot easier to do.
 
 To reboot:
 
@@ -510,13 +504,12 @@ I find [MQTT Explorer](http://mqtt-explorer.com/) to be an excellent tool to use
 
 Alternatively I also use **MQTTBox** when I want to send messages by hand to interact via MQTT. it is affered as a web extension or a native application.
 
-
 #### Viewing the Daemon logs
 
 When your script is being run as a Daemon it is logging. You can view the log output since last reboot with:
 
 ```bash
-$ journalctl -b --no-pager -u isp-rpi-reporter.service
+journalctl -b --no-pager -u isp-rpi-reporter.service
 ```
 
 Alternatively you can create a simple script which you can run any time you want to see the log. Here's my show Daemon log script `showRpiLog`:
@@ -527,7 +520,7 @@ Alternatively you can create a simple script which you can run any time you want
 (set -x;journalctl -b --no-pager -u isp-rpi-reporter.service)
 ```
 
-**NOTE**: *the -b says 'since last boot' the --no-pager says just show it all without breaking it up into pages and requiring the enter key press for each page.*
+**NOTE**: _the -b says 'since last boot' the --no-pager says just show it all without breaking it up into pages and requiring the enter key press for each page._
 
 ---
 

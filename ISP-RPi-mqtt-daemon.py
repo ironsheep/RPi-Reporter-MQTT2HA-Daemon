@@ -34,7 +34,7 @@ try:
 except ImportError:
     apt_available = False
 
-script_version = "1.8.1"
+script_version = "1.8.2"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -143,8 +143,6 @@ print_line(
     '* init mqtt_client_connected=[{}]'.format(mqtt_client_connected), debug=True)
 mqtt_client_should_attempt_reconnect = True
 
-command_base_topic = '{not-set}/command/{not-set}'
-
 def on_connect(client, userdata, flags, rc):
     global mqtt_client_connected
     if rc == 0:
@@ -157,15 +155,6 @@ def on_connect(client, userdata, flags, rc):
             mqtt_client_connected), debug=True)
         client.on_publish = on_publish
 
-        # -------------------------------------------------------------------------
-        # Commands Subscription
-        if (len(commands) > 0):
-            print_line('MQTT subscription to {}/+ enabled'.format(command_base_topic), console=True, sd_notify=True)
-            client.on_message = on_message
-            client.subscribe('{}/+'.format(command_base_topic))
-        else:
-            print_line('MQTT subscripton to {}/+ disabled'.format(command_base_topic), console=True, sd_notify=True)
-        # -------------------------------------------------------------------------
     else:
         print_line('! Connection error with result code {} - {}'.format(str(rc),
                    mqtt.connack_string(rc)), error=True)
@@ -191,16 +180,17 @@ def on_subscribe(client, userdata, mid, granted_qos):
     print_line('on_subscribe() - {} - {}'.format(str(mid),str(granted_qos)), debug=True, sd_notify=True)
 
 def on_message(client, userdata, message):
-    print_line('on_message(). Topic=[{}] payload=[{}]'.format(message.topic, message.payload), console=True, sd_notify=True, debug=True)
+    print_line('on_message() Topic=[{}] payload=[{}]'.format(message.topic, message.payload), console=True, sd_notify=True, debug=True)
 
     decoded_payload = message.payload.decode('utf-8')
     command = message.topic.split('/')[-1]
 
-    if command in commands:
-        print_line('- Command "{}" Received - Run {} {} -'.format(command, commands[command], decoded_payload), console=True, debug=True)
-        subprocess.Popen(["/usr/bin/sh", "-c", commands[command].format(decoded_payload)])
-    else:
-        print_line('* Invalid Command received.', error=True)
+    if command != 'status':
+        if command in commands:
+            print_line('- Command "{}" Received - Run {} {} -'.format(command, commands[command], decoded_payload), console=True, debug=True)
+            subprocess.Popen(["/usr/bin/sh", "-c", commands[command].format(decoded_payload)])
+        else:
+            print_line('* Invalid Command received.', error=True)
 
 # -----------------------------------------------------------------------------
 # Load configuration file
@@ -1180,6 +1170,9 @@ getFileSystemDrives()
 if apt_available:
     getNumberOfAvailableUpdates()
 
+command_base_topic = '{}/command/{}'.format(base_topic, sensor_name.lower())
+
+
 # -----------------------------------------------------------------------------
 #  timer and timer funcs for ALIVE MQTT Notices handling
 # -----------------------------------------------------------------------------
@@ -1190,7 +1183,12 @@ K_ALIVE_TIMOUT_IN_SECONDS = 60
 def publishAliveStatus():
     print_line('- SEND: yes, still alive -', debug=True)
     mqtt_client.publish(lwt_sensor_topic, payload=lwt_online_val, retain=False)
+    mqtt_client.publish(lwt_command_topic, payload=lwt_online_val, retain=False)
 
+def publishShuttingDownStatus():
+    print_line('- SEND: shutting down -', debug=True)
+    mqtt_client.publish(lwt_sensor_topic, payload=lwt_offline_val, retain=False)
+    mqtt_client.publish(lwt_command_topic, payload=lwt_offline_val, retain=False)
 
 def aliveTimeoutHandler():
     print_line('- MQTT TIMER INTERRUPT -', debug=True)
@@ -1273,6 +1271,16 @@ except:
                error=True, sd_notify=True)
     sys.exit(1)
 else:
+    # -------------------------------------------------------------------------
+    # Commands Subscription
+    if (len(commands) > 0):
+        print_line('MQTT subscription to {}/+ enabled'.format(command_base_topic), console=True, sd_notify=True)
+        mqtt_client.on_message = on_message
+        mqtt_client.subscribe('{}/+'.format(command_base_topic))
+    else:
+        print_line('MQTT subscripton to {}/+ disabled'.format(command_base_topic), console=True, sd_notify=True)
+    # -------------------------------------------------------------------------
+
     mqtt_client.publish(lwt_sensor_topic, payload=lwt_online_val, retain=False)
     mqtt_client.publish(lwt_command_topic, payload=lwt_online_val, retain=False)
     mqtt_client.loop_start()
@@ -1377,8 +1385,6 @@ detectorValues = OrderedDict([
         icon='mdi:memory'
     ))
 ])
-
-command_base_topic = '{}/command/{}'.format(base_topic, sensor_name.lower())
 
 for [command, _] in commands.items():
     #print_line('- REGISTER command: [{}]'.format(command), debug=True)
@@ -1809,5 +1815,8 @@ try:
 
 finally:
     # cleanup used pins... just because we like cleaning up after us
+    publishShuttingDownStatus()
     stopPeriodTimer()   # don't leave our timers running!
     stopAliveTimer()
+    mqtt_client.disconnect()
+    print_line('* MQTT Disconnect()', verbose=True)

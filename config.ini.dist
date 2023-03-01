@@ -22,7 +22,7 @@
 [Commands]
 #shutdown = /usr/bin/sudo /sbin/shutdown -h now 'shutdown rqst via MQTT'
 #reboot = /usr/bin/sudo /sbin/shutdown -r now 'reboot rqst via MQTT'
-#restart_service = /usr/bin/sudo systemctl restart {}
+#restart_service = /usr/bin/sudo systemctl restart isp-rpi-reporter.service
 
 [MQTT]
 
