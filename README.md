@@ -130,7 +130,7 @@ First install extra packages the script needs (select one of the two following c
 sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-apt python3-paho-mqtt
 ```
 
-### Packages for pure Ubuntu
+### Additional Packages for pure Ubuntu
 
 **NOTE** if you are running a **pure Ubuntu** not Raspberry pi OS then you may need to install additional packages to get the binary we use to get the core temperatures and tools to inspec the network interfaces. (_If you are NOT seeing temperatures in your Lovelace RPI Monitor Card this is likely the cause. Or if some of your RPis don't show up in Home Assistant_) Do the following in this case:
 
@@ -384,17 +384,17 @@ An example:
 ```json
 {
   "info": {
-    "timestamp": "2023-02-25T22:42:03-07:00",
+    "timestamp": "2023-03-01T15:37:06-07:00",
     "rpi_model": "RPi 4 Model B r1.5",
     "ifaces": "e,w,b",
     "host_name": "pip2iotgw",
     "fqdn": "pip2iotgw.home",
     "ux_release": "bullseye",
     "ux_version": "5.15.84-v8+",
-    "ux_updates": 0,
-    "up_time": " 4:36",
-    "up_time_secs": 16560,
-    "last_update": "2023-02-25T18:06:34-07:00",
+    "ux_updates": 3,
+    "up_time": "21:08",
+    "up_time_secs": 76080,
+    "last_update": "2023-02-28T18:11:41-07:00",
     "fs_total_gb": 32,
     "fs_free_prcnt": 81,
     "fs_used_prcnt": 19,
@@ -407,8 +407,8 @@ An example:
       "wlan0": {
         "IP": "192.168.100.196",
         "mac": "e4:5f:01:f8:18:02",
-        "rx_data": 13,
-        "tx_data": 5
+        "rx_data": 31954,
+        "tx_data": 8883
       }
     },
     "drives": {
@@ -421,7 +421,9 @@ An example:
     },
     "memory": {
       "size_mb": 1849,
-      "free_mb": 1485
+      "free_mb": 1484,
+      "size_swap": 100,
+      "free_swap": 100
     },
     "mem_used_prcnt": 19,
     "cpu": {
@@ -430,16 +432,19 @@ An example:
       "number_cores": 4,
       "bogo_mips": "432.00",
       "serial": "1000000081ae88c7",
-      "load_1min_prcnt": 0,
-      "load_5min_prcnt": 0,
-      "load_15min_prcnt": 0
+      "load_1min_prcnt": 2.5,
+      "load_5min_prcnt": 1,
+      "load_15min_prcnt": 0.2
     },
-    "throttle": ["throttled = 0x0", "Not throttled"],
-    "temperature_c": 25.8,
-    "temp_gpu_c": 25.8,
-    "temp_cpu_c": 25.8,
-    "reporter": "ISP-RPi-mqtt-daemon v1.8.0",
-    "reporter_releases": "v1.7.4,v1.7.2,v1.7.3",
+    "throttle": [
+      "throttled = 0x0",
+      "Not throttled"
+    ],
+    "temperature_c": 28.7,
+    "temp_gpu_c": 28.7,
+    "temp_cpu_c": 28.2,
+    "reporter": "ISP-RPi-mqtt-daemon v1.8.3",
+    "reporter_releases": "v1.8.2,v1.7.2,v1.7.3,v1.7.4",
     "report_interval": 5
   }
 }
@@ -536,6 +541,7 @@ This project is enjoyed by users in many countries. A number of these users have
 
 Thank you to the following github users for taking the time to help make this project function better for all of us!:
 
+- [brunob45](https://github.com/brunob45) - report swap usage
 - [hobbypunk90](https://github.com/hobbypunk90) - add commanding of RPi from HA
 - [OasisOfChaos](https://github.com/OasisOfChaos) - adjust temp. reporting so can work on non-RPi devices like Orange Pi
 - [nabeelmoeen](https://github.com/nabeelmoeen) - add memory usage as addiitonal sensor

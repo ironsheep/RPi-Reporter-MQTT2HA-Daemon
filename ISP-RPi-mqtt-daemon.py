@@ -34,7 +34,7 @@ try:
 except ImportError:
     apt_available = False
 
-script_version = "1.8.2"
+script_version = "1.8.3"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -1177,8 +1177,11 @@ getFileSystemDrives()
 if apt_available:
     getNumberOfAvailableUpdates()
 
-command_base_topic = '{}/command/{}'.format(base_topic, sensor_name.lower())
+# -----------------------------------------------------------------------------
+#  MQTT Topic def's
+# -----------------------------------------------------------------------------
 
+command_base_topic = '{}/command/{}'.format(base_topic, sensor_name.lower())
 
 # -----------------------------------------------------------------------------
 #  timer and timer funcs for ALIVE MQTT Notices handling
