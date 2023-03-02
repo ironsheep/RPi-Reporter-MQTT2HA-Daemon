@@ -102,6 +102,8 @@ The monitored topic reports the following information:
 | `memory`            |                    | shows the RAM configuration in MB for this RPi                                                                          |
 |                     | `size_mb`          | - total memory Size in MBytes                                                                                           |
 |                     | `free_mb`          | - available memory in MBytes                                                                                            |
+|                     | `size_swap`        | - total swap size in MBytes                                                                                             |
+|                     | `free_swap`        | - available swap size in MBytes                                                                                         |
 | `mem_used_prcnt`    |                    | shows the amount of RAM currently in use (used by HA sensor)                                                            |
 | `reporter`          |                    | name and version of the script reporting these values                                                                   |
 | `reporter_releases` |                    | list of latest reporter formal versions                                                                                 |
