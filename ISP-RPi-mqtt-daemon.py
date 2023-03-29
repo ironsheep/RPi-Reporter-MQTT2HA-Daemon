@@ -34,7 +34,7 @@ try:
 except ImportError:
     apt_available = False
 
-script_version = "1.8.3"
+script_version = "1.8.4"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -1825,7 +1825,7 @@ try:
 
         if apt_available:
             if timeNow > update_last_fetch_time + kUpdateCheckIntervalInSeconds:
-                getNumberOfAvailableUpdates()() # and count them!
+                getNumberOfAvailableUpdates() # and count them!
 
 finally:
     # cleanup used pins... just because we like cleaning up after us

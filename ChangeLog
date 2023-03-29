@@ -1,5 +1,10 @@
 # ChangeLog
 
+Tue, 28 Mar 2023 23:24:03 -0600 v1.8.4
+
+- Remove unused Requirements file from repo. (#92)
+- Fix code which calls getNumberOfAvailableUpdates() after initial call at startup (#93)
+
 Wed, 01 Mar 2023 15:30:03 -0700 v1.8.3
 
 - Remove package that can't be satisfied from `requirements.txt` (#88)
