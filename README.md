@@ -35,9 +35,9 @@ Additional pages:
 
 ## Features
 
-- Tested on Raspberry Pi's 2/3/4 with Jessie, Stretch and Buster
-- Tested with Home Assistant v0.111.0 -> 2023.2.5
-- Tested with Mosquitto broker v5.1 - v6.1.3
+- Tested on Raspberry Pi's zero, 2, 3, and 4 with Jessie, Stretch, Buster, and Bullseye
+- Tested with Home Assistant v0.111.0 -> 2023.4.6
+- Tested with Mosquitto broker 
 - Data is published via MQTT
 - MQTT discovery messages are sent so RPi's are automatically registered with Home Assistant (if MQTT discovery is enabled in your HA installation)
 - MQTT authentication support
@@ -129,7 +129,7 @@ First install extra packages the script needs (select one of the two following c
 ### Packages for Ubuntu, Raspberry pi OS, and the like
 
 ```shell
-sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-apt python3-paho-mqtt
+sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-apt python3-paho-mqtt python3-requests
 ```
 
 ### Additional Packages for pure Ubuntu
@@ -234,6 +234,8 @@ password = {your mqtt password if your setup requires one}
 
 Now that your config.ini is setup let's test!
 
+**NOTE:** *If you wish to support remote commanding of your RPi then you can find additional configuration steps in [Setting up RPi Control from Home Assistant](./RMTCTRL.md)  However, to simplifly your effort, please complete the following steps to ensure all is running as desired before you attempt to set up remote control.*
+
 ## Execution
 
 ### Initial Test
@@ -277,6 +279,8 @@ groups daemon
 $ daemon : daemon video
 #                 ^^^^^ now it is present
 ```
+
+*NOTE: Yes, `video` is correct. This appears to be due to our accessing the GPU temperatures.*
 
 ### Choose Run Style
 
@@ -457,6 +461,15 @@ An example:
 This data can be subscribed to and processed by your home assistant installation. How you build your RPi dashboard from here is up to you!
 
 ## Troubleshooting
+
+### Issue: I've updated my RPi OS and now I'm getting reporter script startup errors
+
+Most often fix: _Re-add the video perms to the daemon group_
+
+See Closed Issues: [#94](https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/issues/94), [#98](https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/issues/98)
+
+We occasionaly have reports of users who updated their RPi afterwhich the RPI reporter Daemon script fails to start.  The issue is that one of the packages updated appears to have reset the `daemon` group perminsions.  For instructions on resetting the permissions to what is needed see: [Set up daemon account to allow access to temperature values](https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon#set-up-daemon-account-to-allow-access-to-temperature-values)
+
 
 ### Issue: Some of my RPi's don't show up in HA
 

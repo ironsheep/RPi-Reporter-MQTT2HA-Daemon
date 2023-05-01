@@ -34,7 +34,7 @@ try:
 except ImportError:
     apt_available = False
 
-script_version = "1.8.4"
+script_version = "1.8.5"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -146,14 +146,21 @@ mqtt_client_should_attempt_reconnect = True
 def on_connect(client, userdata, flags, rc):
     global mqtt_client_connected
     if rc == 0:
-        print_line('* MQTT connection established',
-                   console=True, sd_notify=True)
+        print_line('* MQTT connection established', console=True, sd_notify=True)
         print_line('')  # blank line?!
         #_thread.start_new_thread(afterMQTTConnect, ())
         mqtt_client_connected = True
         print_line('on_connect() mqtt_client_connected=[{}]'.format(
             mqtt_client_connected), debug=True)
-        client.on_publish = on_publish
+
+        # -------------------------------------------------------------------------
+        # Commands Subscription
+        if (len(commands) > 0):
+            print_line('MQTT subscription to {}/+ enabled'.format(command_base_topic), console=True, sd_notify=True)
+            mqtt_client.subscribe('{}/+'.format(command_base_topic))
+        else:
+            print_line('MQTT subscripton to {}/+ disabled'.format(command_base_topic), console=True, sd_notify=True)
+        # -------------------------------------------------------------------------
 
     else:
         print_line('! Connection error with result code {} - {}'.format(str(rc),
@@ -167,6 +174,13 @@ def on_connect(client, userdata, flags, rc):
         # kill main thread
         os._exit(1)
 
+def on_disconnect(client, userdata, mid):
+    global mqtt_client_connected
+    mqtt_client_connected = False
+    print_line('* MQTT connection lost', console=True, sd_notify=True)
+    print_line('on_disconnect() mqtt_client_connected=[{}]'.format(
+            mqtt_client_connected), debug=True)
+    pass
 
 def on_publish(client, userdata, mid):
     #print_line('* Data successfully published.')
@@ -179,16 +193,27 @@ def on_publish(client, userdata, mid):
 def on_subscribe(client, userdata, mid, granted_qos):
     print_line('on_subscribe() - {} - {}'.format(str(mid),str(granted_qos)), debug=True, sd_notify=True)
 
+shell_cmd_fspec = ''
 def on_message(client, userdata, message):
-    print_line('on_message() Topic=[{}] payload=[{}]'.format(message.topic, message.payload), console=True, sd_notify=True, debug=True)
+    global shell_cmd_fspec
+    if shell_cmd_fspec == '':
+        shell_cmd_fspec = getShellCmd()
+        if shell_cmd_fspec == '':
+            print_line('* Failed to locate shell Command!', error=True)
+            # kill main thread
+            os._exit(1)
 
     decoded_payload = message.payload.decode('utf-8')
     command = message.topic.split('/')[-1]
+    print_line('on_message() Topic=[{}] payload=[{}] command=[{}]'.format(message.topic, message.payload, command), console=True, sd_notify=True, debug=True)
 
     if command != 'status':
         if command in commands:
             print_line('- Command "{}" Received - Run {} {} -'.format(command, commands[command], decoded_payload), console=True, debug=True)
-            subprocess.Popen(["/usr/bin/sh", "-c", commands[command].format(decoded_payload)])
+            pHandle = subprocess.Popen([shell_cmd_fspec, "-c", commands[command].format(decoded_payload)])
+            output, errors = pHandle.communicate()
+            if errors:
+                print_line('- Command exec says: errors=[{}]'.format(errors), console=True, debug=True)
         else:
             print_line('* Invalid Command received.', error=True)
 
@@ -920,6 +945,17 @@ def getVcGenCmd():
         print_line('Found vcgencmd(1)=[{}]'.format(desiredCommand), debug=True)
     return desiredCommand
 
+def getShellCmd():
+    cmd_locn1 = '/usr/bin/sh'
+    cmd_locn2 = '/bin/sh'
+    desiredCommand = cmd_locn1
+    if os.path.exists(desiredCommand) == False:
+        desiredCommand = cmd_locn2
+    if os.path.exists(desiredCommand) == False:
+        desiredCommand = ''
+    if desiredCommand != '':
+        print_line('Found sh(1)=[{}]'.format(desiredCommand), debug=True)
+    return desiredCommand
 
 def getIPCmd():
     cmd_locn1 = '/bin/ip'
@@ -1248,8 +1284,11 @@ lwt_offline_val = 'offline'
 
 print_line('Connecting to MQTT broker ...', verbose=True)
 mqtt_client = mqtt.Client()
+# hook up MQTT callbacks
 mqtt_client.on_connect = on_connect
-
+mqtt_client.on_disconnect = on_disconnect
+mqtt_client.on_publish = on_publish
+mqtt_client.on_message = on_message
 
 mqtt_client.will_set(lwt_sensor_topic, payload=lwt_offline_val, retain=True)
 mqtt_client.will_set(lwt_command_topic, payload=lwt_offline_val, retain=True)
@@ -1281,16 +1320,6 @@ except:
                error=True, sd_notify=True)
     sys.exit(1)
 else:
-    # -------------------------------------------------------------------------
-    # Commands Subscription
-    if (len(commands) > 0):
-        print_line('MQTT subscription to {}/+ enabled'.format(command_base_topic), console=True, sd_notify=True)
-        mqtt_client.on_message = on_message
-        mqtt_client.subscribe('{}/+'.format(command_base_topic))
-    else:
-        print_line('MQTT subscripton to {}/+ disabled'.format(command_base_topic), console=True, sd_notify=True)
-    # -------------------------------------------------------------------------
-
     mqtt_client.publish(lwt_sensor_topic, payload=lwt_online_val, retain=False)
     mqtt_client.publish(lwt_command_topic, payload=lwt_online_val, retain=False)
     mqtt_client.loop_start()

@@ -1,5 +1,11 @@
 # ChangeLog
 
+Mon, 01 May 2023 16:51:08 -0600 v1.8.5
+
+- Handle resubscription if MQTT broker restarts (#99)
+- Simplify installation / setup documentation (#97)
+- Repair bug in running shell to execute commands
+
 Tue, 28 Mar 2023 23:24:03 -0600 v1.8.4
 
 - Remove unused Requirements file from repo. (#92)
