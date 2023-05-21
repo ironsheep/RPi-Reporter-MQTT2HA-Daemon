@@ -172,11 +172,17 @@ When the directory is not found then we, instead, add our new content to the exi
 
 ### S4: Adjusting the ownership of our reporter script
 
-Additionally, the daemon user needs permission to execute the shell script referenced in the run-script command (and any command referenced there/access to the directories specified). If the script has been created by the standard pi user, a simple workaround is:
+Additionally, the daemon user needs permission to execute any external tools referenced in the run-script command (and any command referenced there/access to the directories specified). If the script has been created by the standard pi user, a simple repair is:
 
 ```shell
-sudo chown daemon RPi-mqtt-daemon-script.sh
+# change to where your reporter is installed.  Typically:
+cd /opt/RPi-Reporter-MQTT2HA-Daemon
+
+# adjust the owner of the script
+sudo chown daemon ISP-RPi-mqtt-daemon.py
 ```
+
+This then ensures that the script is owned by the daemon account and will ask for permissions as the Daemon user to run external scripts.
 
 ## Verifying your configuration
 
