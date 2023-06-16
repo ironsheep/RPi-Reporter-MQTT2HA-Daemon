@@ -282,6 +282,17 @@ $ daemon : daemon video
 
 *NOTE: Yes, `video` is correct. This appears to be due to our accessing the GPU temperatures.*
 
+### Setup `daemon` account to reboot and restart the service
+
+```shell
+# Add daemoon to sudoers
+sudo nano /etc/sudoers.d/020_daemon-nopasswd
+# Add the following lines
+daemon ALL = (root) NOPASSWD: /sbin/shutdown
+daemon ALL = (root) NOPASSWD: /usr/bin/systemctl
+# ^x to save and exit
+```
+
 ### Choose Run Style
 
 You can choose to run this script as a `systemd service` or as a `Sys V init script`. If you are on a newer OS than `Jessie` or if as a system admin you are just more comfortable with Sys V init scripts then you can use the latter style.
