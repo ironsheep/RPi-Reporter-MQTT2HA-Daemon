@@ -234,7 +234,7 @@ password = {your mqtt password if your setup requires one}
 
 Now that your config.ini is setup let's test!
 
-**NOTE:** *If you wish to support remote commanding of your RPi then you can find additional configuration steps in [Setting up RPi Control from Home Assistant](./RMTCTRL.md)  However, to simplifly your effort, please complete the following steps to ensure all is running as desired before you attempt to set up remote control.*
+**NOTE:** *If you wish to support remote commanding of your RPi then you can find additional configuration steps in [Setting up RPi Control from Home Assistant](./RMTECTRL.md)  However, to simplifly your effort, please complete the following steps to ensure all is running as desired before you attempt to set up remote control.*
 
 ## Execution
 
