@@ -1381,7 +1381,7 @@ print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery .
 #  table of key items to publish:
 detectorValues = OrderedDict([
     (K_LD_MONITOR, dict(
-        title="RPi Monitor {}".format(rpi_hostname),
+        title="Monitor",
         topic_category="sensor",
         device_class="timestamp",
         device_ident="RPi-{}".format(rpi_fqdn),
@@ -1391,7 +1391,7 @@ detectorValues = OrderedDict([
         json_value="timestamp",
     )),
     (K_LD_SYS_TEMP, dict(
-        title="RPi Temp {}".format(rpi_hostname),
+        title="Temperature",
         topic_category="sensor",
         device_class="temperature",
         no_title_prefix="yes",
@@ -1400,7 +1400,7 @@ detectorValues = OrderedDict([
         json_value="temperature_c",
     )),
     (K_LD_FS_USED, dict(
-        title="RPi Disk Used {}".format(rpi_hostname),
+        title="Disk Used",
         topic_category="sensor",
         no_title_prefix="yes",
         unit="%",
@@ -1408,7 +1408,7 @@ detectorValues = OrderedDict([
         json_value="fs_used_prcnt",
     )),
     (K_LD_CPU_USE, dict(
-        title="RPi CPU Use {}".format(rpi_hostname),
+        title="CPU Use",
         topic_category="sensor",
         no_title_prefix="yes",
         unit="%",
@@ -1416,7 +1416,7 @@ detectorValues = OrderedDict([
         json_value=K_LD_CPU_USE_JSON,
     )),
     (K_LD_MEM_USED, dict(
-        title="RPi Mem Used {}".format(rpi_hostname),
+        title="Memory Used",
         topic_category="sensor",
         no_title_prefix="yes",
         json_value="mem_used_prcnt",
@@ -1436,7 +1436,7 @@ for [command, _] in commands.items():
         iconName = 'mdi:cog-counterclockwise'
     detectorValues.update({
         command: dict(
-            title='RPi {} {} Command'.format(command, rpi_hostname),
+            title=command,
             topic_category='button',
             no_title_prefix='yes',
             icon=iconName,
