@@ -644,7 +644,7 @@ def getUptime():
     print_line('rpi_uptime_sec=({})'.format(rpi_uptime_sec), debug=True)
 
 def getNetworkIFsUsingIP(ip_cmd):
-    cmd_str = '{} link show | /bin/egrep -v "link" | /bin/egrep " eth| wlan"'.format(
+    cmd_str = '{} link show | /bin/egrep -v "link" | /bin/egrep " eth| wlan| tailscale| tun"'.format(
         ip_cmd)
     out = subprocess.Popen(cmd_str,
                            shell=True,
