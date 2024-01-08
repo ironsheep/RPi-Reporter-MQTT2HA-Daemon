@@ -961,7 +961,7 @@ def get_shell_cmd():
     if os.path.exists(cmd_locn1):
         desired_command = cmd_locn1
     elif os.path.exists(cmd_locn2):
-        desired_command = ''
+        desired_command = cmd_locn2
     else:
         print_line('ERROR: sh(1) not found!', error=True)
 
