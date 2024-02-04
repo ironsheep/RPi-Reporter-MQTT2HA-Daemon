@@ -583,9 +583,10 @@ def getHostnames():
     global rpi_hostname
     global rpi_fqdn
     stdout, _, returncode = invoke_shell_cmd('/bin/hostname -f')
-    fqdn_raw = 'N/A'
-    if not returncode:
-        fqdn_raw = stdout.decode('utf-8').rstrip()
+    fqdn_from_hostname = stdout.decode('utf-8').rstrip() if not returncode else 'N/A'
+    # Allow overriding the sensor host name via `MQTT_SENSOR_HOSTNAME`
+    # environment variable
+    fqdn_raw = os.environ.get('MQTT_SENSOR_HOSTNAME', fqdn_from_hostname)
     print_line('fqdn_raw=[{}]'.format(fqdn_raw), debug=True)
     rpi_hostname = fqdn_raw
     if '.' in fqdn_raw:
