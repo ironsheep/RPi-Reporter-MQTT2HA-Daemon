@@ -1295,6 +1295,9 @@ if config['MQTT'].getboolean('tls', False):
         certfile=config['MQTT'].get('tls_certfile', None),
         tls_version=ssl.PROTOCOL_SSLv23
     )
+    # Allow skipping TLS verification if `tls_insecure` configuration option is
+    # set, see https://pypi.org/project/paho-mqtt/#tls-insecure-set for details
+    mqtt_client.tls_insecure_set(config['MQTT'].get('tls_insecure', False))
 
 mqtt_username = os.environ.get("MQTT_USERNAME", config['MQTT'].get('username'))
 mqtt_password = os.environ.get(
