@@ -241,7 +241,11 @@ default_base_topic = 'home/nodes'
 base_topic = config['MQTT'].get('base_topic', default_base_topic).lower()
 
 default_sensor_name = 'rpi-reporter'
-sensor_name = config['MQTT'].get('sensor_name', default_sensor_name).lower()
+# Sensor name could be set either via configuration file or `MQTT_SENSOR_NAME`
+# environment variable, the latter takes precedence
+sensor_name = os.environ.get(
+    "MQTT_SENSOR_NAME", config['MQTT'].get('sensor_name', default_sensor_name)
+).lower()
 
 # by default Home Assistant listens to the /homeassistant but it can be changed for a given installation
 default_discovery_prefix = 'homeassistant'
