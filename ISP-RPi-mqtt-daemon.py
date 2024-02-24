@@ -1299,7 +1299,13 @@ lwt_online_val = 'online'
 lwt_offline_val = 'offline'
 
 print_line('Connecting to MQTT broker ...', verbose=True)
-mqtt_client = mqtt.Client()
+# ensure backward compatibility with older versions of paho-mqtt (<=2.0.0)
+# ToDo: Need to update to VERSION2 at some point
+try:
+    mqtt_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
+except AttributeError:
+    mqtt_client = mqtt.Client()
+
 # hook up MQTT callbacks
 mqtt_client.on_connect = on_connect
 mqtt_client.on_disconnect = on_disconnect
