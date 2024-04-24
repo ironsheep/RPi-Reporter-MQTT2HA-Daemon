@@ -569,7 +569,7 @@ This project is enjoyed by users in many countries. A number of these users have
 
 Thank you to the following github users for taking the time to help make this project function better for all of us!:
 
-- [brunob45](https://github.com/brunob45) - report swap usage
+- [brunob45](https://github.com/brunob45) - report swap usage, fixes to MQTT topics for HA 2023.8 update
 - [hobbypunk90](https://github.com/hobbypunk90) - add commanding of RPi from HA
 - [OasisOfChaos](https://github.com/OasisOfChaos) - adjust temp. reporting so can work on non-RPi devices like Orange Pi
 - [nabeelmoeen](https://github.com/nabeelmoeen) - add memory usage as addiitonal sensor
@@ -577,6 +577,9 @@ Thank you to the following github users for taking the time to help make this pr
 - [Henry-Sir](https://github.com/Henry-Sir) - add cpu usage as addiitonal sensor
 - [woodmj74](https://github.com/woodmj74) - changes to reporting correct temperature units
 - [dflvunoooooo](https://github.com/dflvunoooooo) - changes to getting last update date
+- [hostcc](https://github.com/hostcc) - improved error handling with external commands
+- [frennkie](https://github.com/frennkie) - add compatibility with paho-mqtt 2.0.0
+- [kroecks](https://github.com/kroecks) - changes to sensor_name setup
 
 ## Credits
 
