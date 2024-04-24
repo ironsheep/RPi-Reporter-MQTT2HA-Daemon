@@ -216,7 +216,7 @@ sudo pip3 install -r requirements.txt
 
 #### Why are we checking-out the latest release?
 
-When I'm developing new features I'll work on a different branch thereby not affecting master. When they are tested I'll merge the development brach into master. However it is much easier to merge pull requests directly into master. This action will, for a short period of time, make the **master branch have possibly non-working code**!  You don't want this version until I've completed my testing of the new version and marked it as a new release. The clone gets you all versions while the checkout command moves your installation to the released version so you are running the latest fully tested code.  YOu can always check the [releases page](https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/releases) to find out which is the latest. This also tells you what changes appeared in each release.
+When I'm developing new features I'll work on a different branch thereby not affecting master. When they are tested I'll merge the development brach into master. However it is much easier to merge pull requests directly into master. This action will, for a short period of time, make the **master branch have possibly non-working code**!  You don't want this version until I've completed my testing of the new version and marked it as a new release. The clone gets you all versions while the checkout command moves your installation to the released version so you are running the latest fully tested code.  You can always check the [releases page](https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/releases) to find out which is the latest. This also tells you what changes appeared in each release.
 
 ## Configuration
 
