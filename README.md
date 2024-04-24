@@ -12,33 +12,32 @@ A simple Linux python script to query the Raspberry Pi on which it is running fo
 
 ![Discovery image](./Docs/images/DiscoveryV4.png)
 
-This script should be configured to be run in **daemon mode** continously in the background as a systemd service (or optionally as a SysV init script). Instructions are provided below.
-
+This script should be configured to be run in **daemon mode** continuously in the background as a systemd service (or optionally as a SysV init script). Instructions are provided below.
 
 ## Table of Contents
 
 On this Page:
 
 - [Features](#features)- key features of this reporter
-- [Prerequisites](#prerequisites) 
+- [Prerequisites](#prerequisites)
 - [Installation](#installation) - install prerequisites and the daemon project
 - [Configuration](#configuration) - configuring the script to talk with your MQTT broker
 - [Execution](#execution) - initial run by hand, then setup to run from boot
 - [Integration](#integration) - a quick look at what's reported to MQTT about this RPi
-- [Troubleshooting](#troubleshooting) - having start up issues?  Check here for common problems
+- [Troubleshooting](#troubleshooting) - having start up issues? Check here for common problems
 
 Additional pages:
 
 - [Controlling your RPi from Home Assistant](./RMTECTRL.md) - (Optional) Set up to allow remote control from HA
-- [The Associated Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card) - This is our companion Custom Lovelace Card that makes displaying this RPi Monitor data very easy.
-- [ChangeLog](./ChangeLog) - We've been repairing or adding features to this script as users report issues or wishes. This is our list of changes.
-
+- [In practice: Advertisements to HA](./HA-ADVERT.md) - Details of the actual advertisements this Daemon publishes to MQTT
+- [The Associated Lovelace RPi Monitor Card](https://github.com/ironsheep/lovelace-rpi-monitor-card) - This is our companion Lovelace Card that makes displaying this RPi Monitor data very easy
+- [ChangeLog](./ChangeLog) - We've been repairing or adding features to this script as users report issues or wishes. This is our list of changes
 
 ## Features
 
-- Tested on Raspberry Pi's 2/3/4 with Jessie, Stretch and Buster
-- Tested with Home Assistant v0.111.0 -> 2021.11.5
-- Tested with Mosquitto broker v5.1 - v6.0.1
+- Tested on Raspberry Pi's zero, 2, 3, and 4 with Jessie, Stretch, Buster, and Bullseye
+- Tested with Home Assistant v0.111.0 -> 2023.4.6
+- Tested with Mosquitto broker 
 - Data is published via MQTT
 - MQTT discovery messages are sent so RPi's are automatically registered with Home Assistant (if MQTT discovery is enabled in your HA installation)
 - MQTT authentication support
@@ -103,6 +102,8 @@ The monitored topic reports the following information:
 | `memory`            |                    | shows the RAM configuration in MB for this RPi                                                                          |
 |                     | `size_mb`          | - total memory Size in MBytes                                                                                           |
 |                     | `free_mb`          | - available memory in MBytes                                                                                            |
+|                     | `size_swap`        | - total swap size in MBytes                                                                                             |
+|                     | `free_swap`        | - available swap size in MBytes                                                                                         |
 | `mem_used_prcnt`    |                    | shows the amount of RAM currently in use (used by HA sensor)                                                            |
 | `reporter`          |                    | name and version of the script reporting these values                                                                   |
 | `reporter_releases` |                    | list of latest reporter formal versions                                                                                 |
@@ -110,7 +111,7 @@ The monitored topic reports the following information:
 | `throttle`          |                    | reports the throttle status value plus interpretation thereof                                                           |
 | `timestamp`         |                    | date, time when this report was generated                                                                               |
 
-_NOTE: cpu load averages are divided by the number of cores_
+NOTE: _cpu load averages are divided by the number of cores_
 
 ## Prerequisites
 
@@ -128,10 +129,10 @@ First install extra packages the script needs (select one of the two following c
 ### Packages for Ubuntu, Raspberry pi OS, and the like
 
 ```shell
-sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-apt python3-paho-mqtt
+sudo apt-get install git python3 python3-pip python3-tzlocal python3-sdnotify python3-colorama python3-unidecode python3-apt python3-paho-mqtt python3-requests
 ```
 
-### Packages for pure Ubuntu
+### Additional Packages for pure Ubuntu
 
 **NOTE** if you are running a **pure Ubuntu** not Raspberry pi OS then you may need to install additional packages to get the binary we use to get the core temperatures and tools to inspec the network interfaces. (_If you are NOT seeing temperatures in your Lovelace RPI Monitor Card this is likely the cause. Or if some of your RPis don't show up in Home Assistant_) Do the following in this case:
 
@@ -142,10 +143,10 @@ sudo apt-get install libraspberrypi-bin net-tools
 ### Packages for Arch Linux
 
 ```shell
-sudo pacman -S python python-pip python-tzlocal python-notify2 python-colorama python-unidecode python-paho-mqtt python-requests inetutils 
+sudo pacman -S python python-pip python-tzlocal python-notify2 python-colorama python-unidecode python-paho-mqtt python-requests inetutils
 ```
 
-**NOTE**: *for users of Arch Linux the number of updates available will NOT be reported (will always show as '-1'.) This is due to Arch Linux not using the apt package manager.*
+**NOTE**: _for users of Arch Linux the number of updates available will NOT be reported (will always show as '-1'.) This is due to Arch Linux not using the apt package manager._
 
 ### With these extra packages installed, verify access to network information
 
@@ -184,7 +185,7 @@ wlan0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 
 ```
 
-If you are seeing output from the `ifconfig` tool then continue on with the following steps.  If you don't you may have missed installing `net-utils` in an earlier step.
+If you are seeing output from the `ifconfig` tool then continue on with the following steps. If you don't you may have missed installing `net-utils` in an earlier step.
 
 ### Now finish with the script install
 
@@ -233,6 +234,8 @@ password = {your mqtt password if your setup requires one}
 
 Now that your config.ini is setup let's test!
 
+**NOTE:** *If you wish to support remote commanding of your RPi then you can find additional configuration steps in [Setting up RPi Control from Home Assistant](./RMTCTRL.md)  However, to simplifly your effort, please complete the following steps to ensure all is running as desired before you attempt to set up remote control.*
+
 ## Execution
 
 ### Initial Test
@@ -276,6 +279,8 @@ groups daemon
 $ daemon : daemon video
 #                 ^^^^^ now it is present
 ```
+
+*NOTE: Yes, `video` is correct. This appears to be due to our accessing the GPU temperatures.*
 
 ### Choose Run Style
 
@@ -385,17 +390,17 @@ An example:
 ```json
 {
   "info": {
-    "timestamp": "2023-02-25T22:42:03-07:00",
+    "timestamp": "2023-03-01T15:37:06-07:00",
     "rpi_model": "RPi 4 Model B r1.5",
     "ifaces": "e,w,b",
     "host_name": "pip2iotgw",
     "fqdn": "pip2iotgw.home",
     "ux_release": "bullseye",
     "ux_version": "5.15.84-v8+",
-    "ux_updates": 0,
-    "up_time": " 4:36",
-    "up_time_secs": 16560,
-    "last_update": "2023-02-25T18:06:34-07:00",
+    "ux_updates": 3,
+    "up_time": "21:08",
+    "up_time_secs": 76080,
+    "last_update": "2023-02-28T18:11:41-07:00",
     "fs_total_gb": 32,
     "fs_free_prcnt": 81,
     "fs_used_prcnt": 19,
@@ -408,8 +413,8 @@ An example:
       "wlan0": {
         "IP": "192.168.100.196",
         "mac": "e4:5f:01:f8:18:02",
-        "rx_data": 13,
-        "tx_data": 5
+        "rx_data": 31954,
+        "tx_data": 8883
       }
     },
     "drives": {
@@ -422,7 +427,9 @@ An example:
     },
     "memory": {
       "size_mb": 1849,
-      "free_mb": 1485
+      "free_mb": 1484,
+      "size_swap": 100,
+      "free_swap": 100
     },
     "mem_used_prcnt": 19,
     "cpu": {
@@ -431,30 +438,38 @@ An example:
       "number_cores": 4,
       "bogo_mips": "432.00",
       "serial": "1000000081ae88c7",
-      "load_1min_prcnt": 0,
-      "load_5min_prcnt": 0,
-      "load_15min_prcnt": 0
+      "load_1min_prcnt": 2.5,
+      "load_5min_prcnt": 1,
+      "load_15min_prcnt": 0.2
     },
     "throttle": [
       "throttled = 0x0",
       "Not throttled"
     ],
-    "temperature_c": 25.8,
-    "temp_gpu_c": 25.8,
-    "temp_cpu_c": 25.8,
-    "reporter": "ISP-RPi-mqtt-daemon v1.8.0",
-    "reporter_releases": "v1.7.4,v1.7.2,v1.7.3",
+    "temperature_c": 28.7,
+    "temp_gpu_c": 28.7,
+    "temp_cpu_c": 28.2,
+    "reporter": "ISP-RPi-mqtt-daemon v1.8.3",
+    "reporter_releases": "v1.8.2,v1.7.2,v1.7.3,v1.7.4",
     "report_interval": 5
   }
 }
 ```
 
-**NOTE:** Where there's an IP address that interface is connected.  Also, there are new `tx_data` and `rx_data` values which show traffic in bytes for this reporting interval for each network interface.
+**NOTE:** Where there's an IP address that interface is connected. Also, there are new `tx_data` and `rx_data` values which show traffic in bytes for this reporting interval for each network interface.
 
 This data can be subscribed to and processed by your home assistant installation. How you build your RPi dashboard from here is up to you!
 
-
 ## Troubleshooting
+
+### Issue: I've updated my RPi OS and now I'm getting reporter script startup errors
+
+Most often fix: _Re-add the video perms to the daemon group_
+
+See Closed Issues: [#94](https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/issues/94), [#98](https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon/issues/98)
+
+We occasionaly have reports of users who updated their RPi afterwhich the RPI reporter Daemon script fails to start.  The issue is that one of the packages updated appears to have reset the `daemon` group perminsions.  For instructions on resetting the permissions to what is needed see: [Set up daemon account to allow access to temperature values](https://github.com/ironsheep/RPi-Reporter-MQTT2HA-Daemon#set-up-daemon-account-to-allow-access-to-temperature-values)
+
 
 ### Issue: Some of my RPi's don't show up in HA
 
@@ -466,7 +481,7 @@ We occasionaly have reports of users with more than one RPi on their network but
 
 Most often fix: _reboot the missing RPi._
 
-When you remove a sensor from Home Assistant it tells the MQTT broker to 'forget' everything it knows about the RPi.  Some of the information is actually `stored by the MQTT broker` so it is available while the RPi is offline.  Our Daemon script only broadcasts this `stored` information when it is first started.  As a result the RPi will not re-appear after delete from Home Assistant until you reboot the RPi in question. (or, alternatively, stop then restart the script.). You may find reboot easier to do.
+When you remove a sensor from Home Assistant it tells the MQTT broker to 'forget' everything it knows about the RPi. Some of the information is actually `stored by the MQTT broker` so it is available while the RPi is offline. Our Daemon script only broadcasts this `stored` information when it is first started. As a result the RPi will not re-appear after delete from Home Assistant until you reboot the RPi in question. (or, alternatively, stop then restart the script.). You may find reboot easier to do.
 
 To reboot:
 
@@ -509,13 +524,12 @@ I find [MQTT Explorer](http://mqtt-explorer.com/) to be an excellent tool to use
 
 Alternatively I also use **MQTTBox** when I want to send messages by hand to interact via MQTT. it is affered as a web extension or a native application.
 
-
 #### Viewing the Daemon logs
 
 When your script is being run as a Daemon it is logging. You can view the log output since last reboot with:
 
 ```bash
-$ journalctl -b --no-pager -u isp-rpi-reporter.service
+journalctl -b --no-pager -u isp-rpi-reporter.service
 ```
 
 Alternatively you can create a simple script which you can run any time you want to see the log. Here's my show Daemon log script `showRpiLog`:
@@ -526,7 +540,7 @@ Alternatively you can create a simple script which you can run any time you want
 (set -x;journalctl -b --no-pager -u isp-rpi-reporter.service)
 ```
 
-**NOTE**: *the -b says 'since last boot' the --no-pager says just show it all without breaking it up into pages and requiring the enter key press for each page.*
+**NOTE**: _the -b says 'since last boot' the --no-pager says just show it all without breaking it up into pages and requiring the enter key press for each page._
 
 ---
 
@@ -542,6 +556,7 @@ This project is enjoyed by users in many countries. A number of these users have
 
 Thank you to the following github users for taking the time to help make this project function better for all of us!:
 
+- [brunob45](https://github.com/brunob45) - report swap usage
 - [hobbypunk90](https://github.com/hobbypunk90) - add commanding of RPi from HA
 - [OasisOfChaos](https://github.com/OasisOfChaos) - adjust temp. reporting so can work on non-RPi devices like Orange Pi
 - [nabeelmoeen](https://github.com/nabeelmoeen) - add memory usage as addiitonal sensor

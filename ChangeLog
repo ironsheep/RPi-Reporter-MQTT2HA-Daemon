@@ -1,5 +1,33 @@
 # ChangeLog
 
+Mon, 01 May 2023 16:51:08 -0600 v1.8.5
+
+- Handle resubscription if MQTT broker restarts (#99)
+- Simplify installation / setup documentation (#97)
+- Repair bug in running shell to execute commands
+
+Tue, 28 Mar 2023 23:24:03 -0600 v1.8.4
+
+- Remove unused Requirements file from repo. (#92)
+- Fix code which calls getNumberOfAvailableUpdates() after initial call at startup (#93)
+
+Wed, 01 Mar 2023 15:30:03 -0700 v1.8.3
+
+- Remove package that can't be satisfied from `requirements.txt` (#88)
+- Add reporting of swap info. Contributed by [@brunob54](https://github.com/brunob45) (#84)
+
+Tue, 28 Feb 2023 17:24:07 -0700 v1.8.2
+
+- fix LWT online/offline status updates of Daemon
+- repair MQTT command subscription mechanism
+- repaired the remote-control setup instructions for restart-service, updated config.ini.dist
+
+Sun Feb 26 18:28:36 2023 -0700 v1.8.1
+
+- Repair temperature units regression (#82)
+- Disk Used sensor repaired (was reporting free vs. used) (#83)
+- Refine the advertisement of the command endpoints
+
 Sat, 25 Feb 2023 19:36:42 -0700 v1.8.0
 
 - Update README.md and requirements.txt to reflect use of Python `apt` library

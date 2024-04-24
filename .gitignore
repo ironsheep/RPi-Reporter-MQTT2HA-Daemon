@@ -139,3 +139,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+locale_test.tar.gz

@@ -6,4 +6,3 @@ Unidecode>=0.4.21
 colorama>=0.4.3
 tzlocal>=2.1.0
 requests>=2.28.2
-apt>=0.7.8

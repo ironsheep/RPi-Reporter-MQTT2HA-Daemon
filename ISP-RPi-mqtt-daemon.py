@@ -34,7 +34,7 @@ try:
 except ImportError:
     apt_available = False
 
-script_version = "1.8.0"
+script_version = "1.8.5"
 script_name = 'ISP-RPi-mqtt-daemon.py'
 script_info = '{} v{}'.format(script_name, script_version)
 project_name = 'RPi Reporter MQTT2HA Daemon'
@@ -143,28 +143,25 @@ print_line(
     '* init mqtt_client_connected=[{}]'.format(mqtt_client_connected), debug=True)
 mqtt_client_should_attempt_reconnect = True
 
-
 def on_connect(client, userdata, flags, rc):
     global mqtt_client_connected
     if rc == 0:
-        print_line('* MQTT connection established',
-                   console=True, sd_notify=True)
+        print_line('* MQTT connection established', console=True, sd_notify=True)
         print_line('')  # blank line?!
         #_thread.start_new_thread(afterMQTTConnect, ())
         mqtt_client_connected = True
         print_line('on_connect() mqtt_client_connected=[{}]'.format(
             mqtt_client_connected), debug=True)
-        client.on_publish = on_publish
 
         # -------------------------------------------------------------------------
         # Commands Subscription
         if (len(commands) > 0):
-            print_line('MQTT subscription to {}/+ enabled'.format(base_command_topic), console=True, sd_notify=True)
-            client.on_message = on_message
-            client.subscribe('{}/+'.format(base_command_topic))
+            print_line('MQTT subscription to {}/+ enabled'.format(command_base_topic), console=True, sd_notify=True)
+            mqtt_client.subscribe('{}/+'.format(command_base_topic))
         else:
-            print_line('MQTT subscripton to {}/+ disabled'.format(base_command_topic), console=True, sd_notify=True)
+            print_line('MQTT subscripton to {}/+ disabled'.format(command_base_topic), console=True, sd_notify=True)
         # -------------------------------------------------------------------------
+
     else:
         print_line('! Connection error with result code {} - {}'.format(str(rc),
                    mqtt.connack_string(rc)), error=True)
@@ -177,6 +174,13 @@ def on_connect(client, userdata, flags, rc):
         # kill main thread
         os._exit(1)
 
+def on_disconnect(client, userdata, mid):
+    global mqtt_client_connected
+    mqtt_client_connected = False
+    print_line('* MQTT connection lost', console=True, sd_notify=True)
+    print_line('on_disconnect() mqtt_client_connected=[{}]'.format(
+            mqtt_client_connected), debug=True)
+    pass
 
 def on_publish(client, userdata, mid):
     #print_line('* Data successfully published.')
@@ -189,17 +193,29 @@ def on_publish(client, userdata, mid):
 def on_subscribe(client, userdata, mid, granted_qos):
     print_line('on_subscribe() - {} - {}'.format(str(mid),str(granted_qos)), debug=True, sd_notify=True)
 
+shell_cmd_fspec = ''
 def on_message(client, userdata, message):
-    print_line('on_message(). Topic=[{}] payload=[{}]'.format(message.topic, message.payload), console=True, sd_notify=True, debug=True)
+    global shell_cmd_fspec
+    if shell_cmd_fspec == '':
+        shell_cmd_fspec = getShellCmd()
+        if shell_cmd_fspec == '':
+            print_line('* Failed to locate shell Command!', error=True)
+            # kill main thread
+            os._exit(1)
 
     decoded_payload = message.payload.decode('utf-8')
     command = message.topic.split('/')[-1]
+    print_line('on_message() Topic=[{}] payload=[{}] command=[{}]'.format(message.topic, message.payload, command), console=True, sd_notify=True, debug=True)
 
-    if command in commands:
-        print_line('- Command "{}" Received - Run {} {} -'.format(command, commands[command], decoded_payload), console=True, debug=True)
-        subprocess.Popen(["/usr/bin/sh", "-c", commands[command].format(decoded_payload)])
-    else:
-        print_line('* Invalid Command received.', error=True)
+    if command != 'status':
+        if command in commands:
+            print_line('- Command "{}" Received - Run {} {} -'.format(command, commands[command], decoded_payload), console=True, debug=True)
+            pHandle = subprocess.Popen([shell_cmd_fspec, "-c", commands[command].format(decoded_payload)])
+            output, errors = pHandle.communicate()
+            if errors:
+                print_line('- Command exec says: errors=[{}]'.format(errors), console=True, debug=True)
+        else:
+            print_line('* Invalid Command received.', error=True)
 
 # -----------------------------------------------------------------------------
 # Load configuration file
@@ -259,7 +275,6 @@ if config.has_section('Commands'):
 
 # -----------------------------------------------------------------------------
 #  Commands Subscription
-base_command_topic = '{}/command/{}'.format(base_topic, sensor_name.lower())
 # -----------------------------------------------------------------------------
 
 # Check configuration
@@ -359,7 +374,7 @@ rpi_cpu_temp = ''
 rpi_mqtt_script = script_info
 rpi_interfaces = []
 rpi_filesystem = []
-# Tuple (Total, Free, Avail.)
+# Tuple (Total, Free, Avail., Swap Total, Swap Free)
 rpi_memory_tuple = ''
 # Tuple (Hardware, Model Name, NbrCores, BogoMIPS, Serial)
 rpi_cpu_tuple = ''
@@ -462,7 +477,7 @@ def getDeviceMemory():
     #  MemTotal:         948304 kB
     #  MemFree:           40632 kB
     #  MemAvailable:     513332 kB
-    out = subprocess.Popen("cat /proc/meminfo | /bin/egrep -i 'mem[tfa]'",
+    out = subprocess.Popen("cat /proc/meminfo",
                            shell=True,
                            stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT)
@@ -475,6 +490,8 @@ def getDeviceMemory():
     mem_total = ''
     mem_free = ''
     mem_avail = ''
+    swap_total = ''
+    swap_free = ''
     for currLine in trimmedLines:
         lineParts = currLine.split()
         if 'MemTotal' in currLine:
@@ -483,8 +500,13 @@ def getDeviceMemory():
             mem_free = float(lineParts[1]) / 1024
         if 'MemAvail' in currLine:
             mem_avail = float(lineParts[1]) / 1024
-    # Tuple (Total, Free, Avail.)
-    rpi_memory_tuple = (mem_total, mem_free, mem_avail) # [0]=total, [1]=free, [2]=avail.
+        if 'SwapTotal' in currLine:
+            swap_total = float(lineParts[1]) / 1024
+        if 'SwapFree' in currLine:
+            swap_free = float(lineParts[1]) / 1024
+
+    # Tuple (Total, Free, Avail., Swap Total, Swap Free)
+    rpi_memory_tuple = (mem_total, mem_free, mem_avail, swap_total, swap_free) # [0]=total, [1]=free, [2]=avail., [3]=swap total, [4]=swap free
     print_line('rpi_memory_tuple=[{}]'.format(rpi_memory_tuple), debug=True)
 
 def getDeviceModel():
@@ -923,6 +945,17 @@ def getVcGenCmd():
         print_line('Found vcgencmd(1)=[{}]'.format(desiredCommand), debug=True)
     return desiredCommand
 
+def getShellCmd():
+    cmd_locn1 = '/usr/bin/sh'
+    cmd_locn2 = '/bin/sh'
+    desiredCommand = cmd_locn1
+    if os.path.exists(desiredCommand) == False:
+        desiredCommand = cmd_locn2
+    if os.path.exists(desiredCommand) == False:
+        desiredCommand = ''
+    if desiredCommand != '':
+        print_line('Found sh(1)=[{}]'.format(desiredCommand), debug=True)
+    return desiredCommand
 
 def getIPCmd():
     cmd_locn1 = '/bin/ip'
@@ -1181,6 +1214,12 @@ if apt_available:
     getNumberOfAvailableUpdates()
 
 # -----------------------------------------------------------------------------
+#  MQTT Topic def's
+# -----------------------------------------------------------------------------
+
+command_base_topic = '{}/command/{}'.format(base_topic, sensor_name.lower())
+
+# -----------------------------------------------------------------------------
 #  timer and timer funcs for ALIVE MQTT Notices handling
 # -----------------------------------------------------------------------------
 
@@ -1189,8 +1228,13 @@ K_ALIVE_TIMOUT_IN_SECONDS = 60
 
 def publishAliveStatus():
     print_line('- SEND: yes, still alive -', debug=True)
-    mqtt_client.publish(lwt_topic, payload=lwt_online_val, retain=False)
+    mqtt_client.publish(lwt_sensor_topic, payload=lwt_online_val, retain=False)
+    mqtt_client.publish(lwt_command_topic, payload=lwt_online_val, retain=False)
 
+def publishShuttingDownStatus():
+    print_line('- SEND: shutting down -', debug=True)
+    mqtt_client.publish(lwt_sensor_topic, payload=lwt_offline_val, retain=False)
+    mqtt_client.publish(lwt_command_topic, payload=lwt_offline_val, retain=False)
 
 def aliveTimeoutHandler():
     print_line('- MQTT TIMER INTERRUPT -', debug=True)
@@ -1233,16 +1277,21 @@ aliveTimerRunningStatus = False
 # -----------------------------------------------------------------------------
 
 # MQTT connection
-lwt_topic = '{}/sensor/{}/status'.format(base_topic, sensor_name.lower())
+lwt_sensor_topic = '{}/sensor/{}/status'.format(base_topic, sensor_name.lower())
+lwt_command_topic = '{}/command/{}/status'.format(base_topic, sensor_name.lower())
 lwt_online_val = 'online'
 lwt_offline_val = 'offline'
 
 print_line('Connecting to MQTT broker ...', verbose=True)
 mqtt_client = mqtt.Client()
+# hook up MQTT callbacks
 mqtt_client.on_connect = on_connect
+mqtt_client.on_disconnect = on_disconnect
+mqtt_client.on_publish = on_publish
+mqtt_client.on_message = on_message
 
-
-mqtt_client.will_set(lwt_topic, payload=lwt_offline_val, retain=True)
+mqtt_client.will_set(lwt_sensor_topic, payload=lwt_offline_val, retain=True)
+mqtt_client.will_set(lwt_command_topic, payload=lwt_offline_val, retain=True)
 
 if config['MQTT'].getboolean('tls', False):
     # According to the docs, setting PROTOCOL_SSLv23 "Selects the highest protocol version
@@ -1271,7 +1320,8 @@ except:
                error=True, sd_notify=True)
     sys.exit(1)
 else:
-    mqtt_client.publish(lwt_topic, payload=lwt_online_val, retain=False)
+    mqtt_client.publish(lwt_sensor_topic, payload=lwt_online_val, retain=False)
+    mqtt_client.publish(lwt_command_topic, payload=lwt_online_val, retain=False)
     mqtt_client.loop_start()
 
     while mqtt_client_connected == False:  # wait in loop
@@ -1325,6 +1375,8 @@ if cpu_model.find("ARMv7") >= 0 or cpu_model.find("ARMv6") >= 0:
 else:
     cpu_use_icon = "mdi:cpu-64-bit"
 
+print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
+
 # Publish our MQTT auto discovery
 #  table of key items to publish:
 detectorValues = OrderedDict([
@@ -1343,7 +1395,7 @@ detectorValues = OrderedDict([
         topic_category="sensor",
         device_class="temperature",
         no_title_prefix="yes",
-        unit="C",
+        unit="°C",
         icon='mdi:thermometer',
         json_value="temperature_c",
     )),
@@ -1353,7 +1405,7 @@ detectorValues = OrderedDict([
         no_title_prefix="yes",
         unit="%",
         icon='mdi:sd',
-        json_value="fs_free_prcnt",
+        json_value="fs_used_prcnt",
     )),
     (K_LD_CPU_USE, dict(
         title="RPi CPU Use {}".format(rpi_hostname),
@@ -1384,18 +1436,16 @@ for [command, _] in commands.items():
         iconName = 'mdi:cog-counterclockwise'
     detectorValues.update({
         command: dict(
-            title='RPi Command {} {}'.format(rpi_hostname, command),
+            title='RPi {} {} Command'.format(command, rpi_hostname),
             topic_category='button',
             no_title_prefix='yes',
             icon=iconName,
             command = command,
-            command_topic = '{}/{}'.format(base_command_topic, command)
+            command_topic = '{}/{}'.format(command_base_topic, command)
         )
     })
 
 #print_line('- detectorValues=[{}]'.format(detectorValues), debug=True)
-
-print_line('Announcing RPi Monitoring device to MQTT broker for auto-discovery ...')
 
 sensor_base_topic = '{}/sensor/{}'.format(base_topic, sensor_name.lower())
 values_topic_rel = '{}/{}'.format('~', K_LD_MONITOR)
@@ -1423,14 +1473,14 @@ for [sensor, params] in detectorValues.items():
         payload['stat_t'] = values_topic_rel
         payload['val_tpl'] = "{{{{ value_json.{}.{} }}}}".format(K_LD_PAYLOAD_NAME, params['json_value'])
     if 'command' in params:
-        payload['~'] = base_command_topic
+        payload['~'] = command_base_topic
         payload['cmd_t'] = '~/{}'.format(params['command'])
         payload['json_attr_t'] = '~/{}/attributes'.format(params['command'])
     else:
         payload['~'] = sensor_base_topic
-        payload['avty_t'] = activity_topic_rel
-        payload['pl_avail'] = lwt_online_val
-        payload['pl_not_avail'] = lwt_offline_val
+    payload['avty_t'] = activity_topic_rel
+    payload['pl_avail'] = lwt_online_val
+    payload['pl_not_avail'] = lwt_offline_val
     if 'trigger_type' in params:
         payload['type'] = params['trigger_type']
     if 'trigger_subtype' in params:
@@ -1541,6 +1591,8 @@ K_RPI_DVC_PATH = "dvc"
 K_RPI_MEMORY = "memory"
 K_RPI_MEM_TOTAL = "size_mb"
 K_RPI_MEM_FREE = "free_mb"
+K_RPI_SWAP_TOTAL = "size_swap"
+K_RPI_SWAP_FREE = "free_swap"
 # Tuple (Hardware, Model Name, NbrCores, BogoMIPS, Serial)
 K_RPI_CPU = "cpu"
 K_RPI_CPU_HARDWARE = "hardware"
@@ -1698,8 +1750,10 @@ def getMemoryDictionary():
     memoryData = OrderedDict()
     if rpi_memory_tuple != '':
         # TODO: remove free fr
-        memoryData[K_RPI_MEM_TOTAL] = int(rpi_memory_tuple[0])
-        memoryData[K_RPI_MEM_FREE] = int(rpi_memory_tuple[2])
+        memoryData[K_RPI_MEM_TOTAL] = round(rpi_memory_tuple[0])
+        memoryData[K_RPI_MEM_FREE] = round(rpi_memory_tuple[2])
+        memoryData[K_RPI_SWAP_TOTAL] = round(rpi_memory_tuple[3])
+        memoryData[K_RPI_SWAP_FREE] = round(rpi_memory_tuple[4])
     #print_line('memoryData:{}"'.format(memoryData), debug=True)
     return memoryData
 
@@ -1800,9 +1854,12 @@ try:
 
         if apt_available:
             if timeNow > update_last_fetch_time + kUpdateCheckIntervalInSeconds:
-                getNumberOfAvailableUpdates()() # and count them!
+                getNumberOfAvailableUpdates() # and count them!
 
 finally:
     # cleanup used pins... just because we like cleaning up after us
+    publishShuttingDownStatus()
     stopPeriodTimer()   # don't leave our timers running!
     stopAliveTimer()
+    mqtt_client.disconnect()
+    print_line('* MQTT Disconnect()', verbose=True)
