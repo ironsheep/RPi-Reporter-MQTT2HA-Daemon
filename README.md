@@ -191,7 +191,7 @@ If you are seeing output from the `ifconfig` tool then continue on with the foll
 
 Now that the extra packages are installed let's install our script and any remaining supporting python modules.
 
-**--> NEW!! These instructions adjusted to use the latest released version! See "Why" below.**
+**--> NEW!! These instructions adjusted to use the latest released version! See ["Why"](#why-are-we-checking-out-the-latest-release) below.**
 
 ```shell
 # Get a copy of the repository
@@ -361,6 +361,9 @@ sudo systemctl stop isp-rpi-reporter.service
 # get the latest version
 sudo git pull
 
+# (NEW) Move to the latest official release:
+sudo git checkout v1.8.5 # (you want to replace v1.8.5 with the latest if this isn't)
+
 # reload the systemd configuration (in case it changed)
 sudo systemctl daemon-reload
 
@@ -371,6 +374,8 @@ sudo systemctl start isp-rpi-reporter.service
 systemctl status isp-rpi-reporter.service
 
 ```
+
+**NOTE**: *Wondering about the "checkout" command? See [Why are we checking-out the latest release?](#why-are-we-checking-out-the-latest-release) above.*
 
 #### SysV init script commands to perform update
 
@@ -386,6 +391,9 @@ sudo /etc/init.d/rpi-reporter stop
 # get the latest version
 sudo git pull
 
+# (NEW) Move to the latest official release:
+sudo git checkout v1.8.5 # (you want to replace v1.8.5 with the latest if this isn't)
+
 # restart the service with your new version
 sudo /etc/init.d/rpi-reporter start
 
@@ -393,6 +401,8 @@ sudo /etc/init.d/rpi-reporter start
 sudo /etc/init.d/rpi-reporter status
 
 ```
+
+**NOTE**: *Wondering about the "checkout" command? See [Why are we checking-out the latest release?](#why-are-we-checking-out-the-latest-release) above.*
 
 ## Integration
 
