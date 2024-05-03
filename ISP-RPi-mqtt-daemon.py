@@ -1633,6 +1633,9 @@ K_RPI_DRV_DEVICE = "device"
 K_RPI_DRV_NFS = "device-nfs"
 K_RPI_DVC_IP = "ip"
 K_RPI_DVC_PATH = "dvc"
+# new block devices dictionary
+K_RPI_BLK_DEVICES = "block_devices"
+K_RPI_BLK_DEV_TEMP = "temperature_c"
 # new memory dictionary
 K_RPI_MEMORY = "memory"
 K_RPI_MEM_TOTAL = "size_mb"
@@ -1689,6 +1692,10 @@ def send_status(timestamp, nothing):
 
     rpiData[K_RPI_NETWORK] = getNetworkDictionary()
 
+    rpiBlockDevices = getBlockDevicesDictionary()
+    if len(rpiBlockDevices) > 0:
+        rpiData[K_RPI_BLK_DEVICES] = rpiBlockDevices
+
     rpiDrives = getDrivesDictionary()
     if len(rpiDrives) > 0:
         rpiData[K_RPI_DRIVES] = rpiDrives
@@ -1726,6 +1733,21 @@ def send_status(timestamp, nothing):
 def forceSingleDigit(temperature):
     tempInterp = '{:.1f}'.format(temperature)
     return float(tempInterp)
+
+def getBlockDevicesDictionary():
+    rpiDevices = OrderedDict()
+
+    smartctlHelper = os.path.join(os.path.dirname(__file__), 'smartctl-helper')
+    stdout, stderr, returncode = invoke_shell_cmd("sudo " + smartctlHelper)
+    if returncode != 0:
+        print_line('Could not query SMART data: {}'.format(stderr), warning=True)
+        return rpiDevices
+
+    for device in stdout.decode('utf-8').splitlines():
+        [ name, temp ] = device.split(':')
+        if len(temp) > 0:
+            rpiDevices[name] = { K_RPI_BLK_DEV_TEMP: float(temp) }
+    return rpiDevices
 
 
 def getDrivesDictionary():
