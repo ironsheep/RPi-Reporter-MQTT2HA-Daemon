@@ -1,0 +1,6 @@
+#!/bin/bash
+
+smartctl --scan | awk '{ print $1 }' | while read dev; do
+    temp="$(smartctl -a $dev | grep "Temperature:" | awk '{ print $2 }')"
+    echo "$dev:$temp"
+done
