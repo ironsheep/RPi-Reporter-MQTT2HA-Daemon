@@ -682,7 +682,7 @@ def getUptime():
 
 
 def getNetworkIFsUsingIP(ip_cmd):
-    cmd_str = '{} link show | /bin/egrep -v "link" | /bin/egrep " eth| wlan"'.format(
+    cmd_str = '{} link show | /bin/egrep ": en|: eth|: wl"'.format(
         ip_cmd)
     stdout, _, returncode = invoke_shell_cmd(cmd_str)
     lines = []
