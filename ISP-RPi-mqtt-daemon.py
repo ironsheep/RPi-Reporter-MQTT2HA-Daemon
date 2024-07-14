@@ -1439,6 +1439,7 @@ detectorValues = OrderedDict([
         title="Temperature",
         topic_category="sensor",
         device_class="temperature",
+        state_class="measurement",
         no_title_prefix="yes",
         unit="°C",
         icon='mdi:thermometer',
@@ -1447,6 +1448,7 @@ detectorValues = OrderedDict([
     (K_LD_FS_USED, dict(
         title="Disk Used",
         topic_category="sensor",
+        state_class="measurement",
         no_title_prefix="yes",
         unit="%",
         icon='mdi:sd',
@@ -1455,6 +1457,7 @@ detectorValues = OrderedDict([
     (K_LD_CPU_USE, dict(
         title="CPU Use",
         topic_category="sensor",
+        state_class="measurement",
         no_title_prefix="yes",
         unit="%",
         icon=cpu_use_icon,
@@ -1463,6 +1466,7 @@ detectorValues = OrderedDict([
     (K_LD_MEM_USED, dict(
         title="Memory Used",
         topic_category="sensor",
+        state_class="measurement",
         no_title_prefix="yes",
         json_value="mem_used_prcnt",
         unit="%",
