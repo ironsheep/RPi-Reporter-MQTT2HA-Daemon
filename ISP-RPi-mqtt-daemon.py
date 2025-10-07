@@ -588,11 +588,24 @@ def getDeviceModel():
 
 def getLinuxRelease():
     global rpi_linux_release
-    stdout, _, returncode = invoke_shell_cmd(
-        "/bin/cat /etc/apt/sources.list | /bin/egrep -v '#' | /usr/bin/awk '{ print $3 }' | /bin/sed -e 's/-/ /g' | /usr/bin/cut -f1 -d' ' | /bin/grep . | /usr/bin/sort -u")
-    rpi_linux_release = 'N/A'
-    if not returncode:
-        rpi_linux_release = stdout.decode('utf-8').rstrip()
+    # First, try the modern /etc/os-release file
+    os_release_file = '/etc/os-release'
+    if os.path.exists(os_release_file):
+        stdout, _, returncode = invoke_shell_cmd(
+            "source {} && echo $VERSION_CODENAME".format(os_release_file))
+        if not returncode:
+            release_name = stdout.decode('utf-8').strip()
+            if release_name:
+                rpi_linux_release = release_name
+
+    # If that fails, fall back to the old method of parsing sources.list
+    if rpi_linux_release == 'N/A':
+        print_line('Falling back to legacy method for Linux release detection.', debug=True)
+        stdout, _, returncode = invoke_shell_cmd(
+            "/bin/cat /etc/apt/sources.list | /bin/egrep -v '#' | /usr/bin/awk '{ print $3 }' | /bin/sed -e 's/-/ /g' | /usr/bin/cut -f1 -d' ' | /bin/grep . | /usr/bin/sort -u")
+        if not returncode:
+            rpi_linux_release = stdout.decode('utf-8').rstrip()
+
     print_line('rpi_linux_release=[{}]'.format(rpi_linux_release), debug=True)
 
 
