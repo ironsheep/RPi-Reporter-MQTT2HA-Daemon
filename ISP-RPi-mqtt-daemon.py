@@ -589,10 +589,14 @@ def getDeviceModel():
 def getLinuxRelease():
     global rpi_linux_release
     # First, try the modern /etc/os-release file
+    rpi_linux_release = 'N/A'
     os_release_file = '/etc/os-release'
     if os.path.exists(os_release_file):
         stdout, _, returncode = invoke_shell_cmd(
-            "source {} && echo $VERSION_CODENAME".format(os_release_file))
+            f"source {os_release_file} "
+            "&& if [ -n \"$VERSION_CODENAME\" ]; "
+            "then echo \"$ID $VERSION_CODENAME\"; "
+            "else echo \"$ID $VERSION_ID\"; fi")
         if not returncode:
             release_name = stdout.decode('utf-8').strip()
             if release_name:
