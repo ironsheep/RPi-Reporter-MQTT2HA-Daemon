@@ -732,6 +732,43 @@ def getSingleInterfaceDetails(interfaceName):
     # print_line('interface:[{}] trimmedLines=[{}]'.format(interfaceName, trimmedLines), debug=True)
     return trimmedLines
 
+def getWifiSignalStrength(interfaceName):
+    """
+    Reads /proc/net/wireless to find the signal strength (dBm) and link quality.
+    Returns a dictionary {'signal_level': int, 'link_quality': int/float} or None.
+    Note: Signal level is usually negative (dBm).
+    """
+    try:
+        with open("/proc/net/wireless", "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                if interfaceName in line:
+                    # Typical line format:
+                    # wlan0: 0000   56.  -54.  -256        0      0      0      0      0        0
+                    parts = line.split()
+                    
+                    # The parts list index depends on the split, but usually:
+                    # parts[0] is 'wlan0:'
+                    # parts[2] is Link Quality (e.g., 56.)
+                    # parts[3] is Signal Level (e.g., -54.)
+                    
+                    # Clean the trailing dots if present
+                    quality = float(parts[2].replace('.', ''))
+                    signal = float(parts[3].replace('.', ''))
+                    
+                    return {
+                        "link_quality": quality,
+                        "signal_level_dbm": signal
+                    }
+        # If wlan0 was not found in the loop
+        return None
+    
+    except FileNotFoundError:
+        print_line("/proc/net/wireless not found.", warning=True)
+        return None
+    except Exception as e:
+        print_line(f"Error reading wifi signal: {e}", warning=True)
+        return None
 
 def loadNetworkIFDetailsFromLines(ifConfigLines):
     global rpi_interfaces
@@ -759,6 +796,7 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
     imterfc = ''
     rpi_mac = ''
     current_time = time()
+    interface_names = []
     if current_time == previous_time:
         current_time += 1
 
@@ -775,12 +813,14 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
             if 'flags' in currLine:  # NEWER ONLY
                 haveIF = True
                 imterfc = lineParts[0].replace(':', '')
+                if imterfc not in interface_names: interface_names.append(imterfc)
                 # print_line('newIF=[{}]'.format(imterfc), debug=True)
             # OLDER ONLY, using 'Link ' (notice space) prevent from tripping on
             # IPv6 ('Scope:Link')
             elif 'Link ' in currLine:
                 haveIF = True
                 imterfc = lineParts[0].replace(':', '')
+                if imterfc not in interface_names: interface_names.append(imterfc)
                 newTuple = (imterfc, 'mac', lineParts[4])
                 if rpi_mac == '':
                     rpi_mac = lineParts[4]
@@ -818,6 +858,17 @@ def loadNetworkIFDetailsFromLines(ifConfigLines):
                     print_line('newTuple=[{}]'.format(newTuple), debug=True)
                     haveIF = False
 
+    # add in wifi signal strength and quality to tuples
+    print_line(f"Checking interfaces {interface_names} for wifi details", debug=True)
+    for imterfc in interface_names:
+        temp = getWifiSignalStrength(imterfc)
+        if temp is not None:
+            tmpInterfaces.append((imterfc, 'link_quality', temp['link_quality']))
+            print_line(f"newTuple=[{tmpInterfaces[-1]}]", debug=True)
+            tmpInterfaces.append((imterfc, 'signal_level_dbm', temp['signal_level_dbm']))
+            print_line(f"newTuple=[{tmpInterfaces[-1]}]", debug=True)
+        else:
+            print_line(f"interface {imterfc} appears to not be wireless, skipping!", debug=True)
     rpi_interfaces = tmpInterfaces
     print_line('rpi_interfaces=[{}]'.format(rpi_interfaces), debug=True)
     print_line('rpi_mac=[{}]'.format(rpi_mac), debug=True)
